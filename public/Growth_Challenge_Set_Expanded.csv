@@ -1,0 +1,351 @@
+id,category,challenge_id_text,title,description
+1,Confidence,CON-001,Make eye contact with someone for at least 3 seconds.,Make eye contact with someone for at least 3 seconds.
+2,Confidence,CON-002,Start a conversation with a stranger.,Start a conversation with a stranger.
+3,Confidence,CON-003,Give a genuine compliment to someone today.,Give a genuine compliment to someone today.
+4,Confidence,CON-004,Raise your hand or speak once in a group setting.,Raise your hand or speak once in a group setting.
+5,Confidence,CON-005,Record yourself saying something positive about yourself.,Record yourself saying something positive about yourself.
+6,Confidence,CON-006,Introduce yourself to someone new.,Introduce yourself to someone new.
+7,Confidence,CON-007,Wear something that expresses your personality.,Wear something that expresses your personality.
+8,Confidence,CON-008,Share your opinion in a conversation.,Share your opinion in a conversation.
+9,Confidence,CON-009,Say no to something you don’t want to do.,Say no to something you don’t want to do.
+10,Confidence,CON-010,Take the lead in a small group task.,Take the lead in a small group task.
+11,Self-Control,SEL-001,Wait 5 minutes before responding to any impulse.,Wait 5 minutes before responding to any impulse.
+12,Self-Control,SEL-002,Avoid using your phone for the first hour after waking.,Avoid using your phone for the first hour after waking.
+13,Self-Control,SEL-003,Only eat when sitting down at a table — no snacking.,Only eat when sitting down at a table — no snacking.
+14,Self-Control,SEL-004,Choose water instead of sugary drinks today.,Choose water instead of sugary drinks today.
+15,Self-Control,SEL-005,Turn off all screens 1 hour before bedtime.,Turn off all screens 1 hour before bedtime.
+16,Self-Control,SEL-006,Set a 10-minute timer before making a non-essential purchase.,Set a 10-minute timer before making a non-essential purchase.
+17,Self-Control,SEL-007,Don’t check social media until after 12 PM.,Don’t check social media until after 12 PM.
+18,Self-Control,SEL-008,"Fast from one thing you overuse (snacks, scrolling, etc.) for 24 hours.","Fast from one thing you overuse (snacks, scrolling, etc.) for 24 hours."
+19,Self-Control,SEL-009,Use deep breathing before reacting emotionally today.,Use deep breathing before reacting emotionally today.
+20,Self-Control,SEL-010,Make a to-do list and stick to it without rearranging.,Make a to-do list and stick to it without rearranging.
+21,Self-Worth,SEL-001,Write down 3 things you appreciate about yourself.,Write down 3 things you appreciate about yourself.
+22,Self-Worth,SEL-002,Say 'I matter' out loud — 3 times.,Say 'I matter' out loud — 3 times.
+23,Self-Worth,SEL-003,Look in the mirror and smile at yourself for 10 seconds.,Look in the mirror and smile at yourself for 10 seconds.
+24,Self-Worth,SEL-004,Write a message to your younger self.,Write a message to your younger self.
+25,Self-Worth,SEL-005,List 5 things you’ve overcome in life.,List 5 things you’ve overcome in life.
+26,Self-Worth,SEL-006,Do something today just because it brings you joy.,Do something today just because it brings you joy.
+27,Self-Worth,SEL-007,Declutter one thing that no longer serves you.,Declutter one thing that no longer serves you.
+28,Self-Worth,SEL-008,Say no to something that drains your energy.,Say no to something that drains your energy.
+29,Self-Worth,SEL-009,Spend 15 minutes doing something you're proud of.,Spend 15 minutes doing something you're proud of.
+30,Self-Worth,SEL-010,Write a thank you letter to yourself.,Write a thank you letter to yourself.
+31,Discipline,DIS-001,Wake up 30 minutes earlier than usual.,Wake up 30 minutes earlier than usual.
+32,Discipline,DIS-002,Follow your schedule exactly for one hour.,Follow your schedule exactly for one hour.
+33,Discipline,DIS-003,Set a goal and break it into 3 action steps today.,Set a goal and break it into 3 action steps today.
+34,Discipline,DIS-004,Make your bed as the first task of the day.,Make your bed as the first task of the day.
+35,Discipline,DIS-005,Complete a task you've been procrastinating on.,Complete a task you've been procrastinating on.
+36,Discipline,DIS-006,Work on one task without distraction for 25 minutes.,Work on one task without distraction for 25 minutes.
+37,Discipline,DIS-007,Plan your meals for tomorrow.,Plan your meals for tomorrow.
+38,Discipline,DIS-008,Prepare your clothes for the next day.,Prepare your clothes for the next day.
+39,Discipline,DIS-009,Delete one distraction from your phone.,Delete one distraction from your phone.
+40,Discipline,DIS-010,End your day by writing tomorrow's top priority.,End your day by writing tomorrow's top priority.
+41,Fitness,FIT-001,Go for a 10-minute walk today.,Go for a 10-minute walk today.
+42,Fitness,FIT-002,Do 15 bodyweight squats in one set.,Do 15 bodyweight squats in one set.
+43,Fitness,FIT-003,Stretch for 5 minutes after waking up.,Stretch for 5 minutes after waking up.
+44,Fitness,FIT-004,Take the stairs instead of the lift or escalator.,Take the stairs instead of the lift or escalator.
+45,Fitness,FIT-005,Try 10 push-ups (or as many as you can).,Try 10 push-ups (or as many as you can).
+46,Fitness,FIT-006,Dance to one full song — no matter where you are.,Dance to one full song — no matter where you are.
+47,Fitness,FIT-007,"Walk 5,000 steps today.","Walk 5,000 steps today."
+48,Fitness,FIT-008,Do 30 seconds of jumping jacks.,Do 30 seconds of jumping jacks.
+49,Fitness,FIT-009,Try a short workout video (under 10 minutes).,Try a short workout video (under 10 minutes).
+50,Fitness,FIT-010,Do 20 lunges (10 on each leg).,Do 20 lunges (10 on each leg).
+51,Mindfulness,MIN-001,Take 3 deep breaths before starting any task.,Take 3 deep breaths before starting any task.
+52,Mindfulness,MIN-002,Spend 5 minutes in silence with no phone or distractions.,Spend 5 minutes in silence with no phone or distractions.
+53,Mindfulness,MIN-003,Notice 3 things you can hear around you right now.,Notice 3 things you can hear around you right now.
+54,Mindfulness,MIN-004,Do a body scan from head to toe and relax each part.,Do a body scan from head to toe and relax each part.
+55,Mindfulness,MIN-005,Eat one meal today without any distractions — just taste.,Eat one meal today without any distractions — just taste.
+56,Mindfulness,MIN-006,"Walk slowly for 10 minutes, focusing only on your breath.","Walk slowly for 10 minutes, focusing only on your breath."
+57,Mindfulness,MIN-007,Light a candle and focus on the flame for 3 minutes.,Light a candle and focus on the flame for 3 minutes.
+58,Mindfulness,MIN-008,Name one emotion you're feeling right now.,Name one emotion you're feeling right now.
+59,Mindfulness,MIN-009,Do one task today with full focus and no multitasking.,Do one task today with full focus and no multitasking.
+60,Mindfulness,MIN-010,"Before bed, name 3 good things that happened today.","Before bed, name 3 good things that happened today."
+61,Mindfulness,MIN-011,Take 3 deep breaths before starting any task.,Take 3 deep breaths before starting any task.
+62,Mindfulness,MIN-012,Spend 5 minutes in silence with no phone or distractions.,Spend 5 minutes in silence with no phone or distractions.
+63,Mindfulness,MIN-013,Notice 3 things you can hear around you right now.,Notice 3 things you can hear around you right now.
+64,Mindfulness,MIN-014,Do a body scan from head to toe and relax each part.,Do a body scan from head to toe and relax each part.
+65,Mindfulness,MIN-015,Eat one meal today without any distractions — just taste.,Eat one meal today without any distractions — just taste.
+66,Mindfulness,MIN-016,"Walk slowly for 10 minutes, focusing only on your breath.","Walk slowly for 10 minutes, focusing only on your breath."
+67,Mindfulness,MIN-017,Light a candle and focus on the flame for 3 minutes.,Light a candle and focus on the flame for 3 minutes.
+68,Mindfulness,MIN-018,Name one emotion you're feeling right now.,Name one emotion you're feeling right now.
+69,Mindfulness,MIN-019,Do one task today with full focus and no multitasking.,Do one task today with full focus and no multitasking.
+70,Mindfulness,MIN-020,"Before bed, name 3 good things that happened today.","Before bed, name 3 good things that happened today."
+71,Mindfulness,MIN-021,Take 3 deep breaths before starting any task.,Take 3 deep breaths before starting any task.
+72,Mindfulness,MIN-022,Spend 5 minutes in silence with no phone or distractions.,Spend 5 minutes in silence with no phone or distractions.
+73,Mindfulness,MIN-023,Notice 3 things you can hear around you right now.,Notice 3 things you can hear around you right now.
+74,Mindfulness,MIN-024,Do a body scan from head to toe and relax each part.,Do a body scan from head to toe and relax each part.
+75,Mindfulness,MIN-025,Eat one meal today without any distractions — just taste.,Eat one meal today without any distractions — just taste.
+76,Mindfulness,MIN-026,"Walk slowly for 10 minutes, focusing only on your breath.","Walk slowly for 10 minutes, focusing only on your breath."
+77,Mindfulness,MIN-027,Light a candle and focus on the flame for 3 minutes.,Light a candle and focus on the flame for 3 minutes.
+78,Mindfulness,MIN-028,Name one emotion you're feeling right now.,Name one emotion you're feeling right now.
+79,Mindfulness,MIN-029,Do one task today with full focus and no multitasking.,Do one task today with full focus and no multitasking.
+80,Mindfulness,MIN-030,"Before bed, name 3 good things that happened today.","Before bed, name 3 good things that happened today."
+81,Mindfulness,MIN-031,Take 3 deep breaths before starting any task.,Take 3 deep breaths before starting any task.
+82,Mindfulness,MIN-032,Spend 5 minutes in silence with no phone or distractions.,Spend 5 minutes in silence with no phone or distractions.
+83,Mindfulness,MIN-033,Notice 3 things you can hear around you right now.,Notice 3 things you can hear around you right now.
+84,Mindfulness,MIN-034,Do a body scan from head to toe and relax each part.,Do a body scan from head to toe and relax each part.
+85,Mindfulness,MIN-035,Eat one meal today without any distractions — just taste.,Eat one meal today without any distractions — just taste.
+86,Mindfulness,MIN-036,"Walk slowly for 10 minutes, focusing only on your breath.","Walk slowly for 10 minutes, focusing only on your breath."
+87,Mindfulness,MIN-037,Light a candle and focus on the flame for 3 minutes.,Light a candle and focus on the flame for 3 minutes.
+88,Mindfulness,MIN-038,Name one emotion you're feeling right now.,Name one emotion you're feeling right now.
+89,Mindfulness,MIN-039,Do one task today with full focus and no multitasking.,Do one task today with full focus and no multitasking.
+90,Mindfulness,MIN-040,"Before bed, name 3 good things that happened today.","Before bed, name 3 good things that happened today."
+91,Mindfulness,MIN-041,Take 3 deep breaths before starting any task.,Take 3 deep breaths before starting any task.
+92,Mindfulness,MIN-042,Spend 5 minutes in silence with no phone or distractions.,Spend 5 minutes in silence with no phone or distractions.
+93,Mindfulness,MIN-043,Notice 3 things you can hear around you right now.,Notice 3 things you can hear around you right now.
+94,Mindfulness,MIN-044,Do a body scan from head to toe and relax each part.,Do a body scan from head to toe and relax each part.
+95,Mindfulness,MIN-045,Eat one meal today without any distractions — just taste.,Eat one meal today without any distractions — just taste.
+96,Mindfulness,MIN-046,"Walk slowly for 10 minutes, focusing only on your breath.","Walk slowly for 10 minutes, focusing only on your breath."
+97,Mindfulness,MIN-047,Light a candle and focus on the flame for 3 minutes.,Light a candle and focus on the flame for 3 minutes.
+98,Mindfulness,MIN-048,Name one emotion you're feeling right now.,Name one emotion you're feeling right now.
+99,Mindfulness,MIN-049,Do one task today with full focus and no multitasking.,Do one task today with full focus and no multitasking.
+100,Mindfulness,MIN-050,"Before bed, name 3 good things that happened today.","Before bed, name 3 good things that happened today."
+101,Mindfulness,MIN-051,Take 3 deep breaths before starting any task.,Take 3 deep breaths before starting any task.
+102,Mindfulness,MIN-052,Spend 5 minutes in silence with no phone or distractions.,Spend 5 minutes in silence with no phone or distractions.
+103,Mindfulness,MIN-053,Notice 3 things you can hear around you right now.,Notice 3 things you can hear around you right now.
+104,Mindfulness,MIN-054,Do a body scan from head to toe and relax each part.,Do a body scan from head to toe and relax each part.
+105,Mindfulness,MIN-055,Eat one meal today without any distractions — just taste.,Eat one meal today without any distractions — just taste.
+106,Mindfulness,MIN-056,"Walk slowly for 10 minutes, focusing only on your breath.","Walk slowly for 10 minutes, focusing only on your breath."
+107,Mindfulness,MIN-057,Light a candle and focus on the flame for 3 minutes.,Light a candle and focus on the flame for 3 minutes.
+108,Mindfulness,MIN-058,Name one emotion you're feeling right now.,Name one emotion you're feeling right now.
+109,Mindfulness,MIN-059,Do one task today with full focus and no multitasking.,Do one task today with full focus and no multitasking.
+110,Mindfulness,MIN-060,"Before bed, name 3 good things that happened today.","Before bed, name 3 good things that happened today."
+111,Mindfulness,MIN-061,Take 3 deep breaths before starting any task.,Take 3 deep breaths before starting any task.
+112,Mindfulness,MIN-062,Spend 5 minutes in silence with no phone or distractions.,Spend 5 minutes in silence with no phone or distractions.
+113,Mindfulness,MIN-063,Notice 3 things you can hear around you right now.,Notice 3 things you can hear around you right now.
+114,Mindfulness,MIN-064,Do a body scan from head to toe and relax each part.,Do a body scan from head to toe and relax each part.
+115,Mindfulness,MIN-065,Eat one meal today without any distractions — just taste.,Eat one meal today without any distractions — just taste.
+116,Mindfulness,MIN-066,"Walk slowly for 10 minutes, focusing only on your breath.","Walk slowly for 10 minutes, focusing only on your breath."
+117,Mindfulness,MIN-067,Light a candle and focus on the flame for 3 minutes.,Light a candle and focus on the flame for 3 minutes.
+118,Mindfulness,MIN-068,Name one emotion you're feeling right now.,Name one emotion you're feeling right now.
+119,Mindfulness,MIN-069,Do one task today with full focus and no multitasking.,Do one task today with full focus and no multitasking.
+120,Mindfulness,MIN-070,"Before bed, name 3 good things that happened today.","Before bed, name 3 good things that happened today."
+121,Mindfulness,MIN-071,Take 3 deep breaths before starting any task.,Take 3 deep breaths before starting any task.
+122,Mindfulness,MIN-072,Spend 5 minutes in silence with no phone or distractions.,Spend 5 minutes in silence with no phone or distractions.
+123,Mindfulness,MIN-073,Notice 3 things you can hear around you right now.,Notice 3 things you can hear around you right now.
+124,Mindfulness,MIN-074,Do a body scan from head to toe and relax each part.,Do a body scan from head to toe and relax each part.
+125,Mindfulness,MIN-075,Eat one meal today without any distractions — just taste.,Eat one meal today without any distractions — just taste.
+126,Mindfulness,MIN-076,"Walk slowly for 10 minutes, focusing only on your breath.","Walk slowly for 10 minutes, focusing only on your breath."
+127,Mindfulness,MIN-077,Light a candle and focus on the flame for 3 minutes.,Light a candle and focus on the flame for 3 minutes.
+128,Mindfulness,MIN-078,Name one emotion you're feeling right now.,Name one emotion you're feeling right now.
+129,Mindfulness,MIN-079,Do one task today with full focus and no multitasking.,Do one task today with full focus and no multitasking.
+130,Mindfulness,MIN-080,"Before bed, name 3 good things that happened today.","Before bed, name 3 good things that happened today."
+131,Mindfulness,MIN-081,Take 3 deep breaths before starting any task.,Take 3 deep breaths before starting any task.
+132,Mindfulness,MIN-082,Spend 5 minutes in silence with no phone or distractions.,Spend 5 minutes in silence with no phone or distractions.
+133,Mindfulness,MIN-083,Notice 3 things you can hear around you right now.,Notice 3 things you can hear around you right now.
+134,Mindfulness,MIN-084,Do a body scan from head to toe and relax each part.,Do a body scan from head to toe and relax each part.
+135,Mindfulness,MIN-085,Eat one meal today without any distractions — just taste.,Eat one meal today without any distractions — just taste.
+136,Mindfulness,MIN-086,"Walk slowly for 10 minutes, focusing only on your breath.","Walk slowly for 10 minutes, focusing only on your breath."
+137,Mindfulness,MIN-087,Light a candle and focus on the flame for 3 minutes.,Light a candle and focus on the flame for 3 minutes.
+138,Mindfulness,MIN-088,Name one emotion you're feeling right now.,Name one emotion you're feeling right now.
+139,Mindfulness,MIN-089,Do one task today with full focus and no multitasking.,Do one task today with full focus and no multitasking.
+140,Mindfulness,MIN-090,"Before bed, name 3 good things that happened today.","Before bed, name 3 good things that happened today."
+141,Mindfulness,MIN-091,Take 3 deep breaths before starting any task.,Take 3 deep breaths before starting any task.
+142,Mindfulness,MIN-092,Spend 5 minutes in silence with no phone or distractions.,Spend 5 minutes in silence with no phone or distractions.
+143,Mindfulness,MIN-093,Notice 3 things you can hear around you right now.,Notice 3 things you can hear around you right now.
+144,Mindfulness,MIN-094,Do a body scan from head to toe and relax each part.,Do a body scan from head to toe and relax each part.
+145,Mindfulness,MIN-095,Eat one meal today without any distractions — just taste.,Eat one meal today without any distractions — just taste.
+146,Mindfulness,MIN-096,"Walk slowly for 10 minutes, focusing only on your breath.","Walk slowly for 10 minutes, focusing only on your breath."
+147,Mindfulness,MIN-097,Light a candle and focus on the flame for 3 minutes.,Light a candle and focus on the flame for 3 minutes.
+148,Mindfulness,MIN-098,Name one emotion you're feeling right now.,Name one emotion you're feeling right now.
+149,Mindfulness,MIN-099,Do one task today with full focus and no multitasking.,Do one task today with full focus and no multitasking.
+150,Mindfulness,MIN-100,"Before bed, name 3 good things that happened today.","Before bed, name 3 good things that happened today."
+151,Communication,COM-001,Ask someone a deep or meaningful question today.,Ask someone a deep or meaningful question today.
+152,Communication,COM-002,Listen to someone without interrupting — fully.,Listen to someone without interrupting — fully.
+153,Communication,COM-003,Use a person's name 3 times in a conversation.,Use a person's name 3 times in a conversation.
+154,Communication,COM-004,Have a 5-minute phone or voice chat instead of texting.,Have a 5-minute phone or voice chat instead of texting.
+155,Communication,COM-005,Share something honest but kind with someone today.,Share something honest but kind with someone today.
+156,Communication,COM-006,Pause before replying in any argument or tense moment.,Pause before replying in any argument or tense moment.
+157,Communication,COM-007,Write a message to someone you haven't spoken to in a while.,Write a message to someone you haven't spoken to in a while.
+158,Communication,COM-008,Paraphrase what someone said to confirm you heard them.,Paraphrase what someone said to confirm you heard them.
+159,Communication,COM-009,"Compliment someone’s idea, not just their looks.","Compliment someone’s idea, not just their looks."
+160,Communication,COM-010,End one conversation today with genuine gratitude.,End one conversation today with genuine gratitude.
+161,Communication,COM-011,Ask someone a deep or meaningful question today.,Ask someone a deep or meaningful question today.
+162,Communication,COM-012,Listen to someone without interrupting — fully.,Listen to someone without interrupting — fully.
+163,Communication,COM-013,Use a person's name 3 times in a conversation.,Use a person's name 3 times in a conversation.
+164,Communication,COM-014,Have a 5-minute phone or voice chat instead of texting.,Have a 5-minute phone or voice chat instead of texting.
+165,Communication,COM-015,Share something honest but kind with someone today.,Share something honest but kind with someone today.
+166,Communication,COM-016,Pause before replying in any argument or tense moment.,Pause before replying in any argument or tense moment.
+167,Communication,COM-017,Write a message to someone you haven't spoken to in a while.,Write a message to someone you haven't spoken to in a while.
+168,Communication,COM-018,Paraphrase what someone said to confirm you heard them.,Paraphrase what someone said to confirm you heard them.
+169,Communication,COM-019,"Compliment someone’s idea, not just their looks.","Compliment someone’s idea, not just their looks."
+170,Communication,COM-020,End one conversation today with genuine gratitude.,End one conversation today with genuine gratitude.
+171,Communication,COM-021,Ask someone a deep or meaningful question today.,Ask someone a deep or meaningful question today.
+172,Communication,COM-022,Listen to someone without interrupting — fully.,Listen to someone without interrupting — fully.
+173,Communication,COM-023,Use a person's name 3 times in a conversation.,Use a person's name 3 times in a conversation.
+174,Communication,COM-024,Have a 5-minute phone or voice chat instead of texting.,Have a 5-minute phone or voice chat instead of texting.
+175,Communication,COM-025,Share something honest but kind with someone today.,Share something honest but kind with someone today.
+176,Communication,COM-026,Pause before replying in any argument or tense moment.,Pause before replying in any argument or tense moment.
+177,Communication,COM-027,Write a message to someone you haven't spoken to in a while.,Write a message to someone you haven't spoken to in a while.
+178,Communication,COM-028,Paraphrase what someone said to confirm you heard them.,Paraphrase what someone said to confirm you heard them.
+179,Communication,COM-029,"Compliment someone’s idea, not just their looks.","Compliment someone’s idea, not just their looks."
+180,Communication,COM-030,End one conversation today with genuine gratitude.,End one conversation today with genuine gratitude.
+181,Communication,COM-031,Ask someone a deep or meaningful question today.,Ask someone a deep or meaningful question today.
+182,Communication,COM-032,Listen to someone without interrupting — fully.,Listen to someone without interrupting — fully.
+183,Communication,COM-033,Use a person's name 3 times in a conversation.,Use a person's name 3 times in a conversation.
+184,Communication,COM-034,Have a 5-minute phone or voice chat instead of texting.,Have a 5-minute phone or voice chat instead of texting.
+185,Communication,COM-035,Share something honest but kind with someone today.,Share something honest but kind with someone today.
+186,Communication,COM-036,Pause before replying in any argument or tense moment.,Pause before replying in any argument or tense moment.
+187,Communication,COM-037,Write a message to someone you haven't spoken to in a while.,Write a message to someone you haven't spoken to in a while.
+188,Communication,COM-038,Paraphrase what someone said to confirm you heard them.,Paraphrase what someone said to confirm you heard them.
+189,Communication,COM-039,"Compliment someone’s idea, not just their looks.","Compliment someone’s idea, not just their looks."
+190,Communication,COM-040,End one conversation today with genuine gratitude.,End one conversation today with genuine gratitude.
+191,Communication,COM-041,Ask someone a deep or meaningful question today.,Ask someone a deep or meaningful question today.
+192,Communication,COM-042,Listen to someone without interrupting — fully.,Listen to someone without interrupting — fully.
+193,Communication,COM-043,Use a person's name 3 times in a conversation.,Use a person's name 3 times in a conversation.
+194,Communication,COM-044,Have a 5-minute phone or voice chat instead of texting.,Have a 5-minute phone or voice chat instead of texting.
+195,Communication,COM-045,Share something honest but kind with someone today.,Share something honest but kind with someone today.
+196,Communication,COM-046,Pause before replying in any argument or tense moment.,Pause before replying in any argument or tense moment.
+197,Communication,COM-047,Write a message to someone you haven't spoken to in a while.,Write a message to someone you haven't spoken to in a while.
+198,Communication,COM-048,Paraphrase what someone said to confirm you heard them.,Paraphrase what someone said to confirm you heard them.
+199,Communication,COM-049,"Compliment someone’s idea, not just their looks.","Compliment someone’s idea, not just their looks."
+200,Communication,COM-050,End one conversation today with genuine gratitude.,End one conversation today with genuine gratitude.
+201,Communication,COM-051,Ask someone a deep or meaningful question today.,Ask someone a deep or meaningful question today.
+202,Communication,COM-052,Listen to someone without interrupting — fully.,Listen to someone without interrupting — fully.
+203,Communication,COM-053,Use a person's name 3 times in a conversation.,Use a person's name 3 times in a conversation.
+204,Communication,COM-054,Have a 5-minute phone or voice chat instead of texting.,Have a 5-minute phone or voice chat instead of texting.
+205,Communication,COM-055,Share something honest but kind with someone today.,Share something honest but kind with someone today.
+206,Communication,COM-056,Pause before replying in any argument or tense moment.,Pause before replying in any argument or tense moment.
+207,Communication,COM-057,Write a message to someone you haven't spoken to in a while.,Write a message to someone you haven't spoken to in a while.
+208,Communication,COM-058,Paraphrase what someone said to confirm you heard them.,Paraphrase what someone said to confirm you heard them.
+209,Communication,COM-059,"Compliment someone’s idea, not just their looks.","Compliment someone’s idea, not just their looks."
+210,Communication,COM-060,End one conversation today with genuine gratitude.,End one conversation today with genuine gratitude.
+211,Communication,COM-061,Ask someone a deep or meaningful question today.,Ask someone a deep or meaningful question today.
+212,Communication,COM-062,Listen to someone without interrupting — fully.,Listen to someone without interrupting — fully.
+213,Communication,COM-063,Use a person's name 3 times in a conversation.,Use a person's name 3 times in a conversation.
+214,Communication,COM-064,Have a 5-minute phone or voice chat instead of texting.,Have a 5-minute phone or voice chat instead of texting.
+215,Communication,COM-065,Share something honest but kind with someone today.,Share something honest but kind with someone today.
+216,Communication,COM-066,Pause before replying in any argument or tense moment.,Pause before replying in any argument or tense moment.
+217,Communication,COM-067,Write a message to someone you haven't spoken to in a while.,Write a message to someone you haven't spoken to in a while.
+218,Communication,COM-068,Paraphrase what someone said to confirm you heard them.,Paraphrase what someone said to confirm you heard them.
+219,Communication,COM-069,"Compliment someone’s idea, not just their looks.","Compliment someone’s idea, not just their looks."
+220,Communication,COM-070,End one conversation today with genuine gratitude.,End one conversation today with genuine gratitude.
+221,Communication,COM-071,Ask someone a deep or meaningful question today.,Ask someone a deep or meaningful question today.
+222,Communication,COM-072,Listen to someone without interrupting — fully.,Listen to someone without interrupting — fully.
+223,Communication,COM-073,Use a person's name 3 times in a conversation.,Use a person's name 3 times in a conversation.
+224,Communication,COM-074,Have a 5-minute phone or voice chat instead of texting.,Have a 5-minute phone or voice chat instead of texting.
+225,Communication,COM-075,Share something honest but kind with someone today.,Share something honest but kind with someone today.
+226,Communication,COM-076,Pause before replying in any argument or tense moment.,Pause before replying in any argument or tense moment.
+227,Communication,COM-077,Write a message to someone you haven't spoken to in a while.,Write a message to someone you haven't spoken to in a while.
+228,Communication,COM-078,Paraphrase what someone said to confirm you heard them.,Paraphrase what someone said to confirm you heard them.
+229,Communication,COM-079,"Compliment someone’s idea, not just their looks.","Compliment someone’s idea, not just their looks."
+230,Communication,COM-080,End one conversation today with genuine gratitude.,End one conversation today with genuine gratitude.
+231,Communication,COM-081,Ask someone a deep or meaningful question today.,Ask someone a deep or meaningful question today.
+232,Communication,COM-082,Listen to someone without interrupting — fully.,Listen to someone without interrupting — fully.
+233,Communication,COM-083,Use a person's name 3 times in a conversation.,Use a person's name 3 times in a conversation.
+234,Communication,COM-084,Have a 5-minute phone or voice chat instead of texting.,Have a 5-minute phone or voice chat instead of texting.
+235,Communication,COM-085,Share something honest but kind with someone today.,Share something honest but kind with someone today.
+236,Communication,COM-086,Pause before replying in any argument or tense moment.,Pause before replying in any argument or tense moment.
+237,Communication,COM-087,Write a message to someone you haven't spoken to in a while.,Write a message to someone you haven't spoken to in a while.
+238,Communication,COM-088,Paraphrase what someone said to confirm you heard them.,Paraphrase what someone said to confirm you heard them.
+239,Communication,COM-089,"Compliment someone’s idea, not just their looks.","Compliment someone’s idea, not just their looks."
+240,Communication,COM-090,End one conversation today with genuine gratitude.,End one conversation today with genuine gratitude.
+241,Communication,COM-091,Ask someone a deep or meaningful question today.,Ask someone a deep or meaningful question today.
+242,Communication,COM-092,Listen to someone without interrupting — fully.,Listen to someone without interrupting — fully.
+243,Communication,COM-093,Use a person's name 3 times in a conversation.,Use a person's name 3 times in a conversation.
+244,Communication,COM-094,Have a 5-minute phone or voice chat instead of texting.,Have a 5-minute phone or voice chat instead of texting.
+245,Communication,COM-095,Share something honest but kind with someone today.,Share something honest but kind with someone today.
+246,Communication,COM-096,Pause before replying in any argument or tense moment.,Pause before replying in any argument or tense moment.
+247,Communication,COM-097,Write a message to someone you haven't spoken to in a while.,Write a message to someone you haven't spoken to in a while.
+248,Communication,COM-098,Paraphrase what someone said to confirm you heard them.,Paraphrase what someone said to confirm you heard them.
+249,Communication,COM-099,"Compliment someone’s idea, not just their looks.","Compliment someone’s idea, not just their looks."
+250,Communication,COM-100,End one conversation today with genuine gratitude.,End one conversation today with genuine gratitude.
+251,Resilience,RES-001,Write about a time you overcame something hard.,Write about a time you overcame something hard.
+252,Resilience,RES-002,Identify one small win today — even if it felt tiny.,Identify one small win today — even if it felt tiny.
+253,Resilience,RES-003,Recall one failure and what you learned from it.,Recall one failure and what you learned from it.
+254,Resilience,RES-004,Push through one task even if you don’t feel like it.,Push through one task even if you don’t feel like it.
+255,Resilience,RES-005,Do one thing today that feels uncomfortable but necessary.,Do one thing today that feels uncomfortable but necessary.
+256,Resilience,RES-006,Think about a setback — what strength did it build in you?,Think about a setback — what strength did it build in you?
+257,Resilience,RES-007,Stand tall and breathe deep for 60 seconds before a challenge.,Stand tall and breathe deep for 60 seconds before a challenge.
+258,Resilience,RES-008,Talk to someone about something you’re struggling with.,Talk to someone about something you’re struggling with.
+259,Resilience,RES-009,"Face one small fear today, even if you fail.","Face one small fear today, even if you fail."
+260,Resilience,RES-010,Take a cold shower or cold rinse — for 10 seconds.,Take a cold shower or cold rinse — for 10 seconds.
+261,Resilience,RES-011,Write about a time you overcame something hard.,Write about a time you overcame something hard.
+262,Resilience,RES-012,Identify one small win today — even if it felt tiny.,Identify one small win today — even if it felt tiny.
+263,Resilience,RES-013,Recall one failure and what you learned from it.,Recall one failure and what you learned from it.
+264,Resilience,RES-014,Push through one task even if you don’t feel like it.,Push through one task even if you don’t feel like it.
+265,Resilience,RES-015,Do one thing today that feels uncomfortable but necessary.,Do one thing today that feels uncomfortable but necessary.
+266,Resilience,RES-016,Think about a setback — what strength did it build in you?,Think about a setback — what strength did it build in you?
+267,Resilience,RES-017,Stand tall and breathe deep for 60 seconds before a challenge.,Stand tall and breathe deep for 60 seconds before a challenge.
+268,Resilience,RES-018,Talk to someone about something you’re struggling with.,Talk to someone about something you’re struggling with.
+269,Resilience,RES-019,"Face one small fear today, even if you fail.","Face one small fear today, even if you fail."
+270,Resilience,RES-020,Take a cold shower or cold rinse — for 10 seconds.,Take a cold shower or cold rinse — for 10 seconds.
+271,Resilience,RES-021,Write about a time you overcame something hard.,Write about a time you overcame something hard.
+272,Resilience,RES-022,Identify one small win today — even if it felt tiny.,Identify one small win today — even if it felt tiny.
+273,Resilience,RES-023,Recall one failure and what you learned from it.,Recall one failure and what you learned from it.
+274,Resilience,RES-024,Push through one task even if you don’t feel like it.,Push through one task even if you don’t feel like it.
+275,Resilience,RES-025,Do one thing today that feels uncomfortable but necessary.,Do one thing today that feels uncomfortable but necessary.
+276,Resilience,RES-026,Think about a setback — what strength did it build in you?,Think about a setback — what strength did it build in you?
+277,Resilience,RES-027,Stand tall and breathe deep for 60 seconds before a challenge.,Stand tall and breathe deep for 60 seconds before a challenge.
+278,Resilience,RES-028,Talk to someone about something you’re struggling with.,Talk to someone about something you’re struggling with.
+279,Resilience,RES-029,"Face one small fear today, even if you fail.","Face one small fear today, even if you fail."
+280,Resilience,RES-030,Take a cold shower or cold rinse — for 10 seconds.,Take a cold shower or cold rinse — for 10 seconds.
+281,Resilience,RES-031,Write about a time you overcame something hard.,Write about a time you overcame something hard.
+282,Resilience,RES-032,Identify one small win today — even if it felt tiny.,Identify one small win today — even if it felt tiny.
+283,Resilience,RES-033,Recall one failure and what you learned from it.,Recall one failure and what you learned from it.
+284,Resilience,RES-034,Push through one task even if you don’t feel like it.,Push through one task even if you don’t feel like it.
+285,Resilience,RES-035,Do one thing today that feels uncomfortable but necessary.,Do one thing today that feels uncomfortable but necessary.
+286,Resilience,RES-036,Think about a setback — what strength did it build in you?,Think about a setback — what strength did it build in you?
+287,Resilience,RES-037,Stand tall and breathe deep for 60 seconds before a challenge.,Stand tall and breathe deep for 60 seconds before a challenge.
+288,Resilience,RES-038,Talk to someone about something you’re struggling with.,Talk to someone about something you’re struggling with.
+289,Resilience,RES-039,"Face one small fear today, even if you fail.","Face one small fear today, even if you fail."
+290,Resilience,RES-040,Take a cold shower or cold rinse — for 10 seconds.,Take a cold shower or cold rinse — for 10 seconds.
+291,Resilience,RES-041,Write about a time you overcame something hard.,Write about a time you overcame something hard.
+292,Resilience,RES-042,Identify one small win today — even if it felt tiny.,Identify one small win today — even if it felt tiny.
+293,Resilience,RES-043,Recall one failure and what you learned from it.,Recall one failure and what you learned from it.
+294,Resilience,RES-044,Push through one task even if you don’t feel like it.,Push through one task even if you don’t feel like it.
+295,Resilience,RES-045,Do one thing today that feels uncomfortable but necessary.,Do one thing today that feels uncomfortable but necessary.
+296,Resilience,RES-046,Think about a setback — what strength did it build in you?,Think about a setback — what strength did it build in you?
+297,Resilience,RES-047,Stand tall and breathe deep for 60 seconds before a challenge.,Stand tall and breathe deep for 60 seconds before a challenge.
+298,Resilience,RES-048,Talk to someone about something you’re struggling with.,Talk to someone about something you’re struggling with.
+299,Resilience,RES-049,"Face one small fear today, even if you fail.","Face one small fear today, even if you fail."
+300,Resilience,RES-050,Take a cold shower or cold rinse — for 10 seconds.,Take a cold shower or cold rinse — for 10 seconds.
+301,Resilience,RES-051,Write about a time you overcame something hard.,Write about a time you overcame something hard.
+302,Resilience,RES-052,Identify one small win today — even if it felt tiny.,Identify one small win today — even if it felt tiny.
+303,Resilience,RES-053,Recall one failure and what you learned from it.,Recall one failure and what you learned from it.
+304,Resilience,RES-054,Push through one task even if you don’t feel like it.,Push through one task even if you don’t feel like it.
+305,Resilience,RES-055,Do one thing today that feels uncomfortable but necessary.,Do one thing today that feels uncomfortable but necessary.
+306,Resilience,RES-056,Think about a setback — what strength did it build in you?,Think about a setback — what strength did it build in you?
+307,Resilience,RES-057,Stand tall and breathe deep for 60 seconds before a challenge.,Stand tall and breathe deep for 60 seconds before a challenge.
+308,Resilience,RES-058,Talk to someone about something you’re struggling with.,Talk to someone about something you’re struggling with.
+309,Resilience,RES-059,"Face one small fear today, even if you fail.","Face one small fear today, even if you fail."
+310,Resilience,RES-060,Take a cold shower or cold rinse — for 10 seconds.,Take a cold shower or cold rinse — for 10 seconds.
+311,Resilience,RES-061,Write about a time you overcame something hard.,Write about a time you overcame something hard.
+312,Resilience,RES-062,Identify one small win today — even if it felt tiny.,Identify one small win today — even if it felt tiny.
+313,Resilience,RES-063,Recall one failure and what you learned from it.,Recall one failure and what you learned from it.
+314,Resilience,RES-064,Push through one task even if you don’t feel like it.,Push through one task even if you don’t feel like it.
+315,Resilience,RES-065,Do one thing today that feels uncomfortable but necessary.,Do one thing today that feels uncomfortable but necessary.
+316,Resilience,RES-066,Think about a setback — what strength did it build in you?,Think about a setback — what strength did it build in you?
+317,Resilience,RES-067,Stand tall and breathe deep for 60 seconds before a challenge.,Stand tall and breathe deep for 60 seconds before a challenge.
+318,Resilience,RES-068,Talk to someone about something you’re struggling with.,Talk to someone about something you’re struggling with.
+319,Resilience,RES-069,"Face one small fear today, even if you fail.","Face one small fear today, even if you fail."
+320,Resilience,RES-070,Take a cold shower or cold rinse — for 10 seconds.,Take a cold shower or cold rinse — for 10 seconds.
+321,Resilience,RES-071,Write about a time you overcame something hard.,Write about a time you overcame something hard.
+322,Resilience,RES-072,Identify one small win today — even if it felt tiny.,Identify one small win today — even if it felt tiny.
+323,Resilience,RES-073,Recall one failure and what you learned from it.,Recall one failure and what you learned from it.
+324,Resilience,RES-074,Push through one task even if you don’t feel like it.,Push through one task even if you don’t feel like it.
+325,Resilience,RES-075,Do one thing today that feels uncomfortable but necessary.,Do one thing today that feels uncomfortable but necessary.
+326,Resilience,RES-076,Think about a setback — what strength did it build in you?,Think about a setback — what strength did it build in you?
+327,Resilience,RES-077,Stand tall and breathe deep for 60 seconds before a challenge.,Stand tall and breathe deep for 60 seconds before a challenge.
+328,Resilience,RES-078,Talk to someone about something you’re struggling with.,Talk to someone about something you’re struggling with.
+329,Resilience,RES-079,"Face one small fear today, even if you fail.","Face one small fear today, even if you fail."
+330,Resilience,RES-080,Take a cold shower or cold rinse — for 10 seconds.,Take a cold shower or cold rinse — for 10 seconds.
+331,Resilience,RES-081,Write about a time you overcame something hard.,Write about a time you overcame something hard.
+332,Resilience,RES-082,Identify one small win today — even if it felt tiny.,Identify one small win today — even if it felt tiny.
+333,Resilience,RES-083,Recall one failure and what you learned from it.,Recall one failure and what you learned from it.
+334,Resilience,RES-084,Push through one task even if you don’t feel like it.,Push through one task even if you don’t feel like it.
+335,Resilience,RES-085,Do one thing today that feels uncomfortable but necessary.,Do one thing today that feels uncomfortable but necessary.
+336,Resilience,RES-086,Think about a setback — what strength did it build in you?,Think about a setback — what strength did it build in you?
+337,Resilience,RES-087,Stand tall and breathe deep for 60 seconds before a challenge.,Stand tall and breathe deep for 60 seconds before a challenge.
+338,Resilience,RES-088,Talk to someone about something you’re struggling with.,Talk to someone about something you’re struggling with.
+339,Resilience,RES-089,"Face one small fear today, even if you fail.","Face one small fear today, even if you fail."
+340,Resilience,RES-090,Take a cold shower or cold rinse — for 10 seconds.,Take a cold shower or cold rinse — for 10 seconds.
+341,Resilience,RES-091,Write about a time you overcame something hard.,Write about a time you overcame something hard.
+342,Resilience,RES-092,Identify one small win today — even if it felt tiny.,Identify one small win today — even if it felt tiny.
+343,Resilience,RES-093,Recall one failure and what you learned from it.,Recall one failure and what you learned from it.
+344,Resilience,RES-094,Push through one task even if you don’t feel like it.,Push through one task even if you don’t feel like it.
+345,Resilience,RES-095,Do one thing today that feels uncomfortable but necessary.,Do one thing today that feels uncomfortable but necessary.
+346,Resilience,RES-096,Think about a setback — what strength did it build in you?,Think about a setback — what strength did it build in you?
+347,Resilience,RES-097,Stand tall and breathe deep for 60 seconds before a challenge.,Stand tall and breathe deep for 60 seconds before a challenge.
+348,Resilience,RES-098,Talk to someone about something you’re struggling with.,Talk to someone about something you’re struggling with.
+349,Resilience,RES-099,"Face one small fear today, even if you fail.","Face one small fear today, even if you fail."
+350,Resilience,RES-100,Take a cold shower or cold rinse — for 10 seconds.,Take a cold shower or cold rinse — for 10 seconds.
