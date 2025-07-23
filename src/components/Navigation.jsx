@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, LogOut, Settings, User, Target, Users, BarChart3 } from 'lucide-react';
+import { Heart, LogOut, Settings, User, Target, Users, BarChart3, Trophy } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useData } from '@/contexts/DataContext';
 import { toast } from '@/components/ui/use-toast';
@@ -26,6 +26,7 @@ const Navigation = () => {
     { path: '/challenge', icon: Target, label: 'Challenge' },
     { path: '/progress', icon: BarChart3, label: 'Progress' },
     { path: '/community', icon: Users, label: 'Community' },
+    { path: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
     { path: '/profile', icon: User, label: 'Profile' }
   ];
 

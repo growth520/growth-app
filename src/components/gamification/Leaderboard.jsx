@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
 import { 
   Trophy, 
   Flame, 
@@ -14,11 +15,14 @@ import {
   Crown,
   Medal,
   Award,
-  Users
+  Users,
+  Search,
+  X
 } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useData } from '@/contexts/DataContext';
+import { useNavigate } from 'react-router-dom';
 
 const Leaderboard = ({ 
   title = "Leaderboard",
@@ -29,6 +33,7 @@ const Leaderboard = ({
 }) => {
   const { user } = useAuth();
   const { progress } = useData();
+  const navigate = useNavigate();
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [userRank, setUserRank] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -37,8 +42,68 @@ const Leaderboard = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   const itemsPerPage = maxUsers || 10;
+
+  // Search users by username or full name
+  const searchUsers = async (query) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      let searchQuery = supabase
+        .from('user_progress')
+        .select(`
+          user_id,
+          xp,
+          level,
+          streak,
+          profiles:user_id (
+            id,
+            full_name,
+            username,
+            avatar_url,
+            assessment_results
+          )
+        `)
+        .not('profiles.id', 'is', null);
+
+      // Add search filter
+      searchQuery = searchQuery.or(`profiles.username.ilike.%${query}%,profiles.full_name.ilike.%${query}%`);
+
+      // Add order based on rank type
+      switch (rankBy) {
+        case 'challenges':
+          // For search, we'll use a simpler approach
+          searchQuery = searchQuery.order('xp', { ascending: false });
+          break;
+        case 'streak':
+          searchQuery = searchQuery.order('streak', { ascending: false });
+          break;
+        case 'xp':
+        default:
+          searchQuery = searchQuery.order('xp', { ascending: false });
+          break;
+      }
+
+      const { data, error } = await searchQuery.limit(20);
+      if (error) throw error;
+      
+      setSearchResults(data || []);
+    } catch (err) {
+      console.error('Error searching users:', err);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   // Fetch leaderboard data
   const fetchLeaderboard = async (page = 1, rankType = rankBy) => {
@@ -268,6 +333,35 @@ const Leaderboard = ({
             </Button>
           ))}
         </div>
+
+        {/* Search Bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Input
+            type="text"
+            placeholder="Search users by name or username..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              searchUsers(e.target.value);
+            }}
+            className="pl-10 pr-10"
+          />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSearchQuery('');
+                setSearchResults([]);
+                setIsSearching(false);
+              }}
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
       </CardHeader>
 
       <CardContent>
@@ -289,10 +383,22 @@ const Leaderboard = ({
           </div>
         )}
 
+        {/* Search Results or Regular Leaderboard */}
+        {searchQuery && (
+          <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex items-center gap-2 text-sm text-blue-700">
+              <Search className="w-4 h-4" />
+              <span>
+                {isSearching ? 'Searching...' : `Found ${searchResults.length} users matching "${searchQuery}"`}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Leaderboard List */}
         <div className="space-y-3">
           <AnimatePresence mode="wait">
-            {leaderboardData.map((userData, index) => {
+            {(searchQuery ? searchResults : leaderboardData).map((userData, index) => {
               const rank = (currentPage - 1) * itemsPerPage + index + 1;
               const profile = userData.profiles || userData;
               const isCurrentUser = user && profile.id === user.id;
@@ -329,7 +435,10 @@ const Leaderboard = ({
                   {/* User Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-gray-900 truncate">
+                      <h3 
+                        className="font-semibold text-gray-900 truncate cursor-pointer hover:text-forest-green transition-colors"
+                        onClick={() => navigate(`/profile?userId=${profile.id}`)}
+                      >
                         {profile.full_name || profile.username || 'Anonymous'}
                       </h3>
                       {isCurrentUser && (
@@ -364,20 +473,36 @@ const Leaderboard = ({
         </div>
 
         {/* Empty State */}
-        {leaderboardData.length === 0 && (
-          <div className="text-center py-12">
-            <Trophy className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-600 mb-2">
-              No rankings yet
-            </h3>
-            <p className="text-gray-500">
-              Complete challenges to see rankings appear here!
-            </p>
-          </div>
+        {searchQuery ? (
+          // Empty search results
+          searchResults.length === 0 && !isSearching && (
+            <div className="text-center py-12">
+              <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                No users found
+              </h3>
+              <p className="text-gray-500">
+                No users match your search for "{searchQuery}"
+              </p>
+            </div>
+          )
+        ) : (
+          // Empty leaderboard
+          leaderboardData.length === 0 && (
+            <div className="text-center py-12">
+              <Trophy className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                No rankings yet
+              </h3>
+              <p className="text-gray-500">
+                Complete challenges to see rankings appear here!
+              </p>
+            </div>
+          )
         )}
 
-        {/* Pagination */}
-        {showPagination && totalPages > 1 && (
+        {/* Pagination - only show when not searching */}
+        {showPagination && totalPages > 1 && !searchQuery && (
           <div className="flex items-center justify-between mt-6 pt-4 border-t">
             <div className="text-sm text-gray-600">
               Showing {Math.min((currentPage - 1) * itemsPerPage + 1, totalUsers)} - {Math.min(currentPage * itemsPerPage, totalUsers)} of {totalUsers} users
