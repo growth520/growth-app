@@ -21,6 +21,7 @@ import { Trophy, Flame, Star, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from "@/components/ui/skeleton";
+import { useData } from '@/contexts/DataContext'; // Add useData import
 
 const DEFAULT_USER_SETTINGS = {
   show_streak: true,
@@ -64,6 +65,7 @@ const ProfilePage = () => {
   const { userId: paramUserId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { userBadges } = useData(); // Add userBadges from DataContext
   const isOwnProfile = !paramUserId || paramUserId === user?.id;
   const userId = isOwnProfile ? user?.id : paramUserId;
   const [profile, setProfile] = useState(null);
@@ -216,7 +218,7 @@ const ProfilePage = () => {
 
         // Set progress data
         if (progressDataResult) {
-          // Fetch badges separately
+          // Always fetch badges from database initially
           const { data: badgesData } = await supabase
             .from('user_badges')
             .select('*')
@@ -228,6 +230,7 @@ const ProfilePage = () => {
             streak: progressDataResult.streak || 0,
             badges: badgesData || []
           });
+          
         }
 
         // Prefetch next page
@@ -246,7 +249,17 @@ const ProfilePage = () => {
     };
 
     loadInitialData();
-  }, [userId, user, isOwnProfile, prefetchNextPage]);
+  }, [userId, user, isOwnProfile]);
+
+  // Update badges when DataContext userBadges changes (for own profile)
+  useEffect(() => {
+    if (isOwnProfile && userBadges) {
+      setProgressData(prev => prev ? ({
+        ...prev,
+        badges: userBadges
+      }) : null);
+    }
+  }, [userBadges, isOwnProfile]);
 
   useEffect(() => {
     if (profile) {
@@ -343,7 +356,11 @@ const ProfilePage = () => {
         setIsFollowing(true);
       }
     } catch (err) {
-      alert('Error following/unfollowing: ' + err.message);
+      toast({
+        title: "Error",
+        description: "Could not update follow status. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -375,12 +392,30 @@ const ProfilePage = () => {
 
   // Delete post logic
   const handleDeletePost = async (postId) => {
-    const { error } = await supabase.from('posts').delete().eq('id', postId);
-    if (!error) {
-      setPostState(currentPosts => currentPosts.filter(p => p.id !== postId));
-      setPosts(currentPosts => currentPosts.filter(p => p.id !== postId));
-    } else {
-      alert('Error deleting post: ' + error.message);
+    if (!window.confirm('Are you sure you want to delete this post?')) return;
+    
+    try {
+      const { error } = await supabase.from('posts').delete().eq('id', postId);
+      if (error) throw error;
+      
+      // Refresh the posts
+      if (user?.id === profile?.id) { // Assuming profile.id is the user's own ID
+        // This part needs to be implemented if fetchOwnPosts is defined elsewhere
+        // For now, we'll just remove it from the current posts state
+        setPosts(currentPosts => currentPosts.filter(p => p.id !== postId));
+        setPostState(currentPosts => currentPosts.filter(p => p.id !== postId));
+      }
+      
+      toast({
+        title: "Success",
+        description: "Post deleted successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Could not delete post. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 

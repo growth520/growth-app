@@ -38,14 +38,14 @@ const AdminPage = () => {
       header: true,
       skipEmptyLines: true,
       complete: async (results) => {
-        const requiredColumns = ['Growth Area', 'Challenge ID', 'Challenge Text'];
+        const requiredColumns = ['id', 'category', 'challenge_id_text', 'title', 'description'];
         const headers = results.meta.fields;
         const missingColumns = requiredColumns.filter(col => !headers.includes(col));
 
         if (missingColumns.length > 0) {
           toast({
             title: 'Invalid CSV format',
-            description: `Missing columns: ${missingColumns.join(', ')}. Required: 'Growth Area', 'Challenge ID', 'Challenge Text'`,
+            description: `Missing columns: ${missingColumns.join(', ')}. Required: 'id', 'category', 'challenge_id_text', 'title', 'description'`,
             variant: 'destructive',
           });
           setIsUploading(false);
@@ -53,11 +53,11 @@ const AdminPage = () => {
         }
 
         const challenges = results.data.map(row => ({
-          id: Number(row['id']), // Ensure this is in your CSV!
-          category: row['category'], // Use the 'category' column directly
-          challenge_id_text: row['Challenge ID'],
-          title: row['Challenge Text'],
-          description: row['Challenge Text'],
+          id: Number(row['id']),
+          category: row['category'],
+          challenge_id_text: row['challenge_id_text'],
+          title: row['title'],
+          description: row['description'],
         })).filter(c => c.id && c.category && c.title && c.description && c.challenge_id_text);
 
         if (challenges.length === 0) {

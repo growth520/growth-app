@@ -1,191 +1,270 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
-import { ChevronLeft, Sparkles, CheckCircle, BrainCircuit, Wind, MessageSquare, Shield, Target, Dumbbell, BookOpen } from 'lucide-react';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useData } from '@/contexts/DataContext';
 
 const growthAreas = {
-  Confidence: { icon: <BrainCircuit />, description: "Build unshakable self-belief and assertiveness.", color: "text-blue-500", emoji: "💪" },
-  'Self-Worth': { icon: "💎", description: "Recognize your value and cultivate self-love.", color: "text-pink-500", emoji: "💎" },
-  Mindfulness: { icon: <Wind />, description: "Stay present, reduce stress, and find inner peace.", color: "text-teal-500", emoji: "🧘" },
-  Communication: { icon: <MessageSquare />, description: "Express yourself clearly and build stronger connections.", color: "text-purple-500", emoji: "🗣️" },
-  Resilience: { icon: <Shield />, description: "Bounce back from adversity and handle stress effectively.", color: "text-orange-500", emoji: "⚡" },
-  'Self-Control': { icon: <Target />, description: "Master your impulses and make conscious choices.", color: "text-indigo-500", emoji: "🎯" },
-  Discipline: { icon: <BookOpen />, description: "Build strong habits and consistently work towards your goals.", color: "text-yellow-500", emoji: "📚" },
-  Fitness: { icon: <Dumbbell />, description: "Improve your physical health and boost your energy levels.", color: "text-red-500", emoji: "🏋️" },
-  Purpose: { icon: <Sparkles />, description: "Find meaning and direction in your life.", color: "text-green-500", emoji: "🌟" },
-  Humility: { icon: <ChevronLeft />, description: "Embrace modesty and learn from others.", color: "text-gray-500", emoji: "🙏" },
-  Gratitude: { icon: <CheckCircle />, description: "Appreciate the good in your life and others.", color: "text-warm-orange", emoji: "🙏" },
+  Confidence: { description: "Build unshakable self-belief and assertiveness.", emoji: "💪" },
+  'Self-Worth': { description: "Recognize your value and cultivate self-love.", emoji: "💎" },
+  Mindfulness: { description: "Stay present, reduce stress, and find inner peace.", emoji: "🧘" },
+  Communication: { description: "Express yourself clearly and build stronger connections.", emoji: "🗣️" },
+  Resilience: { description: "Bounce back from adversity and handle stress effectively.", emoji: "⚡" },
+  'Self-Control': { description: "Master your impulses and make conscious choices.", emoji: "🎯" },
+  Discipline: { description: "Build strong habits and consistently work towards your goals.", emoji: "📚" },
+  Fitness: { description: "Improve your physical health and boost your energy levels.", emoji: "🏋️" },
+  Purpose: { description: "Find meaning and direction in your life.", emoji: "🌟" },
+  Humility: { description: "Embrace modesty and learn from others.", emoji: "🙏" },
+  Gratitude: { description: "Appreciate the good in your life and others.", emoji: "🙏" },
 };
 
 const questions = [
   {
-    question: "When you feel stressed, you usually...",
+    id: 1,
+    question: "When you're under stress, what do you usually do?",
     options: [
-      { text: "Take a few deep breaths to reset", weights: { Mindfulness: 2 } },
-      { text: "Push through and keep working", weights: { Discipline: 2 } },
-      { text: "Talk it out with someone you trust", weights: { Communication: 2 } },
-      { text: "Remind yourself of your strengths", weights: { Confidence: 2 } },
-    ],
+      { text: "Take a few deep breaths and refocus", scores: { Mindfulness: 2 } },
+      { text: "Push through and keep going", scores: { Resilience: 2 } },
+      { text: "Talk to someone about it", scores: { Communication: 2 } },
+      { text: "Plan out what to do next", scores: { Discipline: 2 } },
+      { text: "Other", scores: { Purpose: 1, Discipline: 1 }, allowInput: true }
+    ]
   },
   {
-    question: "You find it hardest to...",
+    id: 2,
+    question: "What do you find most challenging?",
     options: [
-      { text: "Stay present in the moment", weights: { Mindfulness: -2 } },
-      { text: "Resist temptations", weights: { 'Self-Control': -2 } },
-      { text: "Stick to routines", weights: { Discipline: -2 } },
-      { text: "Believe in yourself", weights: { Confidence: -2 } },
-    ],
+      { text: "Staying focused on one thing", scores: { Discipline: -2 } },
+      { text: "Controlling impulses", scores: { "Self-Control": -2 } },
+      { text: "Believing in yourself", scores: { Confidence: -2 } },
+      { text: "Feeling good about who you are", scores: { "Self-Worth": -2 } },
+      { text: "Other", scores: { Purpose: 1, Discipline: 1 }, allowInput: true }
+    ]
   },
   {
-    question: "You feel most proud when you...",
+    id: 3,
+    question: "What makes you feel most proud?",
     options: [
-      { text: "Help someone in a meaningful way", weights: { Gratitude: 2, Humility: 1 } },
-      { text: "Crush a personal fitness goal", weights: { Fitness: 2 } },
-      { text: "Bounce back from a tough experience", weights: { Resilience: 2 } },
-      { text: "Speak up for yourself", weights: { Confidence: 1, Communication: 1 } },
-    ],
+      { text: "Helping someone else succeed", scores: { Gratitude: 2 } },
+      { text: "Achieving a personal fitness goal", scores: { Fitness: 2 } },
+      { text: "Staying calm in a hard moment", scores: { Mindfulness: 2 } },
+      { text: "Speaking up for yourself", scores: { Confidence: 2 } },
+      { text: "Other", scores: { Purpose: 1, Discipline: 1 }, allowInput: true }
+    ]
   },
   {
-    question: "Your biggest motivation is...",
+    id: 4,
+    question: "What motivates you the most?",
     options: [
-      { text: "Finding purpose in your actions", weights: { Purpose: 2 } },
-      { text: "Becoming the best version of yourself", weights: { 'Self-Worth': 2 } },
-      { text: "Appreciating what you have", weights: { Gratitude: 2 } },
-      { text: "Learning from your mistakes", weights: { Resilience: 2 } },
-    ],
+      { text: "Living a meaningful life", scores: { Purpose: 2 } },
+      { text: "Becoming the best version of yourself", scores: { "Self-Worth": 2 } },
+      { text: "Appreciating what you have", scores: { Gratitude: 2 } },
+      { text: "Learning from challenges", scores: { Resilience: 2 } },
+      { text: "Other", scores: { Purpose: 1, Discipline: 1 }, allowInput: true }
+    ]
   },
   {
-    question: "When you make a mistake, you tend to...",
+    id: 5,
+    question: "How do you usually react when you make a mistake?",
     options: [
-      { text: "Forgive yourself and grow", weights: { 'Self-Worth': 2 } },
-      { text: "Reflect and try again", weights: { Resilience: 2 } },
-      { text: "Feel unsure or down on yourself", weights: { Confidence: -1, Humility: 1 } },
-      { text: "Move on quickly and refocus", weights: { Discipline: 1 } },
-    ],
+      { text: "Forgive yourself quickly", scores: { "Self-Worth": 2 } },
+      { text: "Look for the lesson in it", scores: { Resilience: 2 } },
+      { text: "Feel embarrassed or doubt yourself", scores: { Confidence: -1, Humility: 1 } },
+      { text: "Move on without overthinking", scores: { Discipline: 2 } },
+      { text: "Other", scores: { Purpose: 1, Discipline: 1 }, allowInput: true }
+    ]
   },
   {
-    question: "In social situations, you usually...",
+    id: 6,
+    question: "In social situations, what feels most like you?",
     options: [
-      { text: "Listen more than you speak", weights: { Humility: 2 } },
-      { text: "Share your thoughts clearly", weights: { Communication: 2 } },
-      { text: "Feel nervous or hold back", weights: { Confidence: -2 } },
-      { text: "Try to make others feel seen", weights: { Gratitude: 1, Communication: 1 } },
-    ],
+      { text: "Listen more than talk", scores: { Humility: 2 } },
+      { text: "Share your thoughts clearly", scores: { Communication: 2 } },
+      { text: "Feel nervous about speaking", scores: { Confidence: -2 } },
+      { text: "Try to make people feel good", scores: { Gratitude: 2 } },
+      { text: "Other", scores: { Purpose: 1, Discipline: 1 }, allowInput: true }
+    ]
   },
   {
-    question: "When you set a goal, you usually...",
+    id: 7,
+    question: "When setting goals, what's your style?",
     options: [
-      { text: "Make a step-by-step plan", weights: { Discipline: 2 } },
-      { text: "Get easily distracted", weights: { 'Self-Control': -2 } },
-      { text: "Stick with it to the end", weights: { 'Self-Control': 2 } },
-      { text: "Lose interest partway through", weights: { Purpose: -2 } },
-    ],
+      { text: "Make a clear plan", scores: { Discipline: 2 } },
+      { text: "Stay focused until it's done", scores: { "Self-Control": 2 } },
+      { text: "Lose interest easily", scores: { Purpose: -2 } },
+      { text: "Jump into action without thinking much", scores: { Mindfulness: 1, Discipline: -1 } },
+      { text: "Other", scores: { Purpose: 1, Discipline: 1 }, allowInput: true }
+    ]
   },
   {
-    question: "Your daily routine often includes...",
+    id: 8,
+    question: "What's part of your daily life now?",
     options: [
-      { text: "Movement or exercise", weights: { Fitness: 2 } },
-      { text: "Reflection or journaling", weights: { Mindfulness: 2 } },
-      { text: "Small acts of kindness", weights: { Gratitude: 2 } },
-      { text: "Setting clear intentions", weights: { Purpose: 1 } },
-    ],
+      { text: "Some kind of exercise or movement", scores: { Fitness: 2 } },
+      { text: "Reflection or mindfulness practice", scores: { Mindfulness: 2 } },
+      { text: "Doing something kind for someone", scores: { Gratitude: 2 } },
+      { text: "Planning or reviewing your day", scores: { Discipline: 2 } },
+      { text: "Other", scores: { Purpose: 1, Discipline: 1 }, allowInput: true }
+    ]
   },
   {
-    question: "You feel most fulfilled when you...",
+    id: 9,
+    question: "What makes you feel most fulfilled?",
     options: [
-      { text: "Help someone else succeed", weights: { Humility: 2, Gratitude: 1 } },
-      { text: "Reach a new personal best", weights: { Fitness: 1, Confidence: 1 } },
-      { text: "Stay calm in chaos", weights: { Resilience: 2, Mindfulness: 1 } },
-      { text: "Follow through on a commitment", weights: { Discipline: 2 } },
-    ],
+      { text: "Helping someone else grow", scores: { Humility: 2 } },
+      { text: "Reaching a new personal best", scores: { Confidence: 2 } },
+      { text: "Staying calm under pressure", scores: { Mindfulness: 2 } },
+      { text: "Sticking to a commitment", scores: { Discipline: 2 } },
+      { text: "Other", scores: { Purpose: 1, Discipline: 1 }, allowInput: true }
+    ]
   },
   {
-    question: "When faced with temptation, you...",
+    id: 10,
+    question: "When you're tempted by something, what happens?",
     options: [
-      { text: "Resist and choose what’s right", weights: { 'Self-Control': 2 } },
-      { text: "Sometimes give in and reflect later", weights: { 'Self-Control': -1 } },
-      { text: "Redirect your attention", weights: { Mindfulness: 1 } },
-      { text: "Ask for help or encouragement", weights: { Communication: 1 } },
-    ],
-  },
-  {
-    question: "You define success as...",
-    options: [
-      { text: "Living with purpose", weights: { Purpose: 2 } },
-      { text: "Being thankful for what you have", weights: { Gratitude: 2 } },
-      { text: "Growing through challenges", weights: { Resilience: 2 } },
-      { text: "Staying true to yourself", weights: { 'Self-Worth': 2 } },
-    ],
-  },
+      { text: "Resist and stay on track", scores: { "Self-Control": 2 } },
+      { text: "Give in sometimes", scores: { "Self-Control": -1 } },
+      { text: "Distract yourself with something positive", scores: { Mindfulness: 2 } },
+      { text: "Ask someone for help", scores: { Communication: 1 } },
+      { text: "Other", scores: { Purpose: 1, Discipline: 1 }, allowInput: true }
+    ]
+  }
 ];
 
 const AssessmentPage = () => {
-  const [step, setStep] = useState('quiz'); // 'quiz' or 'results'
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState([]);
+  const [answers, setAnswers] = useState({});
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [otherText, setOtherText] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showResults, setShowResults] = useState(false);
   const [results, setResults] = useState(null);
-  const navigate = useNavigate();
-  const { toast } = useToast();
   const { user } = useAuth();
   const { refreshAllData } = useData();
-  const isNavigatingManually = useRef(false);
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const handleAnswer = (weights) => {
-    isNavigatingManually.current = false;
-    const newAnswers = [...answers];
-    newAnswers[currentQuestion] = weights;
-    setAnswers(newAnswers);
-  };
+  const calculateResultsFromAnswers = (answersObj) => {
+    const scores = {
+      Mindfulness: 0,
+      Resilience: 0,
+      Communication: 0,
+      Discipline: 0,
+      Purpose: 0,
+      "Self-Control": 0,
+      Confidence: 0,
+      "Self-Worth": 0,
+      Gratitude: 0,
+      Fitness: 0,
+      Humility: 0
+    };
 
-  useEffect(() => {
-    if (answers[currentQuestion] !== undefined && !isNavigatingManually.current) {
-      const timer = setTimeout(() => {
-        if (currentQuestion < questions.length - 1) {
-          setCurrentQuestion(currentQuestion + 1);
-        } else {
-          calculateResults();
-        }
-      }, 400);
-      return () => clearTimeout(timer);
-    }
-  }, [answers, currentQuestion]);
-
-  const prevQuestion = () => {
-    if (currentQuestion > 0) {
-      isNavigatingManually.current = true;
-      setCurrentQuestion(currentQuestion - 1);
-    }
-  };
-
-  const calculateResults = () => {
-    const scores = Object.keys(growthAreas).reduce((acc, area) => ({ ...acc, [area]: 0 }), {});
-    answers.forEach(answerWeights => {
-      for (const area in answerWeights) {
-        scores[area] += answerWeights[area];
+    // Calculate scores from all answers
+    Object.values(answersObj).forEach(answer => {
+      const option = answer.option;
+      if (option && option.scores) {
+        Object.entries(option.scores).forEach(([category, points]) => {
+          scores[category] = (scores[category] || 0) + points;
+        });
       }
     });
 
-    const sortedAreas = Object.entries(scores).sort(([, a], [, b]) => a - b);
-    setResults({
-      topPick: sortedAreas[0][0],
-      otherSuggestions: [sortedAreas[1][0], sortedAreas[2][0]],
-    });
-    setStep('results');
+    // Find areas with LOWEST scores (areas that need improvement)
+    // Filter out areas with positive scores and sort by lowest scores first
+    const areasNeedingImprovement = Object.entries(scores)
+      .filter(([, score]) => score <= 0) // Areas with negative or zero scores need improvement
+      .sort(([,a], [,b]) => a - b) // Sort by lowest scores first
+      .slice(0, 1); // Take only the TOP area needing improvement
+
+    // If no areas have negative scores, take the 1 lowest scoring area
+    const topRecommendation = areasNeedingImprovement.length >= 1 
+      ? areasNeedingImprovement[0]
+      : Object.entries(scores)
+          .sort(([,a], [,b]) => a - b) // Sort by lowest scores first
+          .slice(0, 1)[0];
+
+    return {
+      scores,
+      topRecommendation: { category: topRecommendation[0], score: topRecommendation[1] },
+      primaryGrowthArea: topRecommendation[0],
+      allAreas: Object.entries(scores).map(([category, score]) => ({ category, score }))
+    };
+  };
+
+  const calculateResults = () => {
+    return calculateResultsFromAnswers(answers);
+  };
+
+  const handleOptionSelect = (option) => {
+    setSelectedOption(option);
+    setOtherText('');
+    // Auto-advance to next question after a short delay for all options
+    setTimeout(() => {
+      handleNextWithOption(option);
+    }, 300);
+  };
+
+  const handleNextWithOption = (option) => {
+    if (!option) return;
+
+    const answer = {
+      questionId: questions[currentQuestion].id,
+      question: questions[currentQuestion].question,
+      option: option,
+      otherText: null // No longer using text input for "Other" options
+    };
+
+    const newAnswers = {
+      ...answers,
+      [currentQuestion]: answer
+    };
+    setAnswers(newAnswers);
+
+    if (currentQuestion < questions.length - 1) {
+      setCurrentQuestion(prev => prev + 1);
+      setSelectedOption(null);
+      setOtherText('');
+    } else {
+      // Last question - calculate results using the updated answers
+      const calculatedResults = calculateResultsFromAnswers(newAnswers);
+      setResults(calculatedResults);
+      setShowResults(true);
+    }
+  };
+
+  const handleNext = () => {
+    if (!selectedOption) return;
+    handleNextWithOption(selectedOption);
+  };
+
+  const handlePrevious = () => {
+    if (currentQuestion > 0) {
+      setCurrentQuestion(prev => prev - 1);
+      const prevAnswer = answers[currentQuestion - 1];
+      if (prevAnswer) {
+        setSelectedOption(prevAnswer.option);
+        setOtherText(prevAnswer.otherText || '');
+      }
+    }
   };
 
   const handleSelectGrowthArea = async (area) => {
-    if (!user) return;
+    if (!user || !results) return;
 
+    setIsSubmitting(true);
+    
     const assessmentData = {
       answers,
-      aiRecommendation: results.topPick,
+      scores: results.scores,
+      topRecommendation: results.topRecommendation,
+      primaryGrowthArea: results.primaryGrowthArea,
       userSelection: area,
     };
 
@@ -203,6 +282,7 @@ const AssessmentPage = () => {
         description: error.message,
         variant: "destructive",
       });
+      setIsSubmitting(false);
     } else {
       await refreshAllData();
       toast({
@@ -216,44 +296,99 @@ const AssessmentPage = () => {
   const progress = ((currentQuestion + 1) / questions.length) * 100;
   const currentQ = questions[currentQuestion];
 
+  if (showResults && results) {
+    return (
+      <div className="min-h-screen bg-sun-beige text-charcoal-gray font-lato">
+        <div className="container mx-auto px-4 pt-8 pb-24">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <Card className="bg-white/50 border-black/10 shadow-lg rounded-2xl max-w-2xl mx-auto">
+              <CardHeader className="text-center p-8">
+                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2 }}>
+                  <CheckCircle className="w-16 h-16 text-forest-green mx-auto mb-4" />
+                </motion.div>
+                <CardTitle className="font-poppins text-3xl font-bold text-forest-green mb-2">
+                  Your Growth Profile
+                </CardTitle>
+                <CardDescription className="text-lg text-charcoal-gray/80">
+                  Based on your responses, here are your top growth areas
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-8 pt-0">
+                <div className="space-y-8">
+                  <div className="text-center">
+                    <h3 className="text-2xl font-semibold text-charcoal-gray mb-4">Your Recommended Focus Area</h3>
+                    <div className="bg-gradient-to-r from-forest-green/10 to-leaf-green/10 border-2 border-forest-green/30 rounded-2xl p-8 mb-6">
+                      <div className="text-6xl mb-4">{growthAreas[results.topRecommendation.category]?.emoji}</div>
+                      <h4 className="text-3xl font-bold text-forest-green mb-3">{results.topRecommendation.category}</h4>
+                      <p className="text-lg text-charcoal-gray/80 mb-6">
+                        {growthAreas[results.topRecommendation.category]?.description}
+                      </p>
+                      <Button
+                        onClick={() => handleSelectGrowthArea(results.topRecommendation.category)}
+                        disabled={isSubmitting}
+                        className="bg-gradient-to-r from-forest-green to-leaf-green text-white font-bold py-4 px-8 text-lg rounded-xl min-h-[60px] touch-manipulation"
+                      >
+                        Continue with {results.topRecommendation.category}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="text-center">
+                    <h3 className="text-xl font-semibold text-charcoal-gray mb-4">Or Choose a Different Focus Area</h3>
+                    <p className="text-charcoal-gray/70 mb-6">Want to focus on something else? Select any area below:</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {Object.entries(growthAreas)
+                        .filter(([area]) => area !== results.topRecommendation.category) // Exclude the recommended area
+                        .map(([area, { emoji, description }]) => (
+                        <Card
+                          key={area}
+                          onClick={() => handleSelectGrowthArea(area)}
+                          className="bg-white/40 border-black/10 hover:border-warm-orange hover:bg-white/80 cursor-pointer transition-all duration-300 p-4"
+                        >
+                          <div className="text-center">
+                            <div className="text-3xl mb-2">{emoji}</div>
+                            <h4 className="font-bold text-forest-green text-sm mb-1">{area}</h4>
+                            <p className="text-xs text-charcoal-gray/70 leading-tight">{description}</p>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="text-center p-6 bg-warm-orange/10 rounded-lg">
+                    <p className="text-charcoal-gray font-medium">
+                      🌟 Remember: Growth happens one small step at a time. You're about to embark on a journey of positive change!
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-sun-beige">
-      <motion.div
-        className="absolute inset-0 bg-gradient-to-br from-leaf-green/10 via-warm-orange/10 to-forest-green/10"
-        animate={{
-          backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
-        }}
-        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-      />
+    <div className="min-h-screen bg-sun-beige text-charcoal-gray font-lato">
+      <div className="container mx-auto px-4 pt-8 pb-24">
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
+          <Button onClick={() => navigate('/challenge')} variant="ghost" className="mb-6 text-charcoal-gray">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back
+          </Button>
+        </motion.div>
 
-      <div className="w-full max-w-4xl mx-auto relative z-10">
-        <AnimatePresence mode="wait">
-          {step === 'quiz' && (
-            <motion.div key="quiz">
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-center mb-8"
-              >
-                <div className="flex items-center justify-center gap-3 mb-4 text-4xl">
-                  <span role="img" aria-label="sparkles">✨</span>
-                  <h1 className="font-bold gradient-text">Growth Assessment</h1>
-                </div>
-                <p className="text-charcoal-gray/80 text-lg">Let's find your focus area!</p>
-              </motion.div>
+        <div className="max-w-2xl mx-auto">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <div className="mb-8">
+              <Progress value={progress} className="h-3 mb-4" />
+              <p className="text-center text-charcoal-gray/70">
+                Question {currentQuestion + 1} of {questions.length}
+              </p>
+            </div>
 
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="mb-8"
-              >
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-charcoal-gray/60">Question {currentQuestion + 1} of {questions.length}</span>
-                  <span className="text-sm text-charcoal-gray/60">{Math.round(progress)}% Complete</span>
-                </div>
-                <Progress value={progress} className="h-2 bg-forest-green/20 [&>div]:bg-forest-green" />
-              </motion.div>
-
+            <AnimatePresence mode="wait">
               <motion.div
                 key={currentQuestion}
                 initial={{ opacity: 0, x: 50 }}
@@ -261,96 +396,35 @@ const AssessmentPage = () => {
                 exit={{ opacity: 0, x: -50 }}
                 transition={{ duration: 0.3 }}
               >
-                <Card className="bg-white/50 border-black/10 shadow-2xl">
-                  <CardHeader>
-                    <CardTitle className="text-3xl text-forest-green text-center">
-                      <span className="mr-4 text-4xl">{currentQ.emoji}</span>{currentQ.question}
+                <Card className="bg-white/50 border-black/10 shadow-lg rounded-2xl">
+                  <CardHeader className="p-8">
+                    <CardTitle className="font-poppins text-2xl font-bold text-forest-green">
+                      {currentQ.question}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <CardContent className="p-8 pt-0">
+                    <div className="space-y-4">
                       {currentQ.options.map((option, index) => (
-                        <motion.button
+                        <Button
                           key={index}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                          onClick={() => handleAnswer(option.weights)}
-                          className={`p-6 rounded-xl border-2 transition-all duration-300 text-left hover:scale-105 ${
-                            answers[currentQuestion] === option.weights
-                              ? 'border-leaf-green bg-leaf-green/20 shadow-lg shadow-leaf-green/25'
-                              : 'border-black/10 bg-white/30 hover:border-black/20 hover:bg-white/50'
+                          onClick={() => handleOptionSelect(option)}
+                          variant={selectedOption === option ? "default" : "outline"}
+                          className={`w-full text-left justify-start p-6 h-auto min-h-[60px] touch-manipulation transition-all duration-200 ${
+                            selectedOption === option
+                              ? "bg-forest-green text-white"
+                              : "bg-white/80 text-charcoal-gray hover:bg-leaf-green/20 hover:text-charcoal-gray border-charcoal-gray/20"
                           }`}
                         >
-                          <span className="text-lg text-charcoal-gray font-medium">{option.text}</span>
-                        </motion.button>
+                          <span className="text-base leading-relaxed">{option.text}</span>
+                        </Button>
                       ))}
-                    </div>
-                    <div className="flex justify-start pt-6">
-                      <Button
-                        onClick={prevQuestion}
-                        disabled={currentQuestion === 0}
-                        variant="outline"
-                        className="bg-white/50 border-black/10 text-charcoal-gray hover:bg-white/80 disabled:opacity-50"
-                      >
-                        <ChevronLeft className="w-4 h-4 mr-2" />
-                        Back
-                      </Button>
                     </div>
                   </CardContent>
                 </Card>
               </motion.div>
-            </motion.div>
-          )}
-
-          {step === 'results' && results && (
-            <motion.div
-              key="results"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5 }}
-              className="text-center"
-            >
-              <div className="flex items-center justify-center gap-3 mb-4 text-4xl">
-                 <span role="img" aria-label="plant">🌱</span>
-                <h1 className="font-bold gradient-text">Your Growth Plan</h1>
-              </div>
-              <p className="text-charcoal-gray/80 text-lg mb-8">Based on your answers, here's what we recommend.</p>
-
-              <Card className="bg-white/50 border-2 border-leaf-green shadow-2xl shadow-leaf-green/20 mb-8">
-                <CardHeader>
-                  <CardDescription className="text-leaf-green font-semibold">OUR TOP RECOMMENDATION</CardDescription>
-                  <CardTitle className={`text-4xl flex items-center justify-center gap-3 font-bold ${growthAreas[results.topPick].color}`}>
-                    <span className="text-5xl">{growthAreas[results.topPick].emoji}</span>
-                    {results.topPick}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-charcoal-gray/90 mb-6 text-lg">{growthAreas[results.topPick].description}</p>
-                  <Button onClick={() => handleSelectGrowthArea(results.topPick)} size="lg" className="bg-gradient-to-r from-leaf-green to-forest-green text-white">
-                    <CheckCircle className="w-5 h-5 mr-2" /> Start with {results.topPick}
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <h2 className="text-2xl font-bold text-forest-green mb-4">Or, Choose Another Path</h2>
-              <p className="text-charcoal-gray/80 mb-6">Your journey is your own. Select any area to begin.</p>
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {Object.entries(growthAreas).map(([area, { emoji, color, description }]) => (
-                  <Card
-                    key={area}
-                    onClick={() => handleSelectGrowthArea(area)}
-                    className="bg-white/40 border-black/10 hover:border-warm-orange hover:bg-white/80 cursor-pointer transition-all duration-300 flex flex-col text-center p-4 items-center justify-center"
-                  >
-                    <div className={`text-4xl ${color}`}>{emoji}</div>
-                    <h3 className="font-bold text-forest-green mt-2">{area}</h3>
-                  </Card>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </AnimatePresence>
+          </motion.div>
+        </div>
       </div>
     </div>
   );

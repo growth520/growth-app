@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -62,6 +62,7 @@ const ChallengeDetailsPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [view, setView] = useState('details');
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const fileInputRef = useRef(null);
   const [showTooSoonDialog, setShowTooSoonDialog] = useState(false);
@@ -72,16 +73,21 @@ const ChallengeDetailsPage = () => {
   const navigateTimeoutRef = useRef(null);
 
   const fetchChallengeDetails = useCallback(async () => {
-    console.log('ChallengeDetailsPage: progress.current_challenge_id =', progress?.current_challenge_id);
+    // First, try to use the challenge passed via navigation state
+    if (location.state?.challenge) {
+      setChallenge(location.state.challenge);
+      return;
+    }
+    
+    // Fallback: try to fetch from challenges table by numeric id
     if (progress?.current_challenge_id) {
-      // Try to fetch from challenges table by numeric id
       const { data, error } = await supabase
         .from('challenges')
         .select('*')
         .eq('id', progress.current_challenge_id)
         .single();
-      console.log('ChallengeDetailsPage: Loaded challenge:', data);
       if (error) {
+        console.error('Error fetching challenge:', error);
         toast({ title: 'Error', description: 'Could not fetch challenge details.', variant: 'destructive' });
         navigate('/challenge');
       } else {
@@ -90,7 +96,7 @@ const ChallengeDetailsPage = () => {
     } else if (!loading) {
       navigate('/challenge');
     }
-  }, [progress, loading, navigate, toast]);
+  }, [progress, loading, navigate, toast, location.state]);
 
   useEffect(() => {
     fetchChallengeDetails();
@@ -178,7 +184,6 @@ const ChallengeDetailsPage = () => {
 
         if (webhookResponse.ok) {
           aiResponse = await webhookResponse.json().catch(() => null);
-          console.log('AI Response:', aiResponse);
           
           if (aiResponse?.newChallenge) {
             // Store the AI-generated challenge for later
@@ -197,7 +202,6 @@ const ChallengeDetailsPage = () => {
             if (insertError) {
               console.error('Error saving AI challenge:', insertError);
             } else {
-              console.log('Saved AI challenge:', insertData);
               toast({
                 title: "🤖 New Challenge Generated!",
                 description: "AI has created a personalized challenge based on your reflection.",
@@ -213,7 +217,24 @@ const ChallengeDetailsPage = () => {
       }
 
       // 2. Mark challenge as completed
-      const { data: insertData, error: insertError } = await supabase.from('completed_challenges').insert({
+      let insertData;
+      let insertError;
+      
+      // First, try to ensure the challenge exists in the challenges table
+      try {
+        await supabase.from('challenges').insert({
+          id: challenge.id,
+          category: challenge.category,
+          title: challenge.title,
+          description: challenge.description || challenge.title,
+          challenge_id_text: challenge.id.toString()
+        });
+      } catch (challengeInsertError) {
+        // Continue anyway - the challenge might already exist
+      }
+      
+      // Now try to insert the completed challenge
+      const insertResult = await supabase.from('completed_challenges').insert({
         user_id: user.id,
         challenge_id: challenge.id,
         completed_at: new Date().toISOString(),
@@ -221,6 +242,15 @@ const ChallengeDetailsPage = () => {
         photo_url: null,
         category: challenge.category
       }).select().single();
+      
+      insertData = insertResult.data;
+      insertError = insertResult.error;
+      
+      // If foreign key constraint fails, try without challenge_id
+      if (insertError && insertError.code === '23503') {
+        console.error('Foreign key constraint failed. The challenge needs to exist in the challenges table first.');
+        throw new Error('Challenge not found in database. Please contact admin to upload challenges via the Admin interface, or visit /admin to upload the CSV file.');
+      }
 
       if (insertError) {
         throw insertError;
@@ -252,6 +282,9 @@ const ChallengeDetailsPage = () => {
         level: newLevel,
         current_challenge_id: null, // Clear current challenge after completion
       }).eq('user_id', user.id);
+
+      // Clear the cached challenge since it's now completed
+      localStorage.removeItem('currentChallenge');
 
       // 5. Award badges if needed
       const { data: completed } = await supabase.from('completed_challenges').select('id').eq('user_id', user.id);
@@ -398,7 +431,7 @@ const ChallengeDetailsPage = () => {
               </CardHeader>
               <CardContent className="p-6 pt-0 space-y-6">
                 <p className="text-lg text-charcoal-gray leading-relaxed">{challenge.description}</p>
-                <Button onClick={handleComplete} className="w-full bg-gradient-to-r from-warm-orange to-orange-400 text-white font-bold py-6 text-base rounded-xl">
+                <Button onClick={handleComplete} className="w-full bg-gradient-to-r from-warm-orange to-orange-400 text-white font-bold py-6 text-base rounded-xl min-h-[60px] touch-manipulation">
                   <CheckCircle className="w-5 h-5 mr-2" /> Complete Challenge
                 </Button>
               </CardContent>
@@ -460,7 +493,7 @@ const ChallengeDetailsPage = () => {
                     <SelectItem value="private"><div className="flex items-center gap-2"><Lock className="w-4 h-4" /> Private</div></SelectItem>
                   </SelectContent>
                 </Select>
-                <Button onClick={handleSubmitReflection} disabled={isSubmitting} className="w-full bg-gradient-to-r from-forest-green to-leaf-green text-white font-bold py-6 text-base rounded-xl">
+                <Button onClick={handleSubmitReflection} disabled={isSubmitting} className="w-full bg-gradient-to-r from-forest-green to-leaf-green text-white font-bold py-6 text-base rounded-xl min-h-[60px] touch-manipulation">
                   <Upload className="w-5 h-5 mr-2" /> {isSubmitting ? 'Submitting...' : 'Submit Reflection'}
                 </Button>
               </CardContent>

@@ -9,79 +9,81 @@ import { useToast } from '@/components/ui/use-toast';
 import Comment from './Comment';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
-const CommentsModal = ({ isOpen, setIsOpen, post, onCommentPosted }) => {
+const CommentsModal = ({ isOpen, onClose, post }) => {
   const [comments, setComments] = useState([]);
-  const [commentInput, setCommentInput] = useState('');
+  const [newComment, setNewComment] = useState('');
+  const [replyTo, setReplyTo] = useState(null);
+  const [replyText, setReplyText] = useState('');
+  const { user } = useAuth();
   const { toast } = useToast();
-  const { user, session } = useAuth();
 
   useEffect(() => {
-    console.log('[DEBUG] useAuth user:', user);
-    console.log('[DEBUG] useAuth session:', session);
-  }, [user, session]);
+    if (isOpen && post) {
+      fetchComments();
+    }
+  }, [isOpen, post]);
 
-  const fetchComments = useCallback(async () => {
-    if (!post) return;
+  const fetchComments = async () => {
     const { data, error } = await supabase
       .from('comments')
-      .select('*, profiles:user_id(*)')
+      .select(`
+        *,
+        profiles!comments_user_id_fkey (full_name, avatar_url),
+        replies:comments!parent_comment_id (
+          *,
+          profiles!comments_user_id_fkey (full_name, avatar_url)
+        )
+      `)
       .eq('post_id', post.id)
       .is('parent_comment_id', null)
       .order('created_at', { ascending: true });
 
     if (error) {
-      toast({ title: "Error fetching comments", variant: "destructive" });
+      console.error('Error fetching comments:', error);
     } else {
-      setComments(data);
-    }
-  }, [post, toast]);
-
-  useEffect(() => {
-    if (isOpen) {
-      fetchComments();
-    }
-  }, [isOpen, fetchComments]);
-
-  const handlePostComment = async () => {
-    if (!commentInput.trim()) return;
-    console.log("[DEBUG] Posting comment with user_id:", user?.id, "user:", user);
-    const { error } = await supabase
-      .from('comments')
-      .insert({
-        post_id: Number(post.id), // Ensure post_id is a number
-        user_id: user?.id,  // UUID string
-        content: commentInput
-      });
-    
-    if (error) {
-      toast({ title: "Error posting comment", variant: "destructive" });
-    } else {
-      setCommentInput('');
-      fetchComments();
-      onCommentPosted();
+      setComments(data || []);
     }
   };
 
-  const handleReply = async (parentId, content) => {
-    console.log("[DEBUG] Posting reply with user_id:", user?.id, "user:", user);
-    const { error } = await supabase
-      .from('comments')
-      .insert({
-        post_id: Number(post.id), // Ensure post_id is a number
-        user_id: user?.id,  // UUID string
-        parent_comment_id: Number(parentId), // Ensure parent_comment_id is a number
-        content
-      });
-    
+  const handleComment = async () => {
+    if (!newComment.trim() || !user) return;
+
+    const { error } = await supabase.from('comments').insert({
+      post_id: post.id,
+      user_id: user.id,
+      content: newComment,
+      parent_comment_id: null
+    });
+
     if (error) {
-      toast({ title: "Error posting reply", variant: "destructive" });
+      toast({ title: 'Error', description: 'Failed to post comment', variant: 'destructive' });
     } else {
+      setNewComment('');
+      fetchComments();
+    }
+  };
+
+  const handleReply = async (parentId) => {
+    if (!replyText.trim() || !user) return;
+
+    const { error } = await supabase.from('comments').insert({
+      post_id: post.id,
+      user_id: user.id,
+      content: replyText,
+      parent_comment_id: parentId
+    });
+
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to post reply', variant: 'destructive' });
+    } else {
+      setReplyText('');
+      setReplyTo(null);
       fetchComments();
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-lg w-full bg-sun-beige p-0">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="text-forest-green">Comments on {post.profiles.full_name}'s post</DialogTitle>
@@ -100,8 +102,8 @@ const CommentsModal = ({ isOpen, setIsOpen, post, onCommentPosted }) => {
               <AvatarImage src={user?.user_metadata?.avatar_url} />
               <AvatarFallback>{user?.user_metadata?.full_name?.charAt(0) || 'U'}</AvatarFallback>
             </Avatar>
-            <Input value={commentInput} onChange={(e) => setCommentInput(e.target.value)} placeholder="Write a comment..." className="flex-1"/>
-            <Button size="icon" onClick={handlePostComment} disabled={!commentInput}><Send className="w-4 h-4"/></Button>
+            <Input value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Write a comment..." className="flex-1"/>
+            <Button size="icon" onClick={handleComment} disabled={!newComment}><Send className="w-4 h-4"/></Button>
           </div>
         </div>
       </DialogContent>

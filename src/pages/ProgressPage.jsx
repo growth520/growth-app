@@ -16,7 +16,14 @@ const badgeDefinitions = {
     CHALLENGES_10: { name: "Challenge Champion", icon: <Trophy className="w-8 h-8 text-yellow-500" />, description: "Completed 10 challenges." },
     CHALLENGES_25: { name: "Growth Guru", icon: <Trophy className="w-8 h-8 text-emerald-500" />, description: "Completed 25 challenges." },
     CHALLENGES_50: { name: "Master of Momentum", icon: <Trophy className="w-8 h-8 text-purple-500" />, description: "Completed 50 challenges." },
-    LEVEL_5: { name: "Level 5 Reached", icon: <TrendingUp className="w-8 h-8 text-blue-500" />, description: "You've reached level 5. Keep going!" },
+    LEVEL_2: { name: "Level 2", icon: <TrendingUp className="w-8 h-8 text-green-400" />, description: "You reached level 2!" },
+    LEVEL_3: { name: "Level 3", icon: <TrendingUp className="w-8 h-8 text-green-500" />, description: "You reached level 3!" },
+    LEVEL_4: { name: "Level 4", icon: <TrendingUp className="w-8 h-8 text-blue-400" />, description: "You reached level 4!" },
+    LEVEL_5: { name: "Level 5", icon: <TrendingUp className="w-8 h-8 text-blue-500" />, description: "You've reached level 5. Keep going!" },
+    LEVEL_6: { name: "Level 6", icon: <TrendingUp className="w-8 h-8 text-indigo-400" />, description: "You reached level 6!" },
+    LEVEL_7: { name: "Level 7", icon: <TrendingUp className="w-8 h-8 text-indigo-500" />, description: "You reached level 7!" },
+    LEVEL_8: { name: "Level 8", icon: <TrendingUp className="w-8 h-8 text-purple-400" />, description: "You reached level 8!" },
+    LEVEL_9: { name: "Level 9", icon: <TrendingUp className="w-8 h-8 text-purple-500" />, description: "You reached level 9!" },
     LEVEL_10: { name: "Level 10 Legend", icon: <TrendingUp className="w-8 h-8 text-indigo-500" />, description: "Wow, level 10! You're a true inspiration." },
     LEVEL_15: { name: "Level 15 Titan", icon: <TrendingUp className="w-8 h-8 text-red-500" />, description: "Level 15! You are unstoppable." },
     STREAK_7: { name: "7-Day Streak", icon: <Flame className="w-8 h-8 text-orange-500" />, description: "A full week of consistent growth!" },
@@ -90,6 +97,7 @@ const ProgressPage = () => {
   const { progress, userBadges } = useData();
   const [showCompleted, setShowCompleted] = useState(false);
   const [selectedBadge, setSelectedBadge] = useState(null);
+  
   if (!progress) {
     return <div className="min-h-screen flex items-center justify-center bg-sun-beige">Loading...</div>;
   }
@@ -155,6 +163,7 @@ const ProgressPage = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
+                {/* Show all defined badges */}
                 {Object.entries(badgeDefinitions).map(([type, badge]) => {
                   const isEarned = earnedBadgeTypes.includes(type);
                   return (
@@ -180,6 +189,25 @@ const ProgressPage = () => {
                     </motion.div>
                   );
                 })}
+                
+                {/* Show any earned badges that don't have definitions */}
+                {earnedBadgeTypes.filter(type => !badgeDefinitions[type]).map((type) => (
+                  <motion.div
+                    key={type}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex flex-col items-center justify-center p-4 rounded-xl aspect-square transition-all duration-300 cursor-pointer bg-gradient-to-br from-yellow-50 via-green-50 to-orange-50 border-2 border-yellow-300 shadow-md"
+                    onClick={() => setSelectedBadge({ 
+                      name: type.replace(/_/g, ' '), 
+                      icon: <Trophy className="w-8 h-8 text-yellow-500" />, 
+                      description: `You earned the ${type.replace(/_/g, ' ')} badge!`,
+                      isEarned: true 
+                    })}
+                  >
+                    <Trophy className="w-8 h-8 text-yellow-500" />
+                    <p className="text-xs text-center font-semibold mt-2 text-charcoal-gray">{type.replace(/_/g, ' ')}</p>
+                  </motion.div>
+                ))}
               </div>
             </CardContent>
           </Card>

@@ -50,7 +50,6 @@ const ChallengePage = () => {
       setAllChallenges(JSON.parse(cachedChallenges));
     } else {
       fetchChallengesFromCSV().then(data => {
-        console.log('Loaded challenges from CSV:', data);
         setAllChallenges(data);
         localStorage.setItem('allChallenges', JSON.stringify(data));
       }).catch(console.error);
@@ -67,7 +66,6 @@ const ChallengePage = () => {
         .eq('user_id', user.id);
       if (!error && data) {
         const completedIds = data.map(row => Number(row.challenge_id));
-        console.log('Completed challenge IDs from Supabase:', completedIds);
         setCompletedChallenges(completedIds);
       } else {
         setCompletedChallenges([]);
@@ -98,7 +96,6 @@ const ChallengePage = () => {
   // Helper to get a random challenge from the CSV, filtered by area and not completed
   const getRandomChallenge = useCallback((area) => {
     const filtered = allChallenges.filter(c => c['category'] === area && !completedChallenges.includes(Number(c['id'])));
-    console.log('Filtered challenges for area', area, 'not completed:', filtered);
     if (filtered.length === 0) return null;
 
     // Check if we have a cached challenge
@@ -112,7 +109,6 @@ const ChallengePage = () => {
     }
 
     const chosen = filtered[Math.floor(Math.random() * filtered.length)];
-    console.log('Randomly selected challenge:', chosen);
     
     // Cache the new challenge
     localStorage.setItem('currentChallenge', JSON.stringify(chosen));
@@ -120,16 +116,68 @@ const ChallengePage = () => {
     return chosen;
   }, [allChallenges, completedChallenges]);
 
-  // Helper to get a random extra challenge from the same area, now allowing repeats
-  const getRandomExtraChallenge = async () => {
-    // Fetch all challenges from Supabase for the current area
+  // Helper to get or retrieve persisted extra challenge
+  const getOrCreateExtraChallenge = async () => {
+    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD format
+    
+    // Check if we have a cached extra challenge for today
+    const cachedExtra = localStorage.getItem('extraChallenge');
+    const cachedDate = localStorage.getItem('extraChallengeDate');
+    
+    if (cachedExtra && cachedDate === today) {
+      try {
+        const parsed = JSON.parse(cachedExtra);
+        return parsed;
+      } catch (error) {
+        localStorage.removeItem('extraChallenge');
+        localStorage.removeItem('extraChallengeDate');
+      }
+    }
+    
+    // Generate a new extra challenge for today
     const { data: all } = await supabase
       .from('challenges')
       .select('*')
       .eq('category', profile.assessment_results?.userSelection || 'Confidence');
+    
     if (!all || all.length === 0) return null;
-    // Pick a random challenge (allow repeats)
-    return all[Math.floor(Math.random() * all.length)];
+    
+    // Pick a random challenge
+    const newExtra = all[Math.floor(Math.random() * all.length)];
+    
+    // Cache it for today
+    localStorage.setItem('extraChallenge', JSON.stringify(newExtra));
+    localStorage.setItem('extraChallengeDate', today);
+    
+    return newExtra;
+  };
+
+  // Load persisted extra challenge on component mount
+  useEffect(() => {
+    if (!user || !profile) return;
+    
+    const loadExtraChallenge = async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const cachedExtra = localStorage.getItem('extraChallenge');
+      const cachedDate = localStorage.getItem('extraChallengeDate');
+      
+      if (cachedExtra && cachedDate === today) {
+        try {
+          const parsed = JSON.parse(cachedExtra);
+          setExtraChallenge(parsed);
+        } catch (error) {
+          localStorage.removeItem('extraChallenge');
+          localStorage.removeItem('extraChallengeDate');
+        }
+      }
+    };
+    
+    loadExtraChallenge();
+  }, [user, profile]);
+
+  // Helper to get a random extra challenge from the same area, now allowing repeats
+  const getRandomExtraChallenge = async () => {
+    return getOrCreateExtraChallenge();
   };
 
   // Photo upload logic for extra challenge
@@ -191,7 +239,6 @@ const ChallengePage = () => {
           challenge_title: extraChallenge.title,
           visibility: privacy,
         };
-        console.log('[DEBUG] Inserting extra challenge post to Community:', postData);
         const { error: postError } = await supabase.from('posts').insert(postData);
         if (postError) {
           console.error('Error inserting extra challenge post:', postError);
@@ -203,6 +250,11 @@ const ChallengePage = () => {
       await supabase.from('user_progress').update({ xp: newXp }).eq('user_id', user.id);
       await refreshAllData();
       toast({ title: "🎁 Extra Challenge Completed!", description: `You earned 5 XP!` });
+      
+      // Clear the extra challenge cache since it's completed
+      localStorage.removeItem('extraChallenge');
+      localStorage.removeItem('extraChallengeDate');
+      
       setShowExtraChallenge(false);
       setExtraChallenge(null);
       setExtraReflection('');
@@ -217,10 +269,9 @@ const ChallengePage = () => {
 
   // Helper to check if user has completed a challenge today
   const hasCompletedToday = () => {
-    if (!lastCompletedAt) return false;
+    if (!lastCompletedAt || !progress) return false;
     const today = new Date().toISOString().slice(0, 10);
     const isToday = lastCompletedAt.slice(0, 10) === today && !progress.current_challenge_id;
-    console.log('[hasCompletedToday] lastCompletedAt:', lastCompletedAt, 'today:', today, 'progress.current_challenge_id:', progress.current_challenge_id, 'isToday:', isToday);
     return isToday;
   };
 
@@ -228,8 +279,6 @@ const ChallengePage = () => {
     if (!profile) return;
     const primaryArea = profile.assessment_results?.userSelection || 'Confidence';
     const uniqueAreas = Array.from(new Set(allChallenges.map(c => c['category'])));
-    console.log('Primary area from profile:', primaryArea);
-    console.log('Unique Growth Areas in CSV:', uniqueAreas);
     const newChallengeData = getRandomChallenge(primaryArea);
     if (!newChallengeData) {
       setNoMoreChallenges(true);
@@ -243,16 +292,21 @@ const ChallengePage = () => {
       category: newChallengeData['category'],
       id: Number(newChallengeData['id']),
     });
-    console.log('Setting currentChallenge:', newChallengeData);
   }, [profile, allChallenges, completedChallenges, getRandomChallenge]);
 
   useEffect(() => {
-    console.log('[ChallengePage useEffect] progress.current_challenge_id:', progress?.current_challenge_id, 'lastCompletedAt:', lastCompletedAt, 'hasCompletedToday:', hasCompletedToday());
     if (loading || allChallenges.length === 0) return;
-    if (!profile?.has_completed_assessment) {
+    
+    // Only redirect to assessment if we're certain the user hasn't completed it
+    // Don't redirect if profile is still loading (undefined)
+    if (profile && profile.has_completed_assessment === false) {
       navigate('/assessment', { replace: true });
       return;
     }
+    
+    // Only proceed if we have profile data and assessment is completed
+    if (!profile || profile.has_completed_assessment !== true) return;
+    
     setIsFirstTime(!progress?.current_challenge_id && progress?.xp === 0);
     
     // If there's an active challenge, load it from allChallenges
@@ -267,10 +321,33 @@ const ChallengePage = () => {
         });
       }
     }
-    // Only generate a new challenge if there is no active challenge and the user hasn't completed today's challenge
+    // Only generate a new challenge if:
+    // 1. There's no active challenge AND
+    // 2. User hasn't completed today's challenge AND
+    // 3. There's no cached challenge from previous session
     else if (!hasCompletedToday()) {
-      console.log('[ChallengePage useEffect] Calling generateNewChallenge');
-      generateNewChallenge();
+      
+      // First, try to load from cache
+      const cachedChallenge = localStorage.getItem('currentChallenge');
+      if (cachedChallenge) {
+        try {
+          const parsed = JSON.parse(cachedChallenge);
+          setCurrentChallenge({
+            title: parsed.title,
+            description: parsed.title,
+            category: parsed.category,
+            id: Number(parsed.id),
+          });
+          return;
+        } catch (error) {
+          localStorage.removeItem('currentChallenge');
+        }
+      }
+      
+      // Only generate new challenge if no cache and allChallenges is loaded
+      if (allChallenges.length > 0) {
+        generateNewChallenge();
+      }
     }
   }, [loading, profile, progress?.current_challenge_id, navigate, generateNewChallenge, allChallenges, lastCompletedAt]);
   
@@ -284,13 +361,11 @@ const ChallengePage = () => {
   // When user accepts a challenge, mark it as completed
   const handleAccept = async () => {
     if (currentChallenge && user) {
-      localStorage.removeItem('currentChallenge');
-      console.log('handleAccept: Attempting to set current_challenge_id in Supabase to', currentChallenge.id);
+      // Don't remove from cache yet - keep it until challenge is completed
       const { error, data } = await supabase.from('user_progress').update({
         current_challenge_id: currentChallenge.id,
         challenge_assigned_at: new Date().toISOString()
       }).eq('user_id', user.id);
-      console.log('handleAccept: Supabase update result:', { data, error });
       await refreshProgress();
       // Pass the full challenge object to the detail screen
       navigate('/challenge-details', { state: { challenge: currentChallenge } });
@@ -300,45 +375,57 @@ const ChallengePage = () => {
   };
 
   const handleSkip = () => {
-    localStorage.removeItem('currentChallenge');
     setQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
     setShowSkipModal(true);
   };
 
-  // Only generate a new challenge on skip
+  // Only generate a new challenge on skip confirmation
   const handleConfirmSkipAndGetNew = async () => {
     setShowSkipModal(false);
     if (!user) return;
-    // Reset streak if needed
+    
+    // Clear the cached challenge and generate a new one
+    localStorage.removeItem('currentChallenge');
+    
+    // Reset streak if needed and clear current challenge
     await supabase
       .from('user_progress')
       .update({ streak: 0, current_challenge_id: null })
       .eq('user_id', user.id);
+    
     await generateNewChallenge();
     await refreshProgress();
   };
 
   // Reset extra challenge at midnight
   useEffect(() => {
-    if (!showExtraChallenge) return;
     const now = new Date();
     const msUntilMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0) - now;
     const timeout = setTimeout(() => {
+      // Clear extra challenge at midnight
+      localStorage.removeItem('extraChallenge');
+      localStorage.removeItem('extraChallengeDate');
       setShowExtraChallenge(false);
       setExtraChallenge(null);
       setExtraReflection('');
     }, msUntilMidnight);
     return () => clearTimeout(timeout);
-  }, [showExtraChallenge]);
-
-  // Before rendering, log the state
-  console.log('[RENDER] progress.current_challenge_id:', progress?.current_challenge_id, 'lastCompletedAt:', lastCompletedAt, 'hasCompletedToday:', hasCompletedToday(), 'showExtraChallenge:', showExtraChallenge, 'currentChallenge:', currentChallenge, 'noMoreChallenges:', noMoreChallenges);
+  }, []); // Run once on component mount
 
   if (loading || !profile || !progress) {
-    return <div className="min-h-screen flex items-center justify-center bg-sun-beige"><div className="text-charcoal-gray">Loading your journey...</div></div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-sun-beige">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-forest-green mx-auto"></div>
+          <div className="text-charcoal-gray text-lg">
+            {!profile ? 'Loading profile...' : !progress ? 'Loading progress...' : 'Loading your journey...'}
+          </div>
+        </div>
+      </div>
+    );
   }
 
-  const progressPercentage = (progress.xp / progress.xp_to_next_level) * 100;
+  const progressPercentage = progress ? (progress.xp / progress.xp_to_next_level) * 100 : 0;
 
   return (
     <div className="min-h-screen bg-sun-beige text-charcoal-gray font-lato">
@@ -375,12 +462,19 @@ const ChallengePage = () => {
               <CardTitle className="font-poppins text-2xl font-bold text-forest-green mb-4">You've completed today's challenge!</CardTitle>
               <CardContent className="p-0 pt-4">
                 <Button onClick={async () => {
+                  // If we already have an extra challenge for today, show it
+                  if (extraChallenge) {
+                    setShowExtraChallenge(true);
+                    return;
+                  }
+                  
+                  // Otherwise, get or create one
                   const extra = await getRandomExtraChallenge();
                   if (extra) {
                     setExtraChallenge(extra);
                     setShowExtraChallenge(true);
                   } else {
-                    alert('No extra challenges available in this area!');
+                    toast({ title: 'No Extra Challenges', description: 'No extra challenges available in this area right now!', variant: 'destructive' });
                   }
                 }} className="bg-warm-orange text-white font-bold py-3 text-base rounded-xl">
                   Give me an extra challenge
@@ -461,29 +555,28 @@ const ChallengePage = () => {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <div className="grid grid-cols-2 gap-4 w-full">
-                    {progress.current_challenge_id === currentChallenge.id ? (
+                    {progress?.current_challenge_id === currentChallenge.id ? (
                       <Button
                         onClick={() => { 
-                          console.log('Complete Challenge button clicked'); 
                           navigate('/challenge-details', { state: { challenge: currentChallenge } }); 
                         }}
-                        className="bg-gradient-to-r from-warm-orange to-orange-400 text-white font-bold py-3 text-base rounded-xl h-full flex flex-col"
+                        className="bg-gradient-to-r from-warm-orange to-orange-400 text-white font-bold py-4 px-4 text-base rounded-xl h-auto min-h-[60px] flex flex-col touch-manipulation"
                       >
                         <span>Complete</span>
                         <span>Challenge</span>
                       </Button>
                     ) : (
                       <Button
-                        onClick={() => { console.log('Accept Challenge button clicked'); handleAccept(); }}
-                        className="bg-gradient-to-r from-warm-orange to-orange-400 text-white font-bold py-3 text-base rounded-xl h-full flex flex-col"
+                        onClick={() => { handleAccept(); }}
+                        className="bg-gradient-to-r from-warm-orange to-orange-400 text-white font-bold py-4 px-4 text-base rounded-xl h-auto min-h-[60px] flex flex-col touch-manipulation"
                       >
                         <span>Accept</span>
                         <span>Challenge</span>
                       </Button>
                     )}
-                    <Button onClick={handleSkip} variant="outline" className="border-charcoal-gray/30 text-charcoal-gray font-bold py-3 text-base rounded-xl h-full flex flex-col">
+                    <Button onClick={handleSkip} variant="outline" className="border-charcoal-gray/30 text-charcoal-gray font-bold py-4 px-4 text-base rounded-xl h-auto min-h-[60px] flex flex-col touch-manipulation">
                       <SkipForward className="w-5 h-5 mb-1" />
-                      <span>Skip</span>
+                      <span>New Challenge</span>
                     </Button>
                   </div>
                 </div>
@@ -500,7 +593,7 @@ const ChallengePage = () => {
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-warm-orange/20 rounded-full"><Zap className="w-6 h-6 text-warm-orange" /></div>
                 <div>
-                  <p className="font-bold text-2xl text-forest-green">{progress.streak} days</p>
+                  <p className="font-bold text-2xl text-forest-green">{progress?.streak || 0} days</p>
                   <p className="text-sm text-charcoal-gray/70">in a row</p>
                 </div>
               </div>
@@ -511,7 +604,7 @@ const ChallengePage = () => {
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-forest-green/20 rounded-full"><BarChart className="w-6 h-6 text-forest-green" /></div>
                 <div>
-                  <p className="font-bold text-lg text-forest-green">Level {progress.level}</p>
+                  <p className="font-bold text-lg text-forest-green">Level {progress?.level || 1}</p>
                   <Progress value={progressPercentage} className="h-2 mt-1 bg-forest-green/20 [&>div]:bg-forest-green" />
                 </div>
               </div>
