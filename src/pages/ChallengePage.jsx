@@ -297,8 +297,8 @@ const ChallengePage = () => {
   useEffect(() => {
     if (loading || allChallenges.length === 0) return;
     
-    // Only redirect to assessment if we're certain the user hasn't completed it
-    // Don't redirect if profile is still loading (undefined)
+    // Only redirect to assessment if profile is loaded AND assessment is explicitly not completed
+    // Don't redirect if profile is still loading (undefined) or if assessment is completed
     if (profile && profile.has_completed_assessment === false) {
       navigate('/assessment', { replace: true });
       return;

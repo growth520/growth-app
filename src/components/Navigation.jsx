@@ -17,9 +17,7 @@ import {
 
 // Custom mobile-optimized dropdown trigger
 const MobileDropdownTrigger = ({ children, onToggle, isOpen }) => {
-  const triggerRef = useRef(null);
-
-  const handleInteraction = (e) => {
+  const handleClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
     onToggle();
@@ -33,35 +31,9 @@ const MobileDropdownTrigger = ({ children, onToggle, isOpen }) => {
     }
   };
 
-  useEffect(() => {
-    const element = triggerRef.current;
-    if (!element) return;
-
-    // Add both click and touchstart listeners for better mobile support
-    const clickHandler = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      onToggle();
-    };
-
-    const touchHandler = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      onToggle();
-    };
-
-    element.addEventListener('click', clickHandler, { passive: false });
-    element.addEventListener('touchstart', touchHandler, { passive: false });
-
-    return () => {
-      element.removeEventListener('click', clickHandler);
-      element.removeEventListener('touchstart', touchHandler);
-    };
-  }, [onToggle]);
-
   return (
     <div
-      ref={triggerRef}
+      onClick={handleClick}
       className="cursor-pointer touch-manipulation select-none"
       style={{ 
         touchAction: 'manipulation',
@@ -274,9 +246,13 @@ const Navigation = () => {
                   }
                 }}
                 variant="ghost"
-                className={`flex flex-col items-center h-full rounded-none transition-all duration-300 flex-1 min-w-0 ${
+                className={`flex flex-col items-center h-full rounded-none transition-all duration-300 flex-1 min-w-0 touch-manipulation ${
                   active ? 'text-forest-green' : 'text-charcoal-gray/60'
                 }`}
+                style={{ 
+                  touchAction: 'manipulation',
+                  WebkitTapHighlightColor: 'rgba(0, 0, 0, 0.1)'
+                }}
               >
                 <Icon className="w-6 h-6" />
                 <span className="text-xs mt-1 truncate">{item.label}</span>
