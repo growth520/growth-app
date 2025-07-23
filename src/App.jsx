@@ -29,21 +29,7 @@ function AppContent() {
   // Show appropriate padding based on whether navigation is shown
   const paddingClass = shouldShowNavigation ? "pt-16 md:pt-20 pb-24" : "";
 
-  // Performance optimization - cleanup on location change to prevent memory leaks
-  useEffect(() => {
-    // Clear any existing timers or intervals on route change
-    const highestTimeoutId = setTimeout(() => {}, 0);
-    for (let i = 0; i < highestTimeoutId; i++) {
-      clearTimeout(i);
-    }
-    
-    // Force garbage collection if available (development only)
-    if (process.env.NODE_ENV === 'development' && window.gc) {
-      window.gc();
-    }
-  }, [location.pathname]);
-
-  // Prevent memory leaks from long-running sessions
+  // Lightweight memory management - only for visibility changes
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
@@ -54,17 +40,10 @@ function AppContent() {
       }
     };
 
-    const handleBeforeUnload = () => {
-      // Cleanup before page unload
-      window.dispatchEvent(new Event('app-cleanup'));
-    };
-
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, []);
 

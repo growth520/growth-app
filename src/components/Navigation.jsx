@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,6 @@ const Navigation = () => {
   const { signOut } = useAuth();
   const { profile, hasNewNotifications } = useData();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const touchStartTimeRef = useRef(null);
 
   const navItems = [
     { path: '/challenge', icon: Target, label: 'Challenge' },
@@ -32,6 +31,7 @@ const Navigation = () => {
 
   const handleLogout = async () => {
     try {
+      setIsDropdownOpen(false);
       await signOut();
       navigate('/', { replace: true });
     } catch (error) {
@@ -50,20 +50,14 @@ const Navigation = () => {
     || (profile?.email && profile.email.split('@')[0].slice(0,2).toUpperCase())
     || 'U';
 
-  // Enhanced mobile touch handling
-  const handleTouchStart = () => {
-    touchStartTimeRef.current = Date.now();
-  };
-
-  const handleTouchEnd = (callback) => {
-    const touchDuration = Date.now() - (touchStartTimeRef.current || 0);
-    // Ensure it's a quick tap, not a scroll
-    if (touchDuration < 500) {
-      callback();
+  // Simple navigation handler without complex touch logic
+  const handleNavigation = (path) => {
+    if (!isActive(path)) {
+      navigate(path, { replace: true });
     }
   };
 
-  // Cleanup on unmount to prevent memory leaks
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       setIsDropdownOpen(false);
@@ -84,8 +78,6 @@ const Navigation = () => {
               className="flex items-center gap-3 cursor-pointer flex-shrink-0"
               onClick={() => navigate('/challenge')}
               whileHover={{ scale: 1.05 }}
-              onTouchStart={handleTouchStart}
-              onTouchEnd={() => handleTouchEnd(() => navigate('/challenge'))}
               style={{ touchAction: 'manipulation' }}
             >
               <img src="https://storage.googleapis.com/hostinger-horizons-assets-prod/3576ad99-fbe5-4d76-95b8-b9445d3273c9/f248d90957aab1199c7db78e9c6d6c49.png" alt="Growth App Logo" className="h-8" />
@@ -97,8 +89,6 @@ const Navigation = () => {
                 variant="ghost" 
                 size="icon" 
                 className="relative"
-                onTouchStart={handleTouchStart}
-                onTouchEnd={() => handleTouchEnd(() => navigate('/notifications'))}
                 style={{ touchAction: 'manipulation' }}
               >
                 <Heart className="w-6 h-6 text-charcoal-gray/70" />
@@ -114,7 +104,6 @@ const Navigation = () => {
                       touchAction: 'manipulation',
                       WebkitTapHighlightColor: 'transparent'
                     }}
-                    onTouchStart={handleTouchStart}
                   >
                     <Avatar className="w-8 h-8">
                       <AvatarImage src={profile?.avatar_url} alt={profile?.full_name || profile?.email} />
@@ -130,19 +119,21 @@ const Navigation = () => {
                   sideOffset={8}
                 >
                   <DropdownMenuItem 
-                    onClick={() => navigate('/profile')} 
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      navigate('/profile');
+                    }} 
                     className="cursor-pointer hover:bg-black/5 focus:bg-black/5"
-                    onTouchStart={handleTouchStart}
-                    onTouchEnd={() => handleTouchEnd(() => navigate('/profile'))}
                   >
                     <User className="mr-2 h-4 w-4" />
                     <span>View Profile</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem 
-                    onClick={() => navigate('/settings')} 
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      navigate('/settings');
+                    }} 
                     className="cursor-pointer hover:bg-black/5 focus:bg-black/5"
-                    onTouchStart={handleTouchStart}
-                    onTouchEnd={() => handleTouchEnd(() => navigate('/settings'))}
                   >
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
@@ -151,8 +142,6 @@ const Navigation = () => {
                   <DropdownMenuItem 
                     onClick={handleLogout}
                     className="cursor-pointer text-red-600 hover:bg-red-50 focus:bg-red-50 hover:text-red-700 focus:text-red-700"
-                    onTouchStart={handleTouchStart}
-                    onTouchEnd={() => handleTouchEnd(handleLogout)}
                   >
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log Out</span>
@@ -200,11 +189,17 @@ const Navigation = () => {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
+                  <DropdownMenuItem onClick={() => {
+                    setIsDropdownOpen(false);
+                    navigate('/profile');
+                  }} className="cursor-pointer">
                     <User className="mr-2 h-4 w-4" />
                     <span>View Profile</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/settings')} className="cursor-pointer">
+                  <DropdownMenuItem onClick={() => {
+                    setIsDropdownOpen(false);
+                    navigate('/settings');
+                  }} className="cursor-pointer">
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </DropdownMenuItem>
@@ -223,7 +218,7 @@ const Navigation = () => {
         </div>
       </motion.nav>
 
-      {/* Bottom Navigation for Mobile - Enhanced Touch */}
+      {/* Bottom Navigation for Mobile - Simplified */}
       <motion.nav
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -236,17 +231,7 @@ const Navigation = () => {
             return (
               <button
                 key={item.path}
-                onClick={() => {
-                  if (!active) {
-                    navigate(item.path, { replace: true });
-                  }
-                }}
-                onTouchStart={handleTouchStart}
-                onTouchEnd={() => {
-                  if (!active) {
-                    handleTouchEnd(() => navigate(item.path, { replace: true }));
-                  }
-                }}
+                onClick={() => handleNavigation(item.path)}
                 className={`flex flex-col items-center justify-center h-full transition-all duration-200 flex-1 min-w-0 rounded-none ${
                   active 
                     ? 'text-forest-green bg-forest-green/5' 
