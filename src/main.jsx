@@ -7,7 +7,7 @@ import '@/index.css';
 import { AuthProvider } from '@/contexts/SupabaseAuthContext.jsx';
 import { DataProvider } from '@/contexts/DataContext.jsx';
 import { Toaster } from '@/components/ui/toaster';
-import { ErrorBoundary, preloadCriticalResources } from '@/lib/performance';
+import { ErrorBoundary, preloadCriticalResources } from '@/lib/performance.jsx';
 
 // Preload critical resources for faster initial load
 preloadCriticalResources();

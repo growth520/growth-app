@@ -1,6 +1,6 @@
 // Lazy-loaded components for better code splitting and performance
 
-import { createLazyComponent } from '@/lib/performance';
+import { createLazyComponent } from '@/lib/performance.jsx';
 
 // Lazy load all page components
 export const LazyChallengePage = createLazyComponent(

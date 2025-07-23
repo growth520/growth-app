@@ -1,7 +1,7 @@
 // OpenAI API client for personalized suggestions
 // Note: In production, this should be handled by a backend service for security
 
-import { getCachedData, setCachedData } from '@/lib/performance';
+import { getCachedData, setCachedData } from '@/lib/performance.jsx';
 
 const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 
