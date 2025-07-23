@@ -45,14 +45,14 @@ const ChallengePage = () => {
 
   // Load challenges from CSV on mount
   useEffect(() => {
-    const cachedChallenges = sessionStorage.getItem('allChallenges');
+    const cachedChallenges = localStorage.getItem('allChallenges');
     if (cachedChallenges) {
       setAllChallenges(JSON.parse(cachedChallenges));
     } else {
       fetchChallengesFromCSV().then(data => {
         console.log('Loaded challenges from CSV:', data);
         setAllChallenges(data);
-        sessionStorage.setItem('allChallenges', JSON.stringify(data));
+        localStorage.setItem('allChallenges', JSON.stringify(data));
       }).catch(console.error);
     }
   }, []);
@@ -102,7 +102,7 @@ const ChallengePage = () => {
     if (filtered.length === 0) return null;
 
     // Check if we have a cached challenge
-    const cachedChallenge = sessionStorage.getItem('currentChallenge');
+    const cachedChallenge = localStorage.getItem('currentChallenge');
     if (cachedChallenge) {
       const parsed = JSON.parse(cachedChallenge);
       // Only use the cached challenge if it's from the same area and not completed
@@ -115,7 +115,7 @@ const ChallengePage = () => {
     console.log('Randomly selected challenge:', chosen);
     
     // Cache the new challenge
-    sessionStorage.setItem('currentChallenge', JSON.stringify(chosen));
+    localStorage.setItem('currentChallenge', JSON.stringify(chosen));
     
     return chosen;
   }, [allChallenges, completedChallenges]);
@@ -284,7 +284,7 @@ const ChallengePage = () => {
   // When user accepts a challenge, mark it as completed
   const handleAccept = async () => {
     if (currentChallenge && user) {
-      sessionStorage.removeItem('currentChallenge');
+      localStorage.removeItem('currentChallenge');
       console.log('handleAccept: Attempting to set current_challenge_id in Supabase to', currentChallenge.id);
       const { error, data } = await supabase.from('user_progress').update({
         current_challenge_id: currentChallenge.id,
@@ -300,7 +300,7 @@ const ChallengePage = () => {
   };
 
   const handleSkip = () => {
-    sessionStorage.removeItem('currentChallenge');
+    localStorage.removeItem('currentChallenge');
     setQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
     setShowSkipModal(true);
   };
