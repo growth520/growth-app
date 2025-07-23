@@ -73,7 +73,18 @@ const LoginPage = () => {
     try {
       setLoading(true);
       console.log('Starting social login with provider:', provider);
-      const { data, error } = await signInWithProvider(provider);
+      
+      // Direct Supabase call instead of using context
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/challenge`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent'
+          }
+        }
+      });
       
       if (error) {
         console.error('Social login error:', error);
