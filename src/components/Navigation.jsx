@@ -15,47 +15,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// Custom mobile-optimized dropdown trigger
-const MobileDropdownTrigger = ({ children, onToggle, isOpen }) => {
-  const handleClick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onToggle();
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      e.stopPropagation();
-      onToggle();
-    }
-  };
-
-  return (
-    <div
-      onClick={handleClick}
-      className="cursor-pointer touch-manipulation select-none"
-      style={{ 
-        touchAction: 'manipulation',
-        WebkitTapHighlightColor: 'rgba(0, 0, 0, 0.1)'
-      }}
-      role="button"
-      tabIndex={0}
-      aria-expanded={isOpen}
-      aria-haspopup="true"
-      onKeyDown={handleKeyDown}
-    >
-      {children}
-    </div>
-  );
-};
-
 const Navigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { signOut } = useAuth();
   const { profile, hasNewNotifications } = useData();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const touchStartTimeRef = useRef(null);
 
   const navItems = [
     { path: '/challenge', icon: Target, label: 'Challenge' },
@@ -84,31 +50,25 @@ const Navigation = () => {
     || (profile?.email && profile.email.split('@')[0].slice(0,2).toUpperCase())
     || 'U';
 
-  const toggleDropdown = () => {
-    setIsDropdownOpen(!isDropdownOpen);
+  // Enhanced mobile touch handling
+  const handleTouchStart = () => {
+    touchStartTimeRef.current = Date.now();
   };
 
-  const handleMenuItemClick = (action) => {
-    setIsDropdownOpen(false);
-    if (typeof action === 'function') {
-      action();
+  const handleTouchEnd = (callback) => {
+    const touchDuration = Date.now() - (touchStartTimeRef.current || 0);
+    // Ensure it's a quick tap, not a scroll
+    if (touchDuration < 500) {
+      callback();
     }
   };
 
-  const handleNavigateToProfile = () => {
-    setIsDropdownOpen(false);
-    navigate('/profile');
-  };
-  
-  const handleNavigateToSettings = () => {
-    setIsDropdownOpen(false);
-    navigate('/settings');
-  };
-  
-  const handleLogoutClick = () => {
-    setIsDropdownOpen(false);
-    handleLogout();
-  };
+  // Cleanup on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      setIsDropdownOpen(false);
+    };
+  }, []);
 
   return (
     <>
@@ -124,39 +84,75 @@ const Navigation = () => {
               className="flex items-center gap-3 cursor-pointer flex-shrink-0"
               onClick={() => navigate('/challenge')}
               whileHover={{ scale: 1.05 }}
+              onTouchStart={handleTouchStart}
+              onTouchEnd={() => handleTouchEnd(() => navigate('/challenge'))}
+              style={{ touchAction: 'manipulation' }}
             >
               <img src="https://storage.googleapis.com/hostinger-horizons-assets-prod/3576ad99-fbe5-4d76-95b8-b9445d3273c9/f248d90957aab1199c7db78e9c6d6c49.png" alt="Growth App Logo" className="h-8" />
               <span className="text-2xl font-bold gradient-text">Growth</span>
             </motion.div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              <Button onClick={() => navigate('/notifications')} variant="ghost" size="icon" className="relative">
+              <Button 
+                onClick={() => navigate('/notifications')} 
+                variant="ghost" 
+                size="icon" 
+                className="relative"
+                onTouchStart={handleTouchStart}
+                onTouchEnd={() => handleTouchEnd(() => navigate('/notifications'))}
+                style={{ touchAction: 'manipulation' }}
+              >
                 <Heart className="w-6 h-6 text-charcoal-gray/70" />
                 {hasNewNotifications && <div className="absolute top-2 right-2 w-2 h-2 bg-leaf-green rounded-full" />}
               </Button>
+              
+              {/* Fixed Dropdown Menu */}
               <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
                 <DropdownMenuTrigger asChild>
-                  <MobileDropdownTrigger onToggle={toggleDropdown} isOpen={isDropdownOpen}>
-                    <Avatar className="w-8 h-8 cursor-pointer">
+                  <button
+                    className="flex items-center gap-2 cursor-pointer rounded-full p-1 hover:bg-black/5 transition-colors"
+                    style={{ 
+                      touchAction: 'manipulation',
+                      WebkitTapHighlightColor: 'transparent'
+                    }}
+                    onTouchStart={handleTouchStart}
+                  >
+                    <Avatar className="w-8 h-8">
                       <AvatarImage src={profile?.avatar_url} alt={profile?.full_name || profile?.email} />
                       <AvatarFallback className="bg-gradient-to-r from-forest-green to-leaf-green text-white text-sm">
                         {initials}
                       </AvatarFallback>
                     </Avatar>
-                  </MobileDropdownTrigger>
+                  </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem onClick={handleNavigateToProfile} className="cursor-pointer">
+                <DropdownMenuContent 
+                  align="end" 
+                  className="w-56 bg-white/95 backdrop-blur-sm border border-black/10 shadow-lg"
+                  sideOffset={8}
+                >
+                  <DropdownMenuItem 
+                    onClick={() => navigate('/profile')} 
+                    className="cursor-pointer hover:bg-black/5 focus:bg-black/5"
+                    onTouchStart={handleTouchStart}
+                    onTouchEnd={() => handleTouchEnd(() => navigate('/profile'))}
+                  >
                     <User className="mr-2 h-4 w-4" />
                     <span>View Profile</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleNavigateToSettings} className="cursor-pointer">
+                  <DropdownMenuItem 
+                    onClick={() => navigate('/settings')} 
+                    className="cursor-pointer hover:bg-black/5 focus:bg-black/5"
+                    onTouchStart={handleTouchStart}
+                    onTouchEnd={() => handleTouchEnd(() => navigate('/settings'))}
+                  >
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
-                    onClick={handleLogoutClick} 
-                    className="cursor-pointer text-red-500 focus:text-red-500 focus:bg-red-50"
+                    onClick={handleLogout}
+                    className="cursor-pointer text-red-600 hover:bg-red-50 focus:bg-red-50 hover:text-red-700 focus:text-red-700"
+                    onTouchStart={handleTouchStart}
+                    onTouchEnd={() => handleTouchEnd(handleLogout)}
                   >
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log Out</span>
@@ -189,33 +185,33 @@ const Navigation = () => {
                 <Heart className="w-5 h-5 text-charcoal-gray/70" />
                 {hasNewNotifications && <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-leaf-green rounded-full" />}
               </Button>
+              
+              {/* Desktop Dropdown */}
               <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
                 <DropdownMenuTrigger asChild>
-                  <MobileDropdownTrigger onToggle={toggleDropdown} isOpen={isDropdownOpen}>
-                    <div className="flex items-center gap-3 cursor-pointer">
-                      <Avatar className="w-8 h-8">
-                        <AvatarImage src={profile?.avatar_url} alt={profile?.full_name || profile?.email} />
-                        <AvatarFallback className="bg-gradient-to-r from-forest-green to-leaf-green text-white text-sm">
-                          {initials}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-charcoal-gray text-sm">{profile?.full_name}</span>
-                    </div>
-                  </MobileDropdownTrigger>
+                  <button className="flex items-center gap-3 cursor-pointer rounded-lg p-2 hover:bg-black/5 transition-colors">
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage src={profile?.avatar_url} alt={profile?.full_name || profile?.email} />
+                      <AvatarFallback className="bg-gradient-to-r from-forest-green to-leaf-green text-white text-sm">
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-charcoal-gray text-sm">{profile?.full_name}</span>
+                  </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem onClick={handleNavigateToProfile} className="cursor-pointer">
+                  <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
                     <User className="mr-2 h-4 w-4" />
                     <span>View Profile</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleNavigateToSettings} className="cursor-pointer">
+                  <DropdownMenuItem onClick={() => navigate('/settings')} className="cursor-pointer">
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
-                    onClick={handleLogoutClick} 
-                    className="cursor-pointer text-red-500 focus:text-red-500 focus:bg-red-50"
+                    onClick={handleLogout} 
+                    className="cursor-pointer text-red-600 hover:bg-red-50 focus:bg-red-50"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log Out</span>
@@ -227,36 +223,45 @@ const Navigation = () => {
         </div>
       </motion.nav>
 
-      {/* Bottom Navigation for Mobile */}
+      {/* Bottom Navigation for Mobile - Enhanced Touch */}
       <motion.nav
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="fixed bottom-0 left-0 right-0 z-50 bg-sun-beige/90 backdrop-blur-xl border-t border-black/10 md:hidden w-full overflow-hidden"
+        className="fixed bottom-0 left-0 right-0 z-50 bg-sun-beige/95 backdrop-blur-xl border-t border-black/10 md:hidden w-full overflow-hidden"
       >
         <div className="flex justify-around items-center h-16 w-full max-w-full">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.path);
             return (
-              <Button
+              <button
                 key={item.path}
                 onClick={() => {
                   if (!active) {
                     navigate(item.path, { replace: true });
                   }
                 }}
-                variant="ghost"
-                className={`flex flex-col items-center h-full rounded-none transition-all duration-300 flex-1 min-w-0 touch-manipulation ${
-                  active ? 'text-forest-green' : 'text-charcoal-gray/60'
+                onTouchStart={handleTouchStart}
+                onTouchEnd={() => {
+                  if (!active) {
+                    handleTouchEnd(() => navigate(item.path, { replace: true }));
+                  }
+                }}
+                className={`flex flex-col items-center justify-center h-full transition-all duration-200 flex-1 min-w-0 rounded-none ${
+                  active 
+                    ? 'text-forest-green bg-forest-green/5' 
+                    : 'text-charcoal-gray/60 hover:text-forest-green hover:bg-black/5'
                 }`}
                 style={{ 
                   touchAction: 'manipulation',
-                  WebkitTapHighlightColor: 'rgba(0, 0, 0, 0.1)'
+                  WebkitTapHighlightColor: 'transparent',
+                  minHeight: '64px',
+                  minWidth: '44px'
                 }}
               >
-                <Icon className="w-6 h-6" />
-                <span className="text-xs mt-1 truncate">{item.label}</span>
-              </Button>
+                <Icon className="w-6 h-6 mb-1" />
+                <span className="text-xs truncate px-1">{item.label}</span>
+              </button>
             );
           })}
         </div>

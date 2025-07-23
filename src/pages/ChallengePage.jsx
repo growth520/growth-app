@@ -52,7 +52,14 @@ const ChallengePage = () => {
       fetchChallengesFromCSV().then(data => {
         setAllChallenges(data);
         localStorage.setItem('allChallenges', JSON.stringify(data));
-      }).catch(console.error);
+      }).catch(error => {
+        console.error('Error loading challenges:', error);
+        toast({
+          title: "Error Loading Challenges",
+          description: "Failed to load challenges. Please refresh the page.",
+          variant: "destructive",
+        });
+      });
     }
   }, []);
 
@@ -401,6 +408,10 @@ const ChallengePage = () => {
   useEffect(() => {
     const now = new Date();
     const msUntilMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0) - now;
+    
+    // Don't set timeout if it's more than 24 hours away (prevent overflow)
+    if (msUntilMidnight > 24 * 60 * 60 * 1000) return;
+    
     const timeout = setTimeout(() => {
       // Clear extra challenge at midnight
       localStorage.removeItem('extraChallenge');
@@ -409,6 +420,7 @@ const ChallengePage = () => {
       setExtraChallenge(null);
       setExtraReflection('');
     }, msUntilMidnight);
+    
     return () => clearTimeout(timeout);
   }, []); // Run once on component mount
 

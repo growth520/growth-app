@@ -60,7 +60,7 @@ export const DataProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, []); // No dependencies needed since this is only called with user.id
 
   const refreshProfile = useCallback(async () => {
     if (!user) return;
@@ -228,7 +228,8 @@ export const useData = () => {
   return context;
 };
 
-export const useAuth = () => {
+// This hook is deprecated - use useAuth from SupabaseAuthContext instead
+export const useAuthFromDataContext = () => {
     const context = useContext(DataContext);
     if (context === undefined) {
         throw new Error('useAuth must be used within a DataProvider');

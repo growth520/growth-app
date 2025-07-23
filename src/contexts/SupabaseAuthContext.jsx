@@ -72,7 +72,6 @@ export const AuthProvider = ({ children }) => {
 
   const signInWithProvider = useCallback(async (provider) => {
     try {
-      console.log('Starting OAuth flow with provider:', provider);
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
@@ -83,8 +82,6 @@ export const AuthProvider = ({ children }) => {
           }
         }
       });
-
-      console.log('OAuth response:', { data, error });
 
       if (error) {
         console.error('OAuth error:', error);

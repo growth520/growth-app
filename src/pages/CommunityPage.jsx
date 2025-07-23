@@ -354,7 +354,7 @@ const CommunityPage = () => {
     }
     setPosts(filteredPosts);
     setLoading(false);
-  }, [profile, progress, user, toast, interactedUserIds, feedMode, view]);
+  }, [profile?.assessment_results?.userSelection, progress?.level, progress?.streak, user?.id, feedMode, view]);
 
   useEffect(() => {
     fetchPosts();
@@ -366,22 +366,33 @@ const CommunityPage = () => {
     
     const isLiked = post.likes.some(l => l.user_id === user.id);
 
-    if (isLiked) {
-      await supabase.from('likes').delete().match({ post_id: postId, user_id: user.id });
-    } else {
-      await supabase.from('likes').insert({ post_id: postId, user_id: user.id });
-    }
-    
-    // Optimistic update
-    setPosts(currentPosts => currentPosts.map(p => {
-      if (p.id === postId) {
-        const newLikes = isLiked 
-          ? p.likes.filter(l => l.user_id !== user.id)
-          : [...p.likes, { user_id: user.id }];
-        return { ...p, likes: newLikes };
+    try {
+      if (isLiked) {
+        const { error } = await supabase.from('likes').delete().match({ post_id: postId, user_id: user.id });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('likes').insert({ post_id: postId, user_id: user.id });
+        if (error) throw error;
       }
-      return p;
-    }));
+      
+      // Optimistic update only after successful database operation
+      setPosts(currentPosts => currentPosts.map(p => {
+        if (p.id === postId) {
+          const newLikes = isLiked 
+            ? p.likes.filter(l => l.user_id !== user.id)
+            : [...p.likes, { user_id: user.id }];
+          return { ...p, likes: newLikes };
+        }
+        return p;
+      }));
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update like. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleShare = async (post) => {

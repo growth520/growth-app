@@ -35,20 +35,30 @@ const PostPage = () => {
   }, [postId]);
 
   const handleLike = async (postId) => {
-    if (!post) return;
+    if (!post || !currentUser?.id) return;
+    
     const isLiked = post.likes.some(l => l.user_id === currentUser.id);
-    if (isLiked) {
-      await supabase.from('likes').delete().match({ post_id: postId, user_id: currentUser.id });
-    } else {
-      await supabase.from('likes').insert({ post_id: postId, user_id: currentUser.id });
+    
+    try {
+      if (isLiked) {
+        const { error } = await supabase.from('likes').delete().match({ post_id: postId, user_id: currentUser.id });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('likes').insert({ post_id: postId, user_id: currentUser.id });
+        if (error) throw error;
+      }
+      
+      // Optimistic update only after successful database operation
+      setPost(p => ({
+        ...p,
+        likes: isLiked
+          ? p.likes.filter(l => l.user_id !== currentUser.id)
+          : [...p.likes, { user_id: currentUser.id }],
+      }));
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      // You might want to show a toast notification here if you have access to it
     }
-    // Optimistic update
-    setPost(p => ({
-      ...p,
-      likes: isLiked
-        ? p.likes.filter(l => l.user_id !== currentUser.id)
-        : [...p.likes, { user_id: currentUser.id }],
-    }));
   };
 
   const handleShare = (post) => {

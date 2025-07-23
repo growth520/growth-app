@@ -102,6 +102,15 @@ const ChallengeDetailsPage = () => {
     fetchChallengeDetails();
   }, [fetchChallengeDetails]);
 
+  // Cleanup navigation timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (navigateTimeoutRef.current) {
+        clearTimeout(navigateTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleComplete = () => {
     // Check if challenge was assigned less than 3 minutes ago
     if (progress?.challenge_assigned_at) {
@@ -222,15 +231,19 @@ const ChallengeDetailsPage = () => {
       
       // First, try to ensure the challenge exists in the challenges table
       try {
-        await supabase.from('challenges').insert({
+        const { error: insertChallengeError } = await supabase.from('challenges').upsert({
           id: challenge.id,
           category: challenge.category,
           title: challenge.title,
           description: challenge.description || challenge.title,
           challenge_id_text: challenge.id.toString()
-        });
+        }, { onConflict: 'id' });
+        
+        if (insertChallengeError) {
+          console.error('Error upserting challenge:', insertChallengeError);
+        }
       } catch (challengeInsertError) {
-        // Continue anyway - the challenge might already exist
+        console.error('Error with challenge upsert:', challengeInsertError);
       }
       
       // Now try to insert the completed challenge
@@ -246,10 +259,26 @@ const ChallengeDetailsPage = () => {
       insertData = insertResult.data;
       insertError = insertResult.error;
       
-      // If foreign key constraint fails, try without challenge_id
+      // If foreign key constraint still fails, insert without the challenge_id reference
       if (insertError && insertError.code === '23503') {
-        console.error('Foreign key constraint failed. The challenge needs to exist in the challenges table first.');
-        throw new Error('Challenge not found in database. Please contact admin to upload challenges via the Admin interface, or visit /admin to upload the CSV file.');
+        console.warn('Foreign key constraint failed, inserting completed challenge without challenge_id reference');
+        const fallbackResult = await supabase.from('completed_challenges').insert({
+          user_id: user.id,
+          challenge_id: null, // Remove the foreign key reference
+          completed_at: new Date().toISOString(),
+          reflection,
+          photo_url: null,
+          category: challenge.category
+        }).select().single();
+        
+        insertData = fallbackResult.data;
+        insertError = fallbackResult.error;
+        
+        if (insertError) {
+          throw insertError;
+        }
+      } else if (insertError) {
+        throw insertError;
       }
 
       if (insertError) {

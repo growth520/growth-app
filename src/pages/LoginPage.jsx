@@ -18,40 +18,72 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
     setLoading(true);
-    supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/challenge`
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/challenge`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent'
+          }
+        }
+      });
+      
+      if (error) {
+        console.error('Google login error:', error);
+        toast({
+          title: "Sign in Failed",
+          description: error.message || "Could not sign in with Google. Please try again.",
+          variant: "destructive"
+        });
+        setLoading(false);
       }
-    }).catch((error) => {
-      console.error('Google login error:', error);
+    } catch (error) {
+      console.error('Unexpected Google login error:', error);
       toast({
         title: "Sign in Failed",
         description: "Could not sign in with Google. Please try again.",
         variant: "destructive"
       });
       setLoading(false);
-    });
+    }
   };
 
-  const handleAppleLogin = () => {
+  const handleAppleLogin = async () => {
     setLoading(true);
-    supabase.auth.signInWithOAuth({
-      provider: 'apple',
-      options: {
-        redirectTo: `${window.location.origin}/challenge`
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: {
+          redirectTo: `${window.location.origin}/challenge`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent'
+          }
+        }
+      });
+      
+      if (error) {
+        console.error('Apple login error:', error);
+        toast({
+          title: "Sign in Failed",
+          description: error.message || "Could not sign in with Apple. Please try again.",
+          variant: "destructive"
+        });
+        setLoading(false);
       }
-    }).catch((error) => {
-      console.error('Apple login error:', error);
+    } catch (error) {
+      console.error('Unexpected Apple login error:', error);
       toast({
         title: "Sign in Failed",
         description: "Could not sign in with Apple. Please try again.",
         variant: "destructive"
       });
       setLoading(false);
-    });
+    }
   };
 
   const handleEmailAuth = async (e) => {

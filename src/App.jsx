@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/SupabaseAuthContext';
 import { DataProvider } from '@/contexts/DataContext';
@@ -28,6 +28,45 @@ function AppContent() {
   
   // Show appropriate padding based on whether navigation is shown
   const paddingClass = shouldShowNavigation ? "pt-16 md:pt-20 pb-24" : "";
+
+  // Performance optimization - cleanup on location change to prevent memory leaks
+  useEffect(() => {
+    // Clear any existing timers or intervals on route change
+    const highestTimeoutId = setTimeout(() => {}, 0);
+    for (let i = 0; i < highestTimeoutId; i++) {
+      clearTimeout(i);
+    }
+    
+    // Force garbage collection if available (development only)
+    if (process.env.NODE_ENV === 'development' && window.gc) {
+      window.gc();
+    }
+  }, [location.pathname]);
+
+  // Prevent memory leaks from long-running sessions
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Page is hidden, reduce activity
+        document.querySelectorAll('video, audio').forEach(media => {
+          if (!media.paused) media.pause();
+        });
+      }
+    };
+
+    const handleBeforeUnload = () => {
+      // Cleanup before page unload
+      window.dispatchEvent(new Event('app-cleanup'));
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
 
   if (loading) {
     return (
