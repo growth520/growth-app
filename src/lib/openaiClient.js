@@ -1,7 +1,16 @@
 // OpenAI API client for personalized suggestions
 // Note: In production, this should be handled by a backend service for security
 
+import { getCachedData, setCachedData } from '@/lib/performance';
+
 const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
+
+// Validate OpenAI API key and warn in production
+if (import.meta.env.PROD && !OPENAI_API_KEY) {
+  console.warn('⚠️ OpenAI API key not configured. AI features will use fallback suggestions.');
+} else if (!import.meta.env.PROD && !OPENAI_API_KEY) {
+  console.log('💡 Set VITE_OPENAI_API_KEY in .env for AI personalization features');
+}
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 
 // Fallback suggestions if AI fails
@@ -87,8 +96,22 @@ export const generatePersonalizedSuggestion = async ({
 }) => {
   // Return fallback immediately if no API key
   if (!OPENAI_API_KEY) {
-    console.warn('OpenAI API key not found, using fallback suggestions');
+    if (import.meta.env.PROD) {
+      console.warn('OpenAI API key not found, using fallback suggestions');
+    }
     return getFallbackSuggestion(growthArea);
+  }
+
+  // Create cache key for this request
+  const cacheKey = `ai_suggestion_${btoa(reflection).slice(0, 10)}_${growthArea}_${userLevel}`;
+  
+  // Check cache first (avoid duplicate AI calls)
+  const cachedResult = getCachedData(cacheKey);
+  if (cachedResult) {
+    return {
+      ...cachedResult,
+      cached: true
+    };
   }
 
   try {
@@ -146,12 +169,17 @@ Please provide a personalized motivational message and challenge suggestion base
     const data = await response.json();
     const aiResponse = JSON.parse(data.choices[0].message.content);
 
-    return {
+    const result = {
       success: true,
       motivationalMessage: aiResponse.motivationalMessage || "You're making great progress on your growth journey!",
       challengeSuggestion: aiResponse.challengeSuggestion || getFallbackSuggestion(growthArea).challengeSuggestion,
       source: 'openai'
     };
+
+    // Cache the successful result
+    setCachedData(cacheKey, result);
+
+    return result;
 
   } catch (error) {
     console.error('Error generating AI suggestion:', error);

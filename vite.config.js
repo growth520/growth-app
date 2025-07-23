@@ -210,13 +210,60 @@ export default defineConfig({
 		},
 	},
 	build: {
+		// Production optimizations
+		minify: 'terser',
+		sourcemap: false, // Disable source maps in production for smaller bundle
+		chunkSizeWarningLimit: 1000,
 		rollupOptions: {
 			external: [
 				'@babel/parser',
 				'@babel/traverse',
 				'@babel/generator',
 				'@babel/types'
-			]
+			],
+			output: {
+				// Manual chunk splitting for better caching
+				manualChunks: {
+					// Vendor chunks
+					'react-vendor': ['react', 'react-dom'],
+					'router-vendor': ['react-router-dom'],
+					'ui-vendor': ['framer-motion', 'lucide-react'],
+					'supabase-vendor': ['@supabase/supabase-js'],
+					// App chunks
+					'auth': ['src/contexts/SupabaseAuthContext.jsx'],
+					'data': ['src/contexts/DataContext.jsx'],
+					'components': [
+						'src/components/ui',
+						'src/components/gamification'
+					]
+				},
+				// Optimize chunk naming
+				chunkFileNames: (chunkInfo) => {
+					const facadeModuleId = chunkInfo.facadeModuleId
+						? chunkInfo.facadeModuleId.split('/').pop().replace('.jsx', '').replace('.js', '')
+						: 'chunk';
+					return `js/${facadeModuleId}-[hash].js`;
+				},
+				entryFileNames: 'js/[name]-[hash].js',
+				assetFileNames: (assetInfo) => {
+					const info = assetInfo.name.split('.');
+					const ext = info[info.length - 1];
+					if (/\.(png|jpe?g|svg|gif|tiff|bmp|ico)$/i.test(assetInfo.name)) {
+						return `images/[name]-[hash].${ext}`;
+					}
+					if (/\.(css)$/i.test(assetInfo.name)) {
+						return `css/[name]-[hash].${ext}`;
+					}
+					return `assets/[name]-[hash].${ext}`;
+				}
+			}
+		},
+		// Production performance optimizations
+		target: ['es2020', 'chrome80', 'safari14', 'firefox78'],
+		cssCodeSplit: true,
+		// Enable tree shaking
+		treeshake: {
+			moduleSideEffects: false
 		}
 	}
 });

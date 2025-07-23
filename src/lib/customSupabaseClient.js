@@ -1,6 +1,80 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://eceojrvqdsfjakprojgy.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVjZW9qcnZxZHNmamFrcHJvamd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2OTYwNzQsImV4cCI6MjA2ODI3MjA3NH0.eIOXcXjz69axkq7MDJEwRSJgUtlyILbQO0f2WXw5PAU';
+// Environment variable validation
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Validate required environment variables
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Missing Supabase environment variables:', {
+    url: !!supabaseUrl,
+    key: !!supabaseAnonKey
+  });
+  
+  // Show user-friendly error for missing config
+  if (typeof window !== 'undefined') {
+    const errorDiv = document.createElement('div');
+    errorDiv.innerHTML = `
+      <div style="
+        position: fixed; 
+        top: 0; 
+        left: 0; 
+        right: 0; 
+        bottom: 0; 
+        background: rgba(0,0,0,0.9); 
+        color: white; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        flex-direction: column;
+        font-family: system-ui;
+        z-index: 99999;
+      ">
+        <h1>⚠️ Configuration Error</h1>
+        <p>Missing Supabase environment variables. Please check your .env file.</p>
+        <small>Required: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY</small>
+      </div>
+    `;
+    document.body.appendChild(errorDiv);
+  }
+  
+  throw new Error('Missing required Supabase environment variables');
+}
+
+// Singleton pattern for Supabase client
+let supabaseInstance = null;
+
+const createSupabaseClient = () => {
+  if (!supabaseInstance) {
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true
+      },
+      // Performance optimizations
+      realtime: {
+        params: {
+          eventsPerSecond: 2 // Reduce realtime frequency
+        }
+      },
+      // Cache settings for better performance
+      global: {
+        headers: {
+          'x-client-info': 'growth-app@1.0.0'
+        }
+      }
+    });
+    
+    // Add connection monitoring for production debugging
+    if (import.meta.env.PROD) {
+      supabaseInstance.auth.onAuthStateChange((event, session) => {
+        console.log('Auth state changed:', event, session ? 'Session active' : 'No session');
+      });
+    }
+  }
+  
+  return supabaseInstance;
+};
+
+export const supabase = createSupabaseClient();
