@@ -233,15 +233,11 @@ const ChallengePage = () => {
       return;
     }
     setIsFirstTime(!progress?.current_challenge_id && progress?.xp === 0);
-    // Only generate a new challenge if there is no active challenge and the user has not completed today's challenge
-    if (!progress?.current_challenge_id && !hasCompletedToday()) {
-      console.log('[ChallengePage useEffect] Calling generateNewChallenge');
-      generateNewChallenge();
-    }
-    // Always update currentChallenge if there is an active challenge
+    
+    // If there's an active challenge, load it from allChallenges
     if (progress?.current_challenge_id) {
       const found = allChallenges.find(c => Number(c['id']) === progress.current_challenge_id);
-      if (found && (!currentChallenge || currentChallenge.id !== Number(found['id']))) {
+      if (found) {
         setCurrentChallenge({
           title: found['title'],
           description: found['title'],
@@ -250,7 +246,12 @@ const ChallengePage = () => {
         });
       }
     }
-  }, [loading, profile, progress, navigate, generateNewChallenge, allChallenges, lastCompletedAt]);
+    // Only generate a new challenge if there is no active challenge and the user hasn't completed today's challenge
+    else if (!hasCompletedToday()) {
+      console.log('[ChallengePage useEffect] Calling generateNewChallenge');
+      generateNewChallenge();
+    }
+  }, [loading, profile, progress?.current_challenge_id, navigate, generateNewChallenge, allChallenges, lastCompletedAt]);
   
   const retakeAssessment = async () => {
     if (!user) return;
