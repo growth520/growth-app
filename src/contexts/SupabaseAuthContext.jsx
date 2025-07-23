@@ -70,6 +70,34 @@ export const AuthProvider = ({ children }) => {
     return { error };
   }, [toast]);
 
+  const signInWithProvider = useCallback(async (provider) => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: window.location.origin + '/challenge'
+        }
+      });
+
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Sign in Failed",
+          description: error.message || "Something went wrong with social login",
+        });
+      }
+
+      return { error };
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Sign in Failed",
+        description: "Something went wrong with social login",
+      });
+      return { error };
+    }
+  }, [toast]);
+
   const signOut = useCallback(async () => {
     const { error } = await supabase.auth.signOut();
 
@@ -91,7 +119,8 @@ export const AuthProvider = ({ children }) => {
     signUp,
     signIn,
     signOut,
-  }), [user, session, loading, signUp, signIn, signOut]);
+    signInWithProvider
+  }), [user, session, loading, signUp, signIn, signOut, signInWithProvider]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

@@ -71,11 +71,33 @@ const LoginPage = () => {
 
   const handleSocialLogin = async (provider) => {
     setLoading(true);
-    const { error } = await signInWithProvider(provider);
-    if (error) {
+    try {
+      console.log('Starting social login with provider:', provider);
+      const { error } = await signInWithProvider(provider);
+      if (error) {
+        console.error('Social login error:', error);
+        toast({
+          title: "Sign in Failed",
+          description: error.message || "Could not sign in with Google. Please try again.",
+          variant: "destructive"
+        });
+      } else {
+        console.log('Social login successful');
+        toast({
+          title: "Success!",
+          description: "Signed in successfully with Google.",
+        });
+      }
+    } catch (err) {
+      console.error('Unexpected error during social login:', err);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
       setLoading(false);
     }
-    // No need to navigate here, onAuthStateChange will handle it.
   };
 
   const featureCards = [
