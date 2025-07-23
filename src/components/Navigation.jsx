@@ -170,15 +170,18 @@ const Navigation = () => {
         <div className="flex justify-around items-center h-16">
           {navItems.map((item) => {
             const Icon = item.icon;
+            const active = isActive(item.path);
             return (
               <Button
                 key={item.path}
-                onClick={() => navigate(item.path)}
+                onClick={() => {
+                  if (!active) {
+                    navigate(item.path, { replace: true });
+                  }
+                }}
                 variant="ghost"
                 className={`flex flex-col items-center h-full rounded-none transition-all duration-300 w-full ${
-                  isActive(item.path)
-                    ? 'text-forest-green'
-                    : 'text-charcoal-gray/60'
+                  active ? 'text-forest-green' : 'text-charcoal-gray/60'
                 }`}
               >
                 <Icon className="w-6 h-6" />

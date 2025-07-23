@@ -45,10 +45,16 @@ const ChallengePage = () => {
 
   // Load challenges from CSV on mount
   useEffect(() => {
-    fetchChallengesFromCSV().then(data => {
-      console.log('Loaded challenges from CSV:', data);
-      setAllChallenges(data);
-    }).catch(console.error);
+    const cachedChallenges = sessionStorage.getItem('allChallenges');
+    if (cachedChallenges) {
+      setAllChallenges(JSON.parse(cachedChallenges));
+    } else {
+      fetchChallengesFromCSV().then(data => {
+        console.log('Loaded challenges from CSV:', data);
+        setAllChallenges(data);
+        sessionStorage.setItem('allChallenges', JSON.stringify(data));
+      }).catch(console.error);
+    }
   }, []);
 
   // Fetch completed challenge IDs from Supabase
@@ -90,14 +96,29 @@ const ChallengePage = () => {
   }, [user, progress]);
 
   // Helper to get a random challenge from the CSV, filtered by area and not completed
-  const getRandomChallenge = (area) => {
+  const getRandomChallenge = useCallback((area) => {
     const filtered = allChallenges.filter(c => c['category'] === area && !completedChallenges.includes(Number(c['id'])));
     console.log('Filtered challenges for area', area, 'not completed:', filtered);
     if (filtered.length === 0) return null;
+
+    // Check if we have a cached challenge
+    const cachedChallenge = sessionStorage.getItem('currentChallenge');
+    if (cachedChallenge) {
+      const parsed = JSON.parse(cachedChallenge);
+      // Only use the cached challenge if it's from the same area and not completed
+      if (parsed.category === area && !completedChallenges.includes(Number(parsed.id))) {
+        return parsed;
+      }
+    }
+
     const chosen = filtered[Math.floor(Math.random() * filtered.length)];
     console.log('Randomly selected challenge:', chosen);
+    
+    // Cache the new challenge
+    sessionStorage.setItem('currentChallenge', JSON.stringify(chosen));
+    
     return chosen;
-  };
+  }, [allChallenges, completedChallenges]);
 
   // Helper to get a random extra challenge from the same area, now allowing repeats
   const getRandomExtraChallenge = async () => {
@@ -223,7 +244,7 @@ const ChallengePage = () => {
       id: Number(newChallengeData['id']),
     });
     console.log('Setting currentChallenge:', newChallengeData);
-  }, [profile, allChallenges, completedChallenges]);
+  }, [profile, allChallenges, completedChallenges, getRandomChallenge]);
 
   useEffect(() => {
     console.log('[ChallengePage useEffect] progress.current_challenge_id:', progress?.current_challenge_id, 'lastCompletedAt:', lastCompletedAt, 'hasCompletedToday:', hasCompletedToday());
@@ -263,6 +284,7 @@ const ChallengePage = () => {
   // When user accepts a challenge, mark it as completed
   const handleAccept = async () => {
     if (currentChallenge && user) {
+      sessionStorage.removeItem('currentChallenge');
       console.log('handleAccept: Attempting to set current_challenge_id in Supabase to', currentChallenge.id);
       const { error, data } = await supabase.from('user_progress').update({
         current_challenge_id: currentChallenge.id,
@@ -278,6 +300,7 @@ const ChallengePage = () => {
   };
 
   const handleSkip = () => {
+    sessionStorage.removeItem('currentChallenge');
     setQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
     setShowSkipModal(true);
   };
