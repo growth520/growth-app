@@ -18,131 +18,97 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const generateUsername = async (fullName) => {
-    let base = (fullName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-    if (!base) base = 'user';
-    let username = base;
-    let suffix = 1;
-    let exists = true;
-    while (exists) {
-      const { data } = await supabase.from('profiles').select('id').eq('username', username).single();
-      exists = !!data;
-      if (exists) {
-        username = base + suffix;
-        suffix++;
+  const handleGoogleLogin = () => {
+    setLoading(true);
+    supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/challenge`
       }
-    }
-    return username;
+    }).catch((error) => {
+      console.error('Google login error:', error);
+      toast({
+        title: "Sign in Failed",
+        description: "Could not sign in with Google. Please try again.",
+        variant: "destructive"
+      });
+      setLoading(false);
+    });
   };
 
-  const handleAuthAction = async (e) => {
+  const handleAppleLogin = () => {
+    setLoading(true);
+    supabase.auth.signInWithOAuth({
+      provider: 'apple',
+      options: {
+        redirectTo: `${window.location.origin}/challenge`
+      }
+    }).catch((error) => {
+      console.error('Apple login error:', error);
+      toast({
+        title: "Sign in Failed",
+        description: "Could not sign in with Apple. Please try again.",
+        variant: "destructive"
+      });
+      setLoading(false);
+    });
+  };
+
+  const handleEmailAuth = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    if (isLogin) {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (!error) {
-        toast({ title: "Welcome back! 🎉" });
-        navigate('/challenge');
-      } else {
-        toast({
-          title: "Sign in Failed",
-          description: error.message || "Could not sign in. Please check your credentials.",
-          variant: "destructive"
-        });
-      }
-    } else {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { full_name: fullName },
-        },
-      });
-      if (!error) {
-        // After sign up, generate and save username
-        const username = await generateUsername(fullName);
-        // Get the user id (wait for session)
-        setTimeout(async () => {
-          const { data: { session } } = await supabase.auth.getSession();
-          const userId = session?.user?.id;
-          if (userId) {
-            await supabase.from('profiles').update({ username }).eq('id', userId);
-          }
-        }, 1000);
-        toast({ title: "Account created! 🚀", description: "Please check your email to verify your account." });
-        // Don't navigate immediately, wait for verification or auto-login
-      } else {
-        toast({
-          title: "Sign up Failed",
-          description: error.message || "Could not create account. Please try again.",
-          variant: "destructive"
-        });
-      }
-    }
-    setLoading(false);
-  };
-
-  const handleSocialLogin = async (e, provider) => {
-    e.preventDefault(); // Prevent default button behavior
-    
     try {
-      setLoading(true);
-      console.log('Starting social login with provider:', provider);
-      
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: `${window.location.origin}/challenge`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent'
-          }
-        }
-      });
-      
-      console.log('Social login response:', { data, error });
-
-      if (error) {
-        console.error('Social login error:', error);
-        toast({
-          title: "Sign in Failed",
-          description: error.message || "Could not sign in with Google. Please try again.",
-          variant: "destructive"
+      if (isLogin) {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
         });
-        setLoading(false);
+        if (!error) {
+          toast({ title: "Welcome back! 🎉" });
+          navigate('/challenge');
+        } else {
+          toast({
+            title: "Sign in Failed",
+            description: error.message || "Could not sign in. Please check your credentials.",
+            variant: "destructive"
+          });
+        }
+      } else {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { full_name: fullName },
+          },
+        });
+        if (!error) {
+          toast({ 
+            title: "Account created! 🚀", 
+            description: "Please check your email to verify your account." 
+          });
+        } else {
+          toast({
+            title: "Sign up Failed",
+            description: error.message || "Could not create account. Please try again.",
+            variant: "destructive"
+          });
+        }
       }
-    } catch (err) {
-      console.error('Unexpected error during social login:', err);
+    } catch (error) {
       toast({
         title: "Error",
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
+    } finally {
       setLoading(false);
     }
   };
 
-  const featureCards = [
-    {
-      icon: <Target className="w-6 h-6 text-leaf-green" />,
-      title: "Personalized Challenges",
-    },
-    {
-      icon: <Trophy className="w-6 h-6 text-warm-orange" />,
-      title: "Track Progress",
-    },
-    {
-      icon: <Users className="w-6 h-6 text-forest-green" />,
-      title: "Community Support",
-    },
-  ];
-
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-sun-beige">
+      {/* Background animations */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
           className="absolute top-20 left-20 w-72 h-72 bg-leaf-green/20 rounded-full blur-3xl"
@@ -157,10 +123,10 @@ const LoginPage = () => {
       </div>
 
       <div className="w-full max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center relative z-10">
+        {/* Left side content */}
         <motion.div
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.8 }}
           className="text-center lg:text-left space-y-8"
         >
           <div className="space-y-4">
@@ -183,13 +149,18 @@ const LoginPage = () => {
             </motion.p>
           </div>
 
+          {/* Feature cards */}
           <motion.div
             className="flex flex-col sm:flex-row justify-center lg:justify-start gap-4"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, staggerChildren: 0.1 }}
           >
-            {featureCards.map((feature, index) => (
+            {[
+              { icon: <Target className="w-6 h-6 text-leaf-green" />, title: "Personalized Challenges" },
+              { icon: <Trophy className="w-6 h-6 text-warm-orange" />, title: "Track Progress" },
+              { icon: <Users className="w-6 h-6 text-forest-green" />, title: "Community Support" },
+            ].map((feature, index) => (
               <motion.div key={index} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }} className="flex-1">
                 <Card className="bg-white/40 border-black/10 shadow-md h-full">
                   <CardContent className="p-3 flex flex-col items-center text-center space-y-2">
@@ -202,6 +173,7 @@ const LoginPage = () => {
           </motion.div>
         </motion.div>
 
+        {/* Right side - Auth form */}
         <motion.div
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
@@ -219,7 +191,7 @@ const LoginPage = () => {
             <CardContent className="space-y-6">
               <div className="space-y-3">
                 <Button 
-                  onClick={(e) => handleSocialLogin(e, 'google')} 
+                  onClick={handleGoogleLogin}
                   variant="outline" 
                   className="w-full h-12 bg-white/80 border-black/10 text-charcoal-gray hover:bg-white transition-all duration-300"
                   disabled={loading}
@@ -237,7 +209,7 @@ const LoginPage = () => {
                   )}
                 </Button>
                 <Button 
-                  onClick={(e) => handleSocialLogin(e, 'apple')} 
+                  onClick={handleAppleLogin}
                   variant="outline" 
                   className="w-full h-12 bg-white/80 border-black/10 text-charcoal-gray hover:bg-white transition-all duration-300"
                   disabled={loading}
@@ -256,33 +228,54 @@ const LoginPage = () => {
                 </div>
               </div>
 
-              <form onSubmit={handleAuthAction} className="space-y-4">
+              <form onSubmit={handleEmailAuth} className="space-y-4">
                 {!isLogin && (
-                    <div>
-                        <Input 
-                            type="text" 
-                            placeholder="Enter your full name" 
-                            value={fullName} 
-                            onChange={e => setFullName(e.target.value)} 
-                            className="h-12 bg-white/80 border-black/10 text-charcoal-gray placeholder:text-charcoal-gray/50" 
-                            required
-                        />
-                    </div>
+                  <Input 
+                    type="text" 
+                    placeholder="Enter your full name" 
+                    value={fullName} 
+                    onChange={e => setFullName(e.target.value)} 
+                    className="h-12 bg-white/80 border-black/10 text-charcoal-gray placeholder:text-charcoal-gray/50" 
+                    required
+                  />
                 )}
-                <div>
-                  <Input type="email" placeholder="Enter your email" value={email} onChange={e => setEmail(e.target.value)} className="h-12 bg-white/80 border-black/10 text-charcoal-gray placeholder:text-charcoal-gray/50" required />
-                </div>
-                <div>
-                  <Input type="password" placeholder="Enter your password" value={password} onChange={e => setPassword(e.target.value)} className="h-12 bg-white/80 border-black/10 text-charcoal-gray placeholder:text-charcoal-gray/50" required />
-                </div>
-                <Button type="submit" disabled={loading} className="w-full h-12 bg-gradient-to-r from-forest-green to-leaf-green hover:from-forest-green/90 hover:to-leaf-green/90 text-white font-semibold transition-all duration-300 pulse-glow">
-                  <Mail className="w-5 h-5 mr-2" />
-                  {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
+                <Input 
+                  type="email" 
+                  placeholder="Enter your email" 
+                  value={email} 
+                  onChange={e => setEmail(e.target.value)} 
+                  className="h-12 bg-white/80 border-black/10 text-charcoal-gray placeholder:text-charcoal-gray/50" 
+                  required
+                />
+                <Input 
+                  type="password" 
+                  placeholder="Enter your password" 
+                  value={password} 
+                  onChange={e => setPassword(e.target.value)} 
+                  className="h-12 bg-white/80 border-black/10 text-charcoal-gray placeholder:text-charcoal-gray/50" 
+                  required
+                />
+                <Button 
+                  type="submit" 
+                  className="w-full bg-gradient-to-r from-forest-green to-leaf-green text-white font-bold py-6 text-base rounded-xl"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-3"></div>
+                      {isLogin ? 'Signing in...' : 'Creating account...'}
+                    </div>
+                  ) : (
+                    isLogin ? 'Sign In' : 'Create Account'
+                  )}
                 </Button>
               </form>
 
               <div className="text-center">
-                <button onClick={() => setIsLogin(!isLogin)} className="text-sm text-charcoal-gray/70 hover:text-forest-green transition-colors">
+                <button
+                  onClick={() => setIsLogin(!isLogin)}
+                  className="text-sm text-charcoal-gray/70 hover:text-forest-green transition-colors"
+                >
                   {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
                 </button>
               </div>
