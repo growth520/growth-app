@@ -228,14 +228,7 @@ export default defineConfig({
 					'react-vendor': ['react', 'react-dom'],
 					'router-vendor': ['react-router-dom'],
 					'ui-vendor': ['framer-motion', 'lucide-react'],
-					'supabase-vendor': ['@supabase/supabase-js'],
-					// App chunks
-					'auth': ['src/contexts/SupabaseAuthContext.jsx'],
-					'data': ['src/contexts/DataContext.jsx'],
-					'components': [
-						'src/components/ui',
-						'src/components/gamification'
-					]
+					'supabase-vendor': ['@supabase/supabase-js']
 				},
 				// Optimize chunk naming
 				chunkFileNames: (chunkInfo) => {
