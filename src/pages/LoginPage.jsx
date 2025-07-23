@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { Mail, Apple, Chrome, Target, Users, Trophy } from 'lucide-react';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { supabase } from '@/lib/customSupabaseClient';
 
 const LoginPage = () => {
@@ -18,7 +17,6 @@ const LoginPage = () => {
   
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signIn, signUp, signInWithProvider } = useAuth();
 
   const generateUsername = async (fullName) => {
     let base = (fullName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -42,14 +40,27 @@ const LoginPage = () => {
     setLoading(true);
 
     if (isLogin) {
-      const { error } = await signIn(email, password);
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
       if (!error) {
         toast({ title: "Welcome back! 🎉" });
         navigate('/challenge');
+      } else {
+        toast({
+          title: "Sign in Failed",
+          description: error.message || "Could not sign in. Please check your credentials.",
+          variant: "destructive"
+        });
       }
     } else {
-      const { error } = await signUp(email, password, { 
-        data: { full_name: fullName } 
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: fullName },
+        },
       });
       if (!error) {
         // After sign up, generate and save username
@@ -64,17 +75,24 @@ const LoginPage = () => {
         }, 1000);
         toast({ title: "Account created! 🚀", description: "Please check your email to verify your account." });
         // Don't navigate immediately, wait for verification or auto-login
+      } else {
+        toast({
+          title: "Sign up Failed",
+          description: error.message || "Could not create account. Please try again.",
+          variant: "destructive"
+        });
       }
     }
     setLoading(false);
   };
 
-  const handleSocialLogin = async (provider) => {
+  const handleSocialLogin = async (e, provider) => {
+    e.preventDefault(); // Prevent default button behavior
+    
     try {
       setLoading(true);
       console.log('Starting social login with provider:', provider);
       
-      // Direct Supabase call instead of using context
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
@@ -86,6 +104,8 @@ const LoginPage = () => {
         }
       });
       
+      console.log('Social login response:', { data, error });
+
       if (error) {
         console.error('Social login error:', error);
         toast({
@@ -94,9 +114,6 @@ const LoginPage = () => {
           variant: "destructive"
         });
         setLoading(false);
-      } else {
-        console.log('Social login initiated:', data);
-        // Don't set loading to false here as we're being redirected
       }
     } catch (err) {
       console.error('Unexpected error during social login:', err);
@@ -202,7 +219,7 @@ const LoginPage = () => {
             <CardContent className="space-y-6">
               <div className="space-y-3">
                 <Button 
-                  onClick={() => handleSocialLogin('google')} 
+                  onClick={(e) => handleSocialLogin(e, 'google')} 
                   variant="outline" 
                   className="w-full h-12 bg-white/80 border-black/10 text-charcoal-gray hover:bg-white transition-all duration-300"
                   disabled={loading}
@@ -219,7 +236,12 @@ const LoginPage = () => {
                     </>
                   )}
                 </Button>
-                <Button onClick={() => handleSocialLogin('apple')} variant="outline" className="w-full h-12 bg-white/80 border-black/10 text-charcoal-gray hover:bg-white transition-all duration-300">
+                <Button 
+                  onClick={(e) => handleSocialLogin(e, 'apple')} 
+                  variant="outline" 
+                  className="w-full h-12 bg-white/80 border-black/10 text-charcoal-gray hover:bg-white transition-all duration-300"
+                  disabled={loading}
+                >
                   <Apple className="w-5 h-5 mr-3" />
                   Continue with Apple
                 </Button>
