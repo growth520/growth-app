@@ -17,43 +17,31 @@ import NotificationsPage from '@/pages/NotificationsPage';
 import PostPage from '@/pages/PostPage';
 import AdminPage from '@/pages/AdminPage';
 import SettingsPage from '@/pages/SettingsPage';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import LeaderboardPage from '@/pages/LeaderboardPage';
+
+// Performance optimization - clear old timeouts
+function clearExistingTimeouts() {
+  // Clear any existing timeouts that might cause memory leaks
+  let id = window.setTimeout(function() {}, 0);
+  while (id--) {
+    window.clearTimeout(id);
+  }
+}
 
 function AppContent() {
   const location = useLocation();
-  const { user, loading } = useAuth();
   
-  // Don't show navigation on login page or when not authenticated
-  const shouldShowNavigation = user && location.pathname !== '/login' && location.pathname !== '/';
-  
-  // Show appropriate padding based on whether navigation is shown
-  const paddingClass = shouldShowNavigation ? "pt-16 md:pt-20 pb-24" : "";
-
-  // Lightweight memory management - only for visibility changes
+  // Performance optimization
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        // Page is hidden, reduce activity
-        document.querySelectorAll('video, audio').forEach(media => {
-          if (!media.paused) media.pause();
-        });
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
+    clearExistingTimeouts();
+    
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearExistingTimeouts();
     };
-  }, []);
+  }, [location.pathname]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen w-full overflow-x-hidden bg-sun-beige flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-forest-green"></div>
-      </div>
-    );
-  }
+  const shouldShowNavigation = location.pathname !== '/login' && location.pathname !== '/assessment';
+  const paddingClass = shouldShowNavigation ? 'pb-20' : '';
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-sun-beige">
@@ -71,6 +59,7 @@ function AppContent() {
           <Route path="/post/:id" element={<PostPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/leaderboard" element={<LeaderboardPage />} />
         </Routes>
       </div>
       {shouldShowNavigation && <Navigation />}

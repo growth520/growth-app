@@ -315,6 +315,34 @@ const ChallengeDetailsPage = () => {
       // Clear the cached challenge since it's now completed
       localStorage.removeItem('currentChallenge');
 
+      // 4.5. Generate AI personalized suggestion if reflection exists
+      if (reflection.trim() && profile?.assessment_results?.userSelection) {
+        try {
+          const { generatePersonalizedSuggestion, savePersonalizedSuggestion } = await import('@/lib/openaiClient');
+          
+          const aiResult = await generatePersonalizedSuggestion({
+            reflection: reflection.trim(),
+            growthArea: profile.assessment_results.userSelection,
+            userLevel: newLevel,
+            recentChallenges: [], // Could fetch recent challenges here if needed
+          });
+
+          if (aiResult.success || aiResult.source === 'fallback') {
+            await savePersonalizedSuggestion(supabase, {
+              userId: user.id,
+              reflectionId: insertData.id,
+              motivationalMessage: aiResult.motivationalMessage,
+              challengeSuggestion: aiResult.challengeSuggestion,
+              growthArea: profile.assessment_results.userSelection,
+              aiModel: aiResult.source === 'fallback' ? 'fallback' : 'gpt-4o-mini'
+            });
+          }
+        } catch (aiError) {
+          console.error('Error generating AI suggestion:', aiError);
+          // Don't fail the challenge completion if AI suggestion fails
+        }
+      }
+
       // 5. Award badges if needed
       const { data: completed } = await supabase.from('completed_challenges').select('id').eq('user_id', user.id);
       const completedCount = completed ? completed.length : 0;

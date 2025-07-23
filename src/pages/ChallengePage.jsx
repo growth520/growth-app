@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Zap, Users, BarChart, SkipForward, RefreshCw, Smile, Award, Settings, AlertTriangle, Globe, Lock, Camera, Trash2 } from 'lucide-react';
+import { Zap, Users, BarChart, SkipForward, RefreshCw, Smile, Award, Settings, AlertTriangle, Globe, Lock, Camera, Trash2, Target, CheckCircle, Star, Sparkles, Plus, Flame, Trophy, Gift } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -14,6 +14,8 @@ import { fetchChallengesFromCSV } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
+import PersonalizedSuggestion from '@/components/gamification/PersonalizedSuggestion';
+import Leaderboard from '@/components/gamification/Leaderboard';
 
 const motivationalQuotes = [
     { quote: "The secret of getting ahead is getting started.", author: "Mark Twain", year: "c. 1880" },
@@ -424,15 +426,38 @@ const ChallengePage = () => {
     return () => clearTimeout(timeout);
   }, []); // Run once on component mount
 
-  if (loading || !profile || !progress) {
+  if (loading || !profile) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-sun-beige">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-forest-green mx-auto"></div>
-          <div className="text-charcoal-gray text-lg">
-            {!profile ? 'Loading profile...' : !progress ? 'Loading progress...' : 'Loading your journey...'}
-          </div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-forest-green mx-auto mb-4"></div>
+          <p className="text-charcoal-gray">Loading your growth journey...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (!profile.has_completed_assessment) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-sun-beige p-4">
+        <Card className="w-full max-w-md text-center">
+          <CardContent className="p-6">
+            <Target className="w-16 h-16 text-forest-green mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-charcoal-gray mb-4">
+              Complete Your Assessment
+            </h2>
+            <p className="text-charcoal-gray/80 mb-6">
+              Take our growth assessment to discover your personalized challenges and start your journey.
+            </p>
+            <Button 
+              onClick={() => navigate('/assessment')} 
+              className="w-full"
+              size="lg"
+            >
+              Start Assessment
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -440,232 +465,324 @@ const ChallengePage = () => {
   const progressPercentage = progress ? (progress.xp / progress.xp_to_next_level) * 100 : 0;
 
   return (
-    <div className="min-h-screen bg-sun-beige text-charcoal-gray font-lato">
-      <div className="container mx-auto px-4 pt-8 pb-24">
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="flex justify-between items-start mb-8">
-          <div>
-            <h1 className="text-3xl font-poppins font-bold text-forest-green mb-1">
-              {isFirstTime ? "Welcome to Growth 👋" : `Welcome back, ${profile.full_name} 👋`}
-            </h1>
-            <p className="text-charcoal-gray/80 text-lg">
-              {isFirstTime ? "This is where your journey begins." : "Let’s keep growing today."}
-            </p>
-          </div>
+    <div className="min-h-screen bg-sun-beige p-4 pb-24">
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Header with user progress */}
+        <div className="text-center space-y-4">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center justify-center gap-4"
+          >
+            <div className="text-center">
+              <div className="text-2xl font-bold text-forest-green">
+                Level {progress?.level || 1}
+              </div>
+              <div className="text-sm text-gray-600">
+                {progress?.xp || 0} XP
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-orange-500 flex items-center gap-1">
+                <Flame className="w-6 h-6" />
+                {progress?.streak || 0}
+              </div>
+              <div className="text-sm text-gray-600">
+                Day Streak
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-3xl md:text-4xl font-bold text-forest-green"
+          >
+            Your Growth Journey
+          </motion.h1>
+          
+          <motion.p
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-charcoal-gray/80 max-w-2xl mx-auto"
+          >
+            {profile.assessment_results?.userSelection 
+              ? `Focusing on ${profile.assessment_results.userSelection} development • ${quote.text}`
+              : 'Welcome to your personalized growth experience'
+            }
+          </motion.p>
+        </div>
+
+        {/* AI Personalized Suggestion */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <PersonalizedSuggestion 
+            onSuggestionUsed={(suggestion) => {
+              // Could navigate to a challenge or create a custom challenge
+              console.log('Suggestion used:', suggestion);
+            }}
+            onDismiss={() => {
+              // Handle dismissal if needed
+            }}
+          />
         </motion.div>
 
-        {noMoreChallenges ? (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <Card className="bg-white/50 border-black/10 shadow-lg rounded-2xl overflow-hidden text-center p-8">
-              <Award className="w-16 h-16 text-warm-orange mx-auto mb-4" />
-              <CardTitle className="font-poppins text-2xl font-bold text-forest-green">Wow, Incredible!</CardTitle>
-              <CardContent className="p-0 pt-4">
-                <p className="text-lg text-charcoal-gray leading-relaxed mb-6">
-                  You've completed all the challenges in this category for now. Check back soon for new ones!
-                </p>
-                <Button onClick={() => navigate('/community')} className="bg-leaf-green text-white">
-                  Visit the Community
+        {/* Quick Stats Grid */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+        >
+          <Card className="text-center p-4">
+            <Trophy className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
+            <div className="text-2xl font-bold text-gray-800">
+              {progress?.level || 1}
+            </div>
+            <div className="text-sm text-gray-600">Level</div>
+          </Card>
+          
+          <Card className="text-center p-4">
+            <Zap className="w-8 h-8 text-blue-500 mx-auto mb-2" />
+            <div className="text-2xl font-bold text-gray-800">
+              {progress?.xp || 0}
+            </div>
+            <div className="text-sm text-gray-600">XP</div>
+          </Card>
+          
+          <Card className="text-center p-4">
+            <Flame className="w-8 h-8 text-orange-500 mx-auto mb-2" />
+            <div className="text-2xl font-bold text-gray-800">
+              {progress?.streak || 0}
+            </div>
+            <div className="text-sm text-gray-600">Streak</div>
+          </Card>
+          
+          <Card className="text-center p-4">
+            <Gift className="w-8 h-8 text-purple-500 mx-auto mb-2" />
+            <div className="text-2xl font-bold text-gray-800">
+              {progress?.tokens || 0}
+            </div>
+            <div className="text-sm text-gray-600">Tokens</div>
+          </Card>
+        </motion.div>
+
+        {/* Main Challenge Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          {noMoreChallenges ? (
+            <Card className="text-center p-8">
+              <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-charcoal-gray mb-4">
+                Amazing Work! 🎉
+              </h2>
+              <p className="text-charcoal-gray/80 mb-6">
+                You've completed all available challenges in your growth area. 
+                New challenges are added regularly, so check back soon!
+              </p>
+              <div className="flex gap-4 justify-center">
+                <Button onClick={() => navigate('/progress')}>
+                  View Progress
                 </Button>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ) : hasCompletedToday() && !showExtraChallenge ? (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-            <Card className="bg-white/50 border-black/10 shadow-lg rounded-2xl overflow-hidden text-center p-8">
-              <CardTitle className="font-poppins text-2xl font-bold text-forest-green mb-4">You've completed today's challenge!</CardTitle>
-              <CardContent className="p-0 pt-4">
-                <Button onClick={async () => {
-                  // If we already have an extra challenge for today, show it
-                  if (extraChallenge) {
-                    setShowExtraChallenge(true);
-                    return;
-                  }
-                  
-                  // Otherwise, get or create one
-                  const extra = await getRandomExtraChallenge();
-                  if (extra) {
-                    setExtraChallenge(extra);
-                    setShowExtraChallenge(true);
-                  } else {
-                    toast({ title: 'No Extra Challenges', description: 'No extra challenges available in this area right now!', variant: 'destructive' });
-                  }
-                }} className="bg-warm-orange text-white font-bold py-3 text-base rounded-xl">
-                  Give me an extra challenge
+                <Button variant="outline" onClick={() => navigate('/community')}>
+                  Join Community
                 </Button>
-              </CardContent>
+              </div>
             </Card>
-          </motion.div>
-        ) : showExtraChallenge && extraChallenge ? (
-          <motion.div key="extra" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }}>
-            <Card className="bg-white/50 border-black/10 shadow-lg rounded-2xl">
-              <CardHeader className="p-6">
-                <CardTitle className="font-poppins text-3xl font-bold text-forest-green">Extra Challenge</CardTitle>
-                <CardDescription className="text-charcoal-gray/80 text-base pt-1">{extraChallenge.title}</CardDescription>
-              </CardHeader>
-              <CardContent className="p-6 pt-0 space-y-6">
-                <p className="text-lg text-charcoal-gray leading-relaxed">{extraChallenge.description || extraChallenge.title}</p>
-                <Textarea
-                  value={extraReflection}
-                  onChange={(e) => setExtraReflection(e.target.value)}
-                  placeholder="How did this extra challenge make you feel? What did you learn?"
-                  className="min-h-[150px] text-base rounded-xl bg-white/80 border-charcoal-gray/20"
-                  disabled={isSubmittingExtra}
-                />
-                {photoPreview && (
-                  <div className="relative w-full h-48 rounded-xl overflow-hidden group">
-                    <img src={photoPreview} alt="Reflection preview" className="w-full h-full object-cover" />
-                    {!isSubmittingExtra && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button variant="destructive" size="icon" onClick={handleRemovePhoto}>
-                          <Trash2 className="w-5 h-5" />
-                        </Button>
-                      </div>
-                    )}
+          ) : currentChallenge ? (
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-forest-green to-leaf-green text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-xl md:text-2xl mb-2">
+                      Today's Challenge
+                    </CardTitle>
+                    <Badge variant="secondary" className="bg-white/20 text-white">
+                      {currentChallenge.category}
+                    </Badge>
                   </div>
-                )}
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handlePhotoUpload}
-                  className="hidden"
-                  accept="image/*"
-                  disabled={isSubmittingExtra}
-                />
-                <Button
-                  variant="outline"
-                  className="w-full border-charcoal-gray/30 text-charcoal-gray font-bold py-6 text-base rounded-xl"
-                  onClick={() => fileInputRef.current.click()}
-                  disabled={isSubmittingExtra}
-                >
-                  <Camera className="w-5 h-5 mr-2" /> {photoPreview ? 'Change Photo' : 'Upload Photo'}
-                </Button>
-                {/* Privacy Selector for Extra Challenge */}
-                <Select value={privacy} onValueChange={setPrivacy} disabled={isSubmittingExtra}>
-                  <SelectTrigger className="w-full border-charcoal-gray/30 text-charcoal-gray font-bold py-6 text-base rounded-xl">
-                    <SelectValue placeholder="Select privacy..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="public"><div className="flex items-center gap-2"><Globe className="w-4 h-4" /> Public (share to community)</div></SelectItem>
-                    <SelectItem value="friends"><div className="flex items-center gap-2"><Users className="w-4 h-4" /> Friends Only</div></SelectItem>
-                    <SelectItem value="private"><div className="flex items-center gap-2"><Lock className="w-4 h-4" /> Private</div></SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button onClick={handleSubmitExtraReflection} disabled={isSubmittingExtra} className="w-full bg-gradient-to-r from-warm-orange to-orange-400 text-white font-bold py-6 text-base rounded-xl">
-                  Submit Reflection
-                </Button>
+                  <Target className="w-8 h-8" />
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <h3 className="text-xl font-semibold text-charcoal-gray mb-4">
+                  {currentChallenge.title}
+                </h3>
+                <p className="text-charcoal-gray/80 mb-6 leading-relaxed">
+                  {currentChallenge.description}
+                </p>
+                
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button 
+                    onClick={() => navigate('/challenge-details', { 
+                      state: { challenge: currentChallenge } 
+                    })}
+                    className="flex-1"
+                    size="lg"
+                  >
+                    Start Challenge
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowSkipModal(true)}
+                    className="sm:w-auto"
+                  >
+                    Skip Today
+                  </Button>
+                </div>
               </CardContent>
             </Card>
-          </motion.div>
-        ) : currentChallenge ? (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-            <Card className="bg-white/50 border-black/10 shadow-lg rounded-2xl overflow-hidden">
-              <CardHeader className="p-6">
-                <CardTitle className="font-poppins text-2xl font-bold text-forest-green">Today's Challenge</CardTitle>
+          ) : (
+            <Card className="text-center p-8">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-forest-green mx-auto mb-4"></div>
+              <p className="text-charcoal-gray">Preparing your challenge...</p>
+            </Card>
+          )}
+        </motion.div>
+
+        {/* Extra Challenge Section */}
+        {showExtraChallenge && extraChallenge && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-8"
+          >
+            <Card className="border-orange-200 bg-orange-50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-orange-700">
+                  <Star className="w-5 h-5" />
+                  Bonus Challenge Available!
+                </CardTitle>
               </CardHeader>
-              <CardContent className="p-6 pt-0 space-y-6">
-                <p className="text-lg text-charcoal-gray leading-relaxed">
-                  {currentChallenge.title}
+              <CardContent>
+                <h3 className="font-semibold text-orange-800 mb-2">
+                  {extraChallenge.title}
+                </h3>
+                <p className="text-orange-700 mb-4">
+                  {extraChallenge.description}
                 </p>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="grid grid-cols-2 gap-4 w-full">
-                    {progress?.current_challenge_id === currentChallenge.id ? (
-                      <Button
-                        onClick={() => { 
-                          navigate('/challenge-details', { state: { challenge: currentChallenge } }); 
-                        }}
-                        className="bg-gradient-to-r from-warm-orange to-orange-400 text-white font-bold py-4 px-4 text-base rounded-xl h-auto min-h-[60px] flex flex-col touch-manipulation"
-                      >
-                        <span>Complete</span>
-                        <span>Challenge</span>
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={() => { handleAccept(); }}
-                        className="bg-gradient-to-r from-warm-orange to-orange-400 text-white font-bold py-4 px-4 text-base rounded-xl h-auto min-h-[60px] flex flex-col touch-manipulation"
-                      >
-                        <span>Accept</span>
-                        <span>Challenge</span>
-                      </Button>
-                    )}
-                    <Button onClick={handleSkip} variant="outline" className="border-charcoal-gray/30 text-charcoal-gray font-bold py-4 px-4 text-base rounded-xl h-auto min-h-[60px] flex flex-col touch-manipulation">
-                      <SkipForward className="w-5 h-5 mb-1" />
-                      <span>New Challenge</span>
+                
+                <div className="space-y-4">
+                  <Textarea
+                    placeholder="Share your experience with this bonus challenge..."
+                    value={extraReflection}
+                    onChange={(e) => setExtraReflection(e.target.value)}
+                    className="bg-white"
+                  />
+                  
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2 text-sm text-orange-700">
+                      <input
+                        type="radio"
+                        name="extraPrivacy"
+                        value="public"
+                        checked={privacy === 'public'}
+                        onChange={(e) => setPrivacy(e.target.value)}
+                      />
+                      Share publicly
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-orange-700">
+                      <input
+                        type="radio"
+                        name="extraPrivacy"
+                        value="private"
+                        checked={privacy === 'private'}
+                        onChange={(e) => setPrivacy(e.target.value)}
+                      />
+                      Keep private
+                    </label>
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <Button 
+                      onClick={handleSubmitExtraReflection}
+                      disabled={!extraReflection.trim() || isSubmittingExtra}
+                      className="bg-orange-600 hover:bg-orange-700"
+                    >
+                      {isSubmittingExtra ? 'Submitting...' : 'Complete Bonus (+5 XP)'}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setShowExtraChallenge(false)}
+                    >
+                      Maybe Later
                     </Button>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </motion.div>
-        ) : (
-           <div className="min-h-[200px] flex items-center justify-center bg-sun-beige"><div className="text-charcoal-gray">Assigning your next challenge...</div></div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-            <Card className="bg-white/50 border-black/10 shadow-md rounded-2xl p-4 h-full">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-warm-orange/20 rounded-full"><Zap className="w-6 h-6 text-warm-orange" /></div>
-                <div>
-                  <p className="font-bold text-2xl text-forest-green">{progress?.streak || 0} days</p>
-                  <p className="text-sm text-charcoal-gray/70">in a row</p>
-                </div>
-              </div>
-            </Card>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-            <Card className="bg-white/50 border-black/10 shadow-md rounded-2xl p-4 h-full">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-forest-green/20 rounded-full"><BarChart className="w-6 h-6 text-forest-green" /></div>
-                <div>
-                  <p className="font-bold text-lg text-forest-green">Level {progress?.level || 1}</p>
-                  <Progress value={progressPercentage} className="h-2 mt-1 bg-forest-green/20 [&>div]:bg-forest-green" />
-                </div>
-              </div>
-            </Card>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-            <Card className="bg-white/50 border-black/10 shadow-md rounded-2xl p-4 h-full">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-leaf-green/20 rounded-full"><Users className="w-6 h-6 text-leaf-green" /></div>
-                <div>
-                  <p className="font-bold text-lg text-forest-green">Community</p>
-                  <p className="text-sm text-charcoal-gray/70 hover:underline cursor-pointer" onClick={() => navigate('/community')}>See how others grew</p>
-                </div>
-              </div>
-            </Card>
-          </motion.div>
-        </div>
+        {/* Mini Leaderboard */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+        >
+          <Leaderboard 
+            title="Top Performers This Week"
+            maxUsers={5}
+            showPagination={false}
+            showUserRank={true}
+            defaultRankBy="xp"
+          />
+        </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="mt-8">
-            <Card className="bg-white/50 border-black/10 shadow-md rounded-2xl">
-                <CardContent className="p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div className="text-center sm:text-left">
-                        <h3 className="font-poppins font-bold text-forest-green">Need a new direction?</h3>
-                        <p className="text-charcoal-gray/70 text-sm">Your current focus is <strong>{profile.assessment_results?.userSelection || 'not set'}</strong>. Retake the assessment for a new focus.</p>
-                    </div>
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="outline" className="border-forest-green text-forest-green hover:bg-forest-green/10 hover:text-forest-green flex-shrink-0">
-                                <Settings className="w-4 h-4 mr-2" /> Change Focus
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="bg-sun-beige border-forest-green/20">
-                            <AlertDialogHeader>
-                                <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="text-warm-orange"/>Are you absolutely sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This will reset your focus area and assign you a new set of challenges. Your level, XP, and badges will be saved, but your current challenge progress will be lost. This action cannot be undone.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={retakeAssessment} className="bg-warm-orange hover:bg-warm-orange/90">Yes, change my focus</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </CardContent>
-            </Card>
+        {/* Quick Action Buttons */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-4"
+        >
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/progress')}
+            className="flex flex-col items-center gap-2 h-auto py-4"
+          >
+            <Trophy className="w-6 h-6 text-yellow-500" />
+            <span className="text-sm">Progress</span>
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/leaderboard')}
+            className="flex flex-col items-center gap-2 h-auto py-4"
+          >
+            <Flame className="w-6 h-6 text-orange-500" />
+            <span className="text-sm">Leaderboard</span>
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/community')}
+            className="flex flex-col items-center gap-2 h-auto py-4"
+          >
+            <Users className="w-6 h-6 text-blue-500" />
+            <span className="text-sm">Community</span>
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/profile')}
+            className="flex flex-col items-center gap-2 h-auto py-4"
+          >
+            <Star className="w-6 h-6 text-purple-500" />
+            <span className="text-sm">Profile</span>
+          </Button>
         </motion.div>
       </div>
 
+      {/* Skip Challenge Modal - keeping existing modal code */}
       <Dialog open={showSkipModal} onOpenChange={setShowSkipModal}>
         <DialogContent className="bg-sun-beige border-forest-green/20 font-lato">
           <DialogHeader>
