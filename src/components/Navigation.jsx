@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -15,11 +15,75 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+// Custom mobile-optimized dropdown trigger
+const MobileDropdownTrigger = ({ children, onToggle, isOpen }) => {
+  const triggerRef = useRef(null);
+
+  const handleInteraction = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onToggle();
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      e.stopPropagation();
+      onToggle();
+    }
+  };
+
+  useEffect(() => {
+    const element = triggerRef.current;
+    if (!element) return;
+
+    // Add both click and touchstart listeners for better mobile support
+    const clickHandler = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onToggle();
+    };
+
+    const touchHandler = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onToggle();
+    };
+
+    element.addEventListener('click', clickHandler, { passive: false });
+    element.addEventListener('touchstart', touchHandler, { passive: false });
+
+    return () => {
+      element.removeEventListener('click', clickHandler);
+      element.removeEventListener('touchstart', touchHandler);
+    };
+  }, [onToggle]);
+
+  return (
+    <div
+      ref={triggerRef}
+      className="cursor-pointer touch-manipulation select-none"
+      style={{ 
+        touchAction: 'manipulation',
+        WebkitTapHighlightColor: 'rgba(0, 0, 0, 0.1)'
+      }}
+      role="button"
+      tabIndex={0}
+      aria-expanded={isOpen}
+      aria-haspopup="true"
+      onKeyDown={handleKeyDown}
+    >
+      {children}
+    </div>
+  );
+};
+
 const Navigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { signOut } = useAuth();
   const { profile, hasNewNotifications } = useData();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const navItems = [
     { path: '/challenge', icon: Target, label: 'Challenge' },
@@ -48,50 +112,78 @@ const Navigation = () => {
     || (profile?.email && profile.email.split('@')[0].slice(0,2).toUpperCase())
     || 'U';
 
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
+  };
+
+  const handleMenuItemClick = (action) => {
+    setIsDropdownOpen(false);
+    if (typeof action === 'function') {
+      action();
+    }
+  };
+
+  const handleNavigateToProfile = () => {
+    setIsDropdownOpen(false);
+    navigate('/profile');
+  };
+  
+  const handleNavigateToSettings = () => {
+    setIsDropdownOpen(false);
+    navigate('/settings');
+  };
+  
+  const handleLogoutClick = () => {
+    setIsDropdownOpen(false);
+    handleLogout();
+  };
+
   return (
     <>
       {/* Top Navigation for Mobile */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="fixed top-0 left-0 right-0 z-50 bg-sun-beige/95 backdrop-blur-md border-b border-black/10 shadow-sm"
+        className="fixed top-0 left-0 right-0 z-50 bg-sun-beige/95 backdrop-blur-md border-b border-black/10 shadow-sm w-full overflow-hidden"
       >
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
+        <div className="container mx-auto px-4 max-w-full">
+          <div className="flex items-center justify-between h-16 w-full">
             <motion.div
-              className="flex items-center gap-3 cursor-pointer"
+              className="flex items-center gap-3 cursor-pointer flex-shrink-0"
               onClick={() => navigate('/challenge')}
               whileHover={{ scale: 1.05 }}
             >
               <img src="https://storage.googleapis.com/hostinger-horizons-assets-prod/3576ad99-fbe5-4d76-95b8-b9445d3273c9/f248d90957aab1199c7db78e9c6d6c49.png" alt="Growth App Logo" className="h-8" />
               <span className="text-2xl font-bold gradient-text">Growth</span>
             </motion.div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <Button onClick={() => navigate('/notifications')} variant="ghost" size="icon" className="relative">
                 <Heart className="w-6 h-6 text-charcoal-gray/70" />
                 {hasNewNotifications && <div className="absolute top-2 right-2 w-2 h-2 bg-leaf-green rounded-full" />}
               </Button>
-              <DropdownMenu>
+              <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
                 <DropdownMenuTrigger asChild>
-                  <Avatar className="w-8 h-8 cursor-pointer">
-                    <AvatarImage src={profile?.avatar_url} alt={profile?.full_name || profile?.email} />
-                    <AvatarFallback className="bg-gradient-to-r from-forest-green to-leaf-green text-white text-sm">
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
+                  <MobileDropdownTrigger onToggle={toggleDropdown} isOpen={isDropdownOpen}>
+                    <Avatar className="w-8 h-8 cursor-pointer">
+                      <AvatarImage src={profile?.avatar_url} alt={profile?.full_name || profile?.email} />
+                      <AvatarFallback className="bg-gradient-to-r from-forest-green to-leaf-green text-white text-sm">
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
+                  </MobileDropdownTrigger>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
+                  <DropdownMenuItem onClick={handleNavigateToProfile} className="cursor-pointer">
                     <User className="mr-2 h-4 w-4" />
                     <span>View Profile</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/settings')} className="cursor-pointer">
+                  <DropdownMenuItem onClick={handleNavigateToSettings} className="cursor-pointer">
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
-                    onClick={handleLogout} 
+                    onClick={handleLogoutClick} 
                     className="cursor-pointer text-red-500 focus:text-red-500 focus:bg-red-50"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
@@ -125,30 +217,32 @@ const Navigation = () => {
                 <Heart className="w-5 h-5 text-charcoal-gray/70" />
                 {hasNewNotifications && <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-leaf-green rounded-full" />}
               </Button>
-              <DropdownMenu>
+              <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
                 <DropdownMenuTrigger asChild>
-                  <div className="flex items-center gap-3 cursor-pointer">
-                    <Avatar className="w-8 h-8">
-                      <AvatarImage src={profile?.avatar_url} alt={profile?.full_name || profile?.email} />
-                      <AvatarFallback className="bg-gradient-to-r from-forest-green to-leaf-green text-white text-sm">
-                        {initials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-charcoal-gray text-sm">{profile?.full_name}</span>
-                  </div>
+                  <MobileDropdownTrigger onToggle={toggleDropdown} isOpen={isDropdownOpen}>
+                    <div className="flex items-center gap-3 cursor-pointer">
+                      <Avatar className="w-8 h-8">
+                        <AvatarImage src={profile?.avatar_url} alt={profile?.full_name || profile?.email} />
+                        <AvatarFallback className="bg-gradient-to-r from-forest-green to-leaf-green text-white text-sm">
+                          {initials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-charcoal-gray text-sm">{profile?.full_name}</span>
+                    </div>
+                  </MobileDropdownTrigger>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
+                  <DropdownMenuItem onClick={handleNavigateToProfile} className="cursor-pointer">
                     <User className="mr-2 h-4 w-4" />
                     <span>View Profile</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/settings')} className="cursor-pointer">
+                  <DropdownMenuItem onClick={handleNavigateToSettings} className="cursor-pointer">
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
-                    onClick={handleLogout} 
+                    onClick={handleLogoutClick} 
                     className="cursor-pointer text-red-500 focus:text-red-500 focus:bg-red-50"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
@@ -165,9 +259,9 @@ const Navigation = () => {
       <motion.nav
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="fixed bottom-0 left-0 right-0 z-50 bg-sun-beige/90 backdrop-blur-xl border-t border-black/10 md:hidden"
+        className="fixed bottom-0 left-0 right-0 z-50 bg-sun-beige/90 backdrop-blur-xl border-t border-black/10 md:hidden w-full overflow-hidden"
       >
-        <div className="flex justify-around items-center h-16">
+        <div className="flex justify-around items-center h-16 w-full max-w-full">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.path);
@@ -180,12 +274,12 @@ const Navigation = () => {
                   }
                 }}
                 variant="ghost"
-                className={`flex flex-col items-center h-full rounded-none transition-all duration-300 w-full ${
+                className={`flex flex-col items-center h-full rounded-none transition-all duration-300 flex-1 min-w-0 ${
                   active ? 'text-forest-green' : 'text-charcoal-gray/60'
                 }`}
               >
                 <Icon className="w-6 h-6" />
-                <span className="text-xs mt-1">{item.label}</span>
+                <span className="text-xs mt-1 truncate">{item.label}</span>
               </Button>
             );
           })}

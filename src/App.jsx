@@ -23,8 +23,8 @@ function App() {
     <ErrorBoundary>
       <AuthProvider>
         <DataProvider>
-          <div className="min-h-screen overflow-x-hidden touch-pan-y">
-            <div className="pt-16 md:pt-20 pb-24 px-4 md:px-0"> {/* Add horizontal padding on mobile */}
+          <div className="min-h-screen w-full overflow-x-hidden bg-sun-beige">
+            <div className="w-full max-w-full pt-16 md:pt-20 pb-24"> 
               <Routes>
                 <Route path="/" element={<Navigate to="/login" replace />} />
                 <Route path="/login" element={<LoginPage />} />

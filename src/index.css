@@ -2,158 +2,170 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Lato:wght@300;400;700&display=swap');
 
-:root {
-  --background: 34 67% 97%; /* sun-beige */
-  --foreground: 0 0% 20%; /* charcoal-gray */
-  
-  --card: 34 67% 99%; /* lighter sun-beige */
-  --card-foreground: 0 0% 20%; /* charcoal-gray */
-  
-  --popover: 34 67% 99%;
-  --popover-foreground: 0 0% 20%;
-  
-  --primary: 152 34% 18%; /* forest-green */
-  --primary-foreground: 34 67% 97%; /* sun-beige */
-  
-  --secondary: 122 39% 49%; /* leaf-green */
-  --secondary-foreground: 34 67% 97%; /* sun-beige */
-  
-  --muted: 34 20% 90%;
-  --muted-foreground: 0 0% 40%;
-  
-  --accent: 23 89% 53%; /* warm-orange */
-  --accent-foreground: 34 67% 97%; /* sun-beige */
-  
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 34 67% 97%;
-  
-  --border: 152 34% 80%;
-  --input: 152 34% 85%;
-  --ring: 23 89% 53%; /* warm-orange */
-  
-  --radius: 0.75rem;
+/* Prevent horizontal scrolling and overscroll on mobile */
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+  position: relative;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: none;
+  -webkit-overscroll-behavior-x: none;
+  touch-action: manipulation; /* Prevent double-tap zoom */
 }
 
-.dark {
-  --background: 152 34% 10%;
-  --foreground: 34 67% 97%;
-  
-  --card: 152 34% 12%;
-  --card-foreground: 34 67% 97%;
-  
-  --popover: 152 34% 10%;
-  --popover-foreground: 34 67% 97%;
-  
-  --primary: 122 39% 49%;
-  --primary-foreground: 152 34% 10%;
-  
-  --secondary: 23 89% 53%;
-  --secondary-foreground: 152 34% 10%;
-  
-  --muted: 152 34% 15%;
-  --muted-foreground: 34 67% 80%;
-  
-  --accent: 23 89% 53%;
-  --accent-foreground: 152 34% 10%;
-  
-  --destructive: 0 63% 31%;
-  --destructive-foreground: 34 67% 97%;
-  
-  --border: 152 34% 20%;
-  --input: 152 34% 20%;
-  --ring: 23 89% 53%;
-}
-
-* {
-  border-color: hsl(var(--border));
-}
-
+/* Prevent pull-to-refresh and horizontal bounce on iOS */
 body {
-  @apply bg-sun-beige text-charcoal-gray min-h-screen;
-  font-family: 'Inter', sans-serif;
-  /* Mobile optimizations */
-  -webkit-tap-highlight-color: transparent;
+  -webkit-overscroll-behavior: none;
+  overscroll-behavior: none;
   -webkit-touch-callout: none;
-  -webkit-text-size-adjust: 100%;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  touch-action: manipulation; /* Prevent double-tap zoom */
 }
 
-/* Mobile-specific improvements */
-.touch-manipulation {
-  touch-action: manipulation;
+/* Allow text selection in specific areas */
+input, textarea, [contenteditable] {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
 }
 
-/* Ensure minimum touch target sizes on mobile */
+/* Ensure root container doesn't allow horizontal scroll */
+#root {
+  overflow-x: hidden;
+  width: 100%;
+  min-height: 100vh;
+  touch-action: manipulation; /* Prevent double-tap zoom */
+}
+
+/* Fix for iOS Safari viewport issues */
+@supports (-webkit-touch-callout: none) {
+  .min-h-screen {
+    min-height: -webkit-fill-available;
+  }
+}
+
+/* Prevent horizontal scrolling on all containers */
+* {
+  box-sizing: border-box;
+}
+
+.container, .mx-auto {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom color classes */
+.bg-sun-beige { background-color: #F5F1E8; }
+.bg-forest-green { background-color: #2D5A27; }
+.bg-leaf-green { background-color: #4A7C59; }
+.bg-warm-orange { background-color: #E07A5F; }
+.bg-charcoal-gray { background-color: #3D405B; }
+
+.text-sun-beige { color: #F5F1E8; }
+.text-forest-green { color: #2D5A27; }
+.text-leaf-green { color: #4A7C59; }
+.text-warm-orange { color: #E07A5F; }
+.text-charcoal-gray { color: #3D405B; }
+
+.border-sun-beige { border-color: #F5F1E8; }
+.border-forest-green { border-color: #2D5A27; }
+.border-leaf-green { border-color: #4A7C59; }
+.border-warm-orange { border-color: #E07A5F; }
+.border-charcoal-gray { border-color: #3D405B; }
+
+/* Font families */
+.font-poppins { font-family: 'Poppins', sans-serif; }
+.font-lato { font-family: 'Lato', sans-serif; }
+
+/* Mobile-specific dropdown and button improvements */
 @media (max-width: 768px) {
+  /* Ensure all clickable elements work with single tap on mobile */
   button, 
   [role="button"], 
-  input[type="button"], 
-  input[type="submit"] {
+  [data-radix-dropdown-trigger],
+  .cursor-pointer {
+    touch-action: manipulation !important;
+    cursor: pointer !important;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Remove hover effects on mobile to prevent double-tap issues */
+  button:hover,
+  [role="button"]:hover,
+  [data-radix-dropdown-trigger]:hover {
+    transform: none !important;
+  }
+  
+  /* Ensure dropdown triggers are properly sized for touch */
+  [data-radix-dropdown-trigger] {
     min-height: 44px;
     min-width: 44px;
-  }
-  
-  /* Improve text readability on mobile */
-  .text-sm {
-    @apply text-base;
-  }
-  
-  /* Better spacing on mobile */
-  .container {
-    @apply px-6;
-  }
-}
-
-.glass-effect {
-  @apply backdrop-blur-xl bg-white/30 dark:bg-black/30 border border-black/10 dark:border-white/10;
-}
-
-.gradient-text {
-  @apply bg-gradient-to-r from-forest-green to-leaf-green bg-clip-text text-transparent;
-}
-
-.challenge-card {
-  @apply relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:scale-105;
-  background: linear-gradient(135deg, rgba(30,61,47,0.1) 0%, rgba(76,175,80,0.1) 100%);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(30,61,47,0.2);
-}
-
-.progress-ring {
-  transform: rotate(-90deg);
-  transform-origin: 50% 50%;
-}
-
-.floating-animation {
-  animation: float 6s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
-}
-
-.pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite alternate;
-}
-
-@keyframes pulse-glow {
-  from { box-shadow: 0 0 20px rgba(242, 106, 27, 0.4); }
-  to { box-shadow: 0 0 40px rgba(242, 106, 27, 0.8); }
-}
-
-.logo-pulse {
-  animation: logo-pulse 3s infinite cubic-bezier(0.455, 0.03, 0.515, 0.955);
-}
-
-@keyframes logo-pulse {
-  0%, 100% {
-    filter: drop-shadow(0 0 8px rgba(242, 106, 27, 0.4));
-    transform: scale(1);
-  }
-  50% {
-    filter: drop-shadow(0 0 16px rgba(242, 106, 27, 0.8));
-    transform: scale(1.03);
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }

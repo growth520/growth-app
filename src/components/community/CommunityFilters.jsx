@@ -40,7 +40,11 @@ const CommunityFilters = ({ view, setView, filter, setFilter }) => {
         </div>
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="outline" className="w-full sm:w-auto">
+            <Button 
+              variant="outline" 
+              className="w-full sm:w-auto cursor-pointer"
+              style={{ touchAction: 'manipulation' }}
+            >
               <Filter className="w-4 h-4 mr-2" />
               <span>Filter: <span className="font-semibold capitalize">{filter.replace('-', ' ')}</span></span>
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
