@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/SupabaseAuthContext';
 import { DataProvider } from '@/contexts/DataContext';
 import { Toaster } from '@/components/ui/toaster';
@@ -19,10 +19,10 @@ import SettingsPage from '@/pages/SettingsPage';
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <DataProvider>
-          <div className="min-h-screen overflow-x-hidden touch-pan-y">
+    <AuthProvider>
+      <DataProvider>
+        <div className="min-h-screen overflow-x-hidden touch-pan-y">
+          <div className="pt-16 md:pt-20 pb-24"> {/* Add padding-top to account for fixed header */}
             <Routes>
               <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="/login" element={<LoginPage />} />
@@ -37,12 +37,12 @@ function App() {
               <Route path="/admin" element={<AdminPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Routes>
-            <Navigation />
-            <Toaster />
           </div>
-        </DataProvider>
-      </AuthProvider>
-    </Router>
+          <Navigation />
+          <Toaster />
+        </div>
+      </DataProvider>
+    </AuthProvider>
   );
 }
 

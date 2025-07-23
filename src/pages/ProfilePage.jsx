@@ -143,8 +143,8 @@ const ProfilePage = () => {
     const loadInitialData = async () => {
       setLoading(true);
       try {
-        const [profileData, postsData, followersCount, followingData, settingsData] = await Promise.all([
-          // Profile data
+        const [profileData, postsData, followersCount, followingData, settingsData, progressDataResult] = await Promise.all([
+          // Profile
           supabase
             .from('profiles')
             .select('*')
@@ -190,7 +190,21 @@ const ProfilePage = () => {
             .select('*')
             .eq('user_id', userId)
             .single()
-            .then(({ data }) => data)
+            .then(({ data }) => data),
+
+          // Progress data
+          supabase
+            .from('user_progress')
+            .select('*')
+            .eq('user_id', userId)
+            .single()
+            .then(({ data, error }) => {
+              if (error) {
+                console.error('Error fetching progress:', error);
+                return { level: 1, xp: 0, streak: 0 };
+              }
+              return data;
+            })
         ]);
 
         setProfile(profileData);
@@ -199,6 +213,22 @@ const ProfilePage = () => {
         setFollowers(followersCount);
         setIsFollowing(!!(followingData && followingData.length > 0));
         if (settingsData) setUserSettings(settingsData);
+
+        // Set progress data
+        if (progressDataResult) {
+          // Fetch badges separately
+          const { data: badgesData } = await supabase
+            .from('user_badges')
+            .select('*')
+            .eq('user_id', userId);
+          
+          setProgressData({
+            level: progressDataResult.level || 1,
+            xp: progressDataResult.xp || 0,
+            streak: progressDataResult.streak || 0,
+            badges: badgesData || []
+          });
+        }
 
         // Prefetch next page
         prefetchNextPage();
@@ -793,6 +823,74 @@ const ProfilePage = () => {
     return Math.round((xp / xpToLevel) * 100);
   };
 
+  // Helper function to get badge emoji
+  const getBadgeEmoji = (badgeType) => {
+    switch (badgeType) {
+      case 'FIRST_CHALLENGE':
+        return '🎯';
+      case 'CHALLENGES_5':
+        return '🌟';
+      case 'CHALLENGES_10':
+        return '💫';
+      case 'CHALLENGES_25':
+        return '⭐';
+      case 'CHALLENGES_50':
+        return '🏆';
+      case 'LEVEL_2':
+        return '🥉';
+      case 'LEVEL_3':
+        return '🥈';
+      case 'LEVEL_4':
+        return '🥇';
+      case 'LEVEL_5':
+        return '👑';
+      case 'STREAK_7':
+        return '🔥';
+      case 'STREAK_30':
+        return '🔥';
+      case 'FIRST_REFLECTION':
+        return '💭';
+      case 'FIRST_SHARE':
+        return '🤝';
+      default:
+        return '🏆';
+    }
+  };
+
+  // Helper function to get badge name
+  const getBadgeName = (badgeType) => {
+    switch (badgeType) {
+      case 'FIRST_CHALLENGE':
+        return 'First Challenge';
+      case 'CHALLENGES_5':
+        return '5 Challenges';
+      case 'CHALLENGES_10':
+        return '10 Challenges';
+      case 'CHALLENGES_25':
+        return '25 Challenges';
+      case 'CHALLENGES_50':
+        return '50 Challenges';
+      case 'LEVEL_2':
+        return 'Level 2';
+      case 'LEVEL_3':
+        return 'Level 3';
+      case 'LEVEL_4':
+        return 'Level 4';
+      case 'LEVEL_5':
+        return 'Level 5';
+      case 'STREAK_7':
+        return '7-Day Streak';
+      case 'STREAK_30':
+        return '30-Day Streak';
+      case 'FIRST_REFLECTION':
+        return 'Deep Thinker';
+      case 'FIRST_SHARE':
+        return 'Community Builder';
+      default:
+        return 'Achievement';
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-sun-beige text-charcoal-gray font-lato">
@@ -903,7 +1001,7 @@ const ProfilePage = () => {
                     </div>
                   )}
 
-                  {userSettings.show_badges && progressData.badges?.length > 0 && (
+                  {userSettings.show_badges && (
                     <div className="space-y-2">
                       <div className="flex items-center gap-3 text-charcoal-gray/80">
                         <div className="bg-leaf-green/10 p-2 rounded-full">
@@ -911,22 +1009,32 @@ const ProfilePage = () => {
                         </div>
                         <div className="font-semibold">Recent Badges</div>
                       </div>
-                      <ScrollArea className="w-full whitespace-nowrap">
-                        <div className="flex space-x-4 p-1">
-                          {progressData.badges.slice(0, 5).map((badge) => (
-                            <div
-                              key={badge.id}
-                              className="flex-none inline-flex flex-col items-center gap-1 bg-white/50 rounded-lg p-3 border border-black/5"
-                            >
-                              <div className="text-2xl">{badge.emoji}</div>
-                              <div className="text-xs font-medium text-charcoal-gray/70 whitespace-normal text-center max-w-[80px]">
-                                {badge.name}
+                      {progressData.badges?.length > 0 ? (
+                        <ScrollArea className="w-full whitespace-nowrap">
+                          <div className="flex space-x-4 p-1">
+                            {progressData.badges.slice(0, 5).map((badge) => (
+                              <div
+                                key={badge.id}
+                                className="flex-none inline-flex flex-col items-center gap-1 bg-white/50 rounded-lg p-3 border border-black/5"
+                              >
+                                <div className="text-2xl">
+                                  {getBadgeEmoji(badge.badge_type)}
+                                </div>
+                                <div className="text-xs font-medium text-charcoal-gray/70 whitespace-normal text-center max-w-[80px]">
+                                  {getBadgeName(badge.badge_type)}
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
+                          <ScrollBar orientation="horizontal" />
+                        </ScrollArea>
+                      ) : (
+                        <div className="text-center py-8 text-charcoal-gray/60">
+                          <Trophy className="w-12 h-12 mx-auto mb-3 text-charcoal-gray/30" />
+                          <p className="text-sm">No badges to display</p>
+                          <p className="text-xs mt-1">Complete challenges to earn your first badge!</p>
                         </div>
-                        <ScrollBar orientation="horizontal" />
-                      </ScrollArea>
+                      )}
                     </div>
                   )}
 

@@ -449,7 +449,7 @@ const ChallengePage = () => {
               </CardContent>
             </Card>
           </motion.div>
-        ) : currentChallenge && !progress.current_challenge_id ? (
+        ) : currentChallenge ? (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
             <Card className="bg-white/50 border-black/10 shadow-lg rounded-2xl overflow-hidden">
               <CardHeader className="p-6">
@@ -461,44 +461,26 @@ const ChallengePage = () => {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <div className="grid grid-cols-2 gap-4 w-full">
-                    <Button
-                      onClick={() => { console.log('Accept Challenge button clicked'); handleAccept(); }}
-                      className="bg-gradient-to-r from-warm-orange to-orange-400 text-white font-bold py-3 text-base rounded-xl h-full flex flex-col"
-                    >
-                      <span>Accept</span>
-                      <span>Challenge</span>
-                    </Button>
-                    <Button onClick={handleSkip} variant="outline" className="border-charcoal-gray/30 text-charcoal-gray font-bold py-3 text-base rounded-xl h-full flex flex-col">
-                      <SkipForward className="w-5 h-5 mb-1" />
-                      <span>Skip</span>
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ) : currentChallenge && progress.current_challenge_id === currentChallenge.id ? (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-            <Card className="bg-white/50 border-black/10 shadow-lg rounded-2xl overflow-hidden">
-              <CardHeader className="p-6">
-                <CardTitle className="font-poppins text-2xl font-bold text-forest-green">Today's Challenge</CardTitle>
-              </CardHeader>
-              <CardContent className="p-6 pt-0 space-y-6">
-                <p className="text-lg text-charcoal-gray leading-relaxed">
-                  {currentChallenge.title}
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="grid grid-cols-2 gap-4 w-full">
-                    <Button
-                      onClick={() => { 
-                        console.log('Complete Challenge button clicked'); 
-                        navigate('/challenge-details', { state: { challenge: currentChallenge } }); 
-                      }}
-                      className="bg-gradient-to-r from-warm-orange to-orange-400 text-white font-bold py-3 text-base rounded-xl h-full flex flex-col"
-                    >
-                      <span>Complete</span>
-                      <span>Challenge</span>
-                    </Button>
+                    {progress.current_challenge_id === currentChallenge.id ? (
+                      <Button
+                        onClick={() => { 
+                          console.log('Complete Challenge button clicked'); 
+                          navigate('/challenge-details', { state: { challenge: currentChallenge } }); 
+                        }}
+                        className="bg-gradient-to-r from-warm-orange to-orange-400 text-white font-bold py-3 text-base rounded-xl h-full flex flex-col"
+                      >
+                        <span>Complete</span>
+                        <span>Challenge</span>
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => { console.log('Accept Challenge button clicked'); handleAccept(); }}
+                        className="bg-gradient-to-r from-warm-orange to-orange-400 text-white font-bold py-3 text-base rounded-xl h-full flex flex-col"
+                      >
+                        <span>Accept</span>
+                        <span>Challenge</span>
+                      </Button>
+                    )}
                     <Button onClick={handleSkip} variant="outline" className="border-charcoal-gray/30 text-charcoal-gray font-bold py-3 text-base rounded-xl h-full flex flex-col">
                       <SkipForward className="w-5 h-5 mb-1" />
                       <span>Skip</span>

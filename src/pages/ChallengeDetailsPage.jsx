@@ -163,9 +163,10 @@ const ChallengeDetailsPage = () => {
     }
     setIsSubmitting(true);
     try {
-      // 1. Send to webhook
+      // 1. Send to webhook and wait for response
+      let aiResponse;
       try {
-        await fetch("https://hook.eu2.make.com/iv84i9ozmgz7rxq0j6xf447ogqft8sl0", {
+        const webhookResponse = await fetch("https://hook.eu2.make.com/ajcskoiwdq5de96vc2z6fi5jxti1wsva", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -174,6 +175,38 @@ const ChallengeDetailsPage = () => {
             user_reflection: reflection
           })
         });
+
+        if (webhookResponse.ok) {
+          aiResponse = await webhookResponse.json().catch(() => null);
+          console.log('AI Response:', aiResponse);
+          
+          if (aiResponse?.newChallenge) {
+            // Store the AI-generated challenge for later
+            const { data: insertData, error: insertError } = await supabase
+              .from('ai_challenges')
+              .insert({
+                user_id: user.id,
+                growth_area: challenge.category,
+                challenge_text: aiResponse.newChallenge,
+                reflection_id: null, // Will be updated after reflection is saved
+                status: 'pending'
+              })
+              .select()
+              .single();
+
+            if (insertError) {
+              console.error('Error saving AI challenge:', insertError);
+            } else {
+              console.log('Saved AI challenge:', insertData);
+              toast({
+                title: "🤖 New Challenge Generated!",
+                description: "AI has created a personalized challenge based on your reflection.",
+              });
+            }
+          }
+        } else {
+          console.error('Webhook error:', webhookResponse.statusText);
+        }
       } catch (webhookError) {
         console.error('Webhook error:', webhookError);
         // Continue with the rest of the submission even if webhook fails
@@ -185,11 +218,26 @@ const ChallengeDetailsPage = () => {
         challenge_id: challenge.id,
         completed_at: new Date().toISOString(),
         reflection,
-        photo_url: null, // (add photo logic if needed)
+        photo_url: null,
         category: challenge.category
-      });
-      console.log('Insert completed_challenges result:', insertData, 'error:', insertError);
-      // 3. Update XP, level, streak in user_progress
+      }).select().single();
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      // 3. If we have both the AI challenge and the completed challenge, link them
+      if (aiResponse?.newChallenge) {
+        await supabase
+          .from('ai_challenges')
+          .update({ reflection_id: insertData.id })
+          .eq('user_id', user.id)
+          .is('reflection_id', null)
+          .order('created_at', { ascending: false })
+          .limit(1);
+      }
+
+      // 4. Update XP, level, streak in user_progress
       let newXp = (progress?.xp || 0) + 10;
       let newLevel = progress?.level || 1;
       let leveledUp = false;
@@ -203,38 +251,52 @@ const ChallengeDetailsPage = () => {
         xp: newXp,
         level: newLevel,
         current_challenge_id: null, // Clear current challenge after completion
-        // Optionally update streak logic here
       }).eq('user_id', user.id);
-      // 4. Award badges if needed
+
+      // 5. Award badges if needed
       const { data: completed } = await supabase.from('completed_challenges').select('id').eq('user_id', user.id);
       const completedCount = completed ? completed.length : 0;
       const badgeInserts = [];
-      // First challenge badge
       if (completedCount === 1) badgeInserts.push({ user_id: user.id, badge_type: 'FIRST_CHALLENGE' });
       if (completedCount >= 5) badgeInserts.push({ user_id: user.id, badge_type: 'CHALLENGES_5' });
       if (completedCount >= 10) badgeInserts.push({ user_id: user.id, badge_type: 'CHALLENGES_10' });
       if (completedCount >= 25) badgeInserts.push({ user_id: user.id, badge_type: 'CHALLENGES_25' });
       if (completedCount >= 50) badgeInserts.push({ user_id: user.id, badge_type: 'CHALLENGES_50' });
       if (leveledUp) badgeInserts.push({ user_id: user.id, badge_type: `LEVEL_${newLevel}` });
+      
       for (const badge of badgeInserts) {
         await supabase.from('user_badges').upsert(badge, { onConflict: ['user_id', 'badge_type'] });
       }
+
       await refreshAllData();
+      
+      // 6. Show success messages
       toast({
         title: "🌟 Challenge Completed!",
         description: `You earned 10 XP! Keep up the great work.`,
       });
+
       if (leveledUp) {
-        setTimeout(() => toast({ title: "🎉 Level Up!", description: `You reached level ${newLevel}!` }), 500);
+        setTimeout(() => toast({ 
+          title: "🎉 Level Up!", 
+          description: `You reached level ${newLevel}!` 
+        }), 500);
       }
+
       if (badgeInserts.length > 0) {
-        toast({ title: "🏅 Badge Unlocked!", description: `You've earned new badges! Check them out on your Progress page.` });
+        toast({ 
+          title: "🏅 Badge Unlocked!", 
+          description: `You've earned new badges! Check them out on your Progress page.` 
+        });
       }
+
       // Show extra challenge option
       setShowExtraChallenge(true);
       // Set a timeout to navigate back to /challenge after 1.5s
       navigateTimeoutRef.current = setTimeout(() => navigate('/challenge'), 1500);
+
     } catch (error) {
+      console.error('Error in handleSubmitReflection:', error);
       toast({ 
         title: "Error Saving Progress", 
         description: error.message || "Something went wrong. Please try again.", 
