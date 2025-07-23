@@ -72,14 +72,22 @@ export const AuthProvider = ({ children }) => {
 
   const signInWithProvider = useCallback(async (provider) => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      console.log('Starting OAuth flow with provider:', provider);
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: window.location.origin + '/challenge'
+          redirectTo: `${window.location.origin}/challenge`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent'
+          }
         }
       });
 
+      console.log('OAuth response:', { data, error });
+
       if (error) {
+        console.error('OAuth error:', error);
         toast({
           variant: "destructive",
           title: "Sign in Failed",
@@ -87,8 +95,9 @@ export const AuthProvider = ({ children }) => {
         });
       }
 
-      return { error };
+      return { error, data };
     } catch (error) {
+      console.error('Unexpected OAuth error:', error);
       toast({
         variant: "destructive",
         title: "Sign in Failed",

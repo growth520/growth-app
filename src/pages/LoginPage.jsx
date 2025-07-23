@@ -70,10 +70,11 @@ const LoginPage = () => {
   };
 
   const handleSocialLogin = async (provider) => {
-    setLoading(true);
     try {
+      setLoading(true);
       console.log('Starting social login with provider:', provider);
-      const { error } = await signInWithProvider(provider);
+      const { data, error } = await signInWithProvider(provider);
+      
       if (error) {
         console.error('Social login error:', error);
         toast({
@@ -81,12 +82,10 @@ const LoginPage = () => {
           description: error.message || "Could not sign in with Google. Please try again.",
           variant: "destructive"
         });
+        setLoading(false);
       } else {
-        console.log('Social login successful');
-        toast({
-          title: "Success!",
-          description: "Signed in successfully with Google.",
-        });
+        console.log('Social login initiated:', data);
+        // Don't set loading to false here as we're being redirected
       }
     } catch (err) {
       console.error('Unexpected error during social login:', err);
@@ -95,7 +94,6 @@ const LoginPage = () => {
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
-    } finally {
       setLoading(false);
     }
   };
@@ -192,9 +190,23 @@ const LoginPage = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-3">
-                <Button onClick={() => handleSocialLogin('google')} variant="outline" className="w-full h-12 bg-white/80 border-black/10 text-charcoal-gray hover:bg-white transition-all duration-300">
-                  <Chrome className="w-5 h-5 mr-3" />
-                  Continue with Google
+                <Button 
+                  onClick={() => handleSocialLogin('google')} 
+                  variant="outline" 
+                  className="w-full h-12 bg-white/80 border-black/10 text-charcoal-gray hover:bg-white transition-all duration-300"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-charcoal-gray mr-3"></div>
+                      Connecting...
+                    </div>
+                  ) : (
+                    <>
+                      <Chrome className="w-5 h-5 mr-3" />
+                      Continue with Google
+                    </>
+                  )}
                 </Button>
                 <Button onClick={() => handleSocialLogin('apple')} variant="outline" className="w-full h-12 bg-white/80 border-black/10 text-charcoal-gray hover:bg-white transition-all duration-300">
                   <Apple className="w-5 h-5 mr-3" />
