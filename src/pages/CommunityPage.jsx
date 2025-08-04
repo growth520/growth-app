@@ -170,8 +170,6 @@ const CommunityPage = () => {
 
   // Fetch posts directly from posts table with proper joins
   const fetchPosts = useCallback(async (pageNum = 0, refresh = false) => {
-    if (!user) return;
-    
     try {
       console.log('Fetching posts with filters:', { selectedTab, selectedFilter, selectedGrowthArea, searchQuery });
       
@@ -200,7 +198,8 @@ const CommunityPage = () => {
           metadata,
           likes_count,
           comments_count
-        `);
+        `)
+        .eq('privacy', 'public'); // Only show public posts
       
       // Apply filters
       if (selectedGrowthArea !== 'all') {
@@ -209,7 +208,9 @@ const CommunityPage = () => {
       
       // Apply tab filters
       if (selectedTab === 'my-posts') {
-        query = query.eq('user_id', user.id);
+        if (user) {
+          query = query.eq('user_id', user.id);
+        }
       } else if (selectedTab === 'liked') {
         // For liked posts, we'll filter after fetching since we need to check userInteractions
         // This will be handled in the data transformation
@@ -316,32 +317,48 @@ const CommunityPage = () => {
         let filteredPosts = transformedPosts;
         
         if (selectedTab === 'liked') {
-          filteredPosts = transformedPosts.filter(post => 
-            userInteractions.likes.includes(post.id)
-          );
-          console.log('Filtered liked posts:', filteredPosts.length);
+          if (user && userInteractions.likes.length > 0) {
+            filteredPosts = transformedPosts.filter(post => 
+              userInteractions.likes.includes(post.id)
+            );
+            console.log('Filtered liked posts:', filteredPosts.length);
+          } else {
+            filteredPosts = []; // No liked posts if not logged in or no likes
+          }
         } else if (selectedTab === 'commented') {
-          filteredPosts = transformedPosts.filter(post => 
-            userInteractions.comments.includes(post.id)
-          );
-          console.log('Filtered commented posts:', filteredPosts.length);
+          if (user && userInteractions.comments.length > 0) {
+            filteredPosts = transformedPosts.filter(post => 
+              userInteractions.comments.includes(post.id)
+            );
+            console.log('Filtered commented posts:', filteredPosts.length);
+          } else {
+            filteredPosts = []; // No commented posts if not logged in or no comments
+          }
         } else if (selectedTab === 'friends') {
-          filteredPosts = transformedPosts.filter(post => 
-            following.includes(post.user_id)
-          );
-          console.log('Filtered friends posts:', filteredPosts.length);
+          if (user && following.length > 0) {
+            filteredPosts = transformedPosts.filter(post => 
+              following.includes(post.user_id)
+            );
+            console.log('Filtered friends posts:', filteredPosts.length);
+          } else {
+            filteredPosts = []; // No friends posts if not logged in or no following
+          }
         }
         
         // Apply post-fetch filtering for filter types that need additional logic
         if (selectedFilter === 'growth-like-me') {
           // Get current user's growth area from profile
-          const currentUserProfile = profilesData[user.id];
-          if (currentUserProfile?.assessment_results?.userSelection) {
-            const userGrowthArea = currentUserProfile.assessment_results.userSelection;
-            filteredPosts = filteredPosts.filter(post => 
-              post.category === userGrowthArea
-            );
-            console.log('Filtered growth like me posts:', filteredPosts.length, 'for area:', userGrowthArea);
+          if (user) {
+            const currentUserProfile = profilesData[user.id];
+            if (currentUserProfile?.assessment_results?.userSelection) {
+              const userGrowthArea = currentUserProfile.assessment_results.userSelection;
+              filteredPosts = filteredPosts.filter(post => 
+                post.category === userGrowthArea
+              );
+              console.log('Filtered growth like me posts:', filteredPosts.length, 'for area:', userGrowthArea);
+            }
+          } else {
+            filteredPosts = []; // No growth-like-me posts if not logged in
           }
         }
         
