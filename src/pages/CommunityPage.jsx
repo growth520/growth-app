@@ -199,7 +199,7 @@ const CommunityPage = () => {
           likes_count,
           comments_count
         `)
-        .or('privacy.eq.public,visibility.eq.public,privacy.is.null,visibility.is.null'); // Show posts that are public in either field or NULL (defaults to public)
+        .or('privacy.eq.public,visibility.eq.public'); // Show posts that are public in either field
       
       // Apply filters
       if (selectedGrowthArea !== 'all') {
