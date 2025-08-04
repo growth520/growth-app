@@ -262,7 +262,7 @@ const LoginPage = () => {
             </motion.div>
 
             {/* Feature Cards */}
-            <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-4">
               {[
                 {
                   icon: <Target className="w-8 h-8 text-green-600" />,
@@ -285,19 +285,17 @@ const LoginPage = () => {
               ].map((feature, index) => (
                 <motion.div
                   key={index}
-                  className={`${feature.bgColor} rounded-2xl p-6 shadow-xl border border-white/20 backdrop-blur-sm`}
+                  className={`${feature.bgColor} rounded-2xl p-4 shadow-xl border border-white/20 backdrop-blur-sm`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 0.7 + index * 0.1 }}
                 >
-                  <div className="flex items-center space-x-4">
-                    <div className="flex-shrink-0">
+                  <div className="text-center space-y-2">
+                    <div className="flex justify-center">
                       {feature.icon}
                     </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-800">{feature.title}</h3>
-                      <p className="text-sm text-gray-700">{feature.subtitle}</p>
-                    </div>
+                    <h3 className="text-sm font-bold text-gray-800">{feature.title}</h3>
+                    <p className="text-xs text-gray-700">{feature.subtitle}</p>
                   </div>
                 </motion.div>
               ))}
