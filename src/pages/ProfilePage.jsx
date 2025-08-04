@@ -129,7 +129,7 @@ const ProfilePage = () => {
       .from('posts')
       .select('id, reflection, challenge_title, photo_url, category, created_at, user_id, likes_count, comments_count, shares_count, views_count')
       .eq('user_id', userId)
-      .eq('visibility', 'public')
+      .or('privacy.eq.public,visibility.eq.public,privacy.is.null,visibility.is.null')
       .order('created_at', { ascending: false })
       .range(from, to);
 
@@ -179,7 +179,7 @@ const ProfilePage = () => {
             .from('posts')
             .select('id, reflection, challenge_title, photo_url, category, created_at, user_id, likes_count, comments_count, shares_count, views_count')
             .eq('user_id', userId)
-            .eq('visibility', 'public')
+            .or('privacy.eq.public,visibility.eq.public,privacy.is.null,visibility.is.null')
             .order('created_at', { ascending: false })
             .range(0, ITEMS_PER_PAGE - 1)
             .then(async ({ data }) => {
@@ -850,7 +850,7 @@ const ProfilePage = () => {
         .from('posts')
         .select('id, reflection, challenge_title, photo_url, category, created_at, user_id, likes_count, comments_count, shares_count, views_count')
         .eq('user_id', userId)
-        .eq('visibility', 'public')
+        .or('privacy.eq.public,visibility.eq.public,privacy.is.null,visibility.is.null')
         .order('created_at', { ascending: false })
         .range(from, to);
 
