@@ -219,7 +219,7 @@ const LoginPage = () => {
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Header & Tagline */}
         <motion.div 
-          className="text-center pt-12 pb-8 px-4"
+          className="text-center pt-8 pb-6 px-4"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
@@ -228,83 +228,88 @@ const LoginPage = () => {
             <img 
               src="https://storage.googleapis.com/hostinger-horizons-assets-prod/3576ad99-fbe5-4d76-95b8-b9445d3273c9/f248d90957aab1199c7db78e9c6d6c49.png" 
               alt="Growth App Logo" 
-              className="h-12 w-12"
+              className="h-10 w-10"
             />
-            <h1 className="text-4xl md:text-5xl font-bold text-white drop-shadow-lg">
+            <h1 className="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
               Growth
             </h1>
           </div>
-          <p className="text-xl md:text-2xl font-bold text-white drop-shadow-lg max-w-4xl mx-auto leading-relaxed">
+          <p className="text-lg md:text-xl font-bold text-white drop-shadow-lg max-w-3xl mx-auto leading-relaxed">
             This is more than an app. It's a journey towards the best version of you!
           </p>
         </motion.div>
 
-        {/* Feature Highlights Section */}
-        <motion.div 
-          className="flex-1 flex flex-col items-center justify-center px-4 pb-8"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.3 }}
-        >
-          {/* Badge */}
+        {/* Main Content - Side by Side Layout */}
+        <div className="flex-1 flex flex-col lg:flex-row items-center justify-center px-4 pb-8 gap-8 lg:gap-12">
+          {/* Left Side - Feature Cards */}
           <motion.div 
-            className="mb-8 bg-teal-600 text-white px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.5 }}
+            className="w-full lg:w-1/2 max-w-lg"
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
           >
-            <Target className="w-4 h-4" />
-            <Trophy className="w-4 h-4" />
-            <Users className="w-4 h-4" />
-            <span>Unlock 100+ badges as you grow</span>
+            {/* Badge */}
+            <motion.div 
+              className="mb-6 bg-teal-600 text-white px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 w-fit"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.5 }}
+            >
+              <Target className="w-4 h-4 text-green-400" />
+              <Trophy className="w-4 h-4 text-yellow-400" />
+              <Users className="w-4 h-4 text-blue-400" />
+              <span>Unlock 100+ badges as you grow</span>
+            </motion.div>
+
+            {/* Feature Cards */}
+            <div className="space-y-4">
+              {[
+                {
+                  icon: <Target className="w-8 h-8 text-green-600" />,
+                  title: "Personalized Challenges",
+                  subtitle: "Achieve your unique goals",
+                  bgColor: "bg-green-400"
+                },
+                {
+                  icon: <TrendingUp className="w-8 h-8 text-orange-600" />,
+                  title: "Track Progress",
+                  subtitle: "See how far you've come",
+                  bgColor: "bg-orange-400"
+                },
+                {
+                  icon: <Users className="w-8 h-8 text-blue-600" />,
+                  title: "Community Support",
+                  subtitle: "Grow together with others",
+                  bgColor: "bg-yellow-400"
+                }
+              ].map((feature, index) => (
+                <motion.div
+                  key={index}
+                  className={`${feature.bgColor} rounded-2xl p-6 shadow-xl border border-white/20 backdrop-blur-sm`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.7 + index * 0.1 }}
+                >
+                  <div className="flex items-center space-x-4">
+                    <div className="flex-shrink-0">
+                      {feature.icon}
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-800">{feature.title}</h3>
+                      <p className="text-sm text-gray-700">{feature.subtitle}</p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </motion.div>
 
-          {/* Feature Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl w-full mb-12">
-            {[
-              {
-                icon: <Target className="w-8 h-8 text-green-600" />,
-                title: "Personalized Challenges",
-                subtitle: "Achieve your unique goals",
-                bgGradient: "from-green-400 to-emerald-400"
-              },
-              {
-                icon: <TrendingUp className="w-8 h-8 text-orange-600" />,
-                title: "Track Progress",
-                subtitle: "See how far you've come",
-                bgGradient: "from-orange-400 to-red-400"
-              },
-              {
-                icon: <Users className="w-8 h-8 text-blue-600" />,
-                title: "Community Support",
-                subtitle: "Grow together with others",
-                bgGradient: "from-blue-400 to-purple-400"
-              }
-            ].map((feature, index) => (
-              <motion.div
-                key={index}
-                className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.7 + index * 0.1 }}
-              >
-                <div className="text-center space-y-3">
-                  <div className="flex justify-center">
-                    {feature.icon}
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-800">{feature.title}</h3>
-                  <p className="text-sm text-gray-600">{feature.subtitle}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Login Section */}
+          {/* Right Side - Login Section */}
           <motion.div
-            className="w-full max-w-md mx-auto"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 1 }}
+            className="w-full lg:w-1/2 max-w-md"
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.5 }}
           >
             <Card className="bg-white/10 backdrop-blur-md border-white/20 shadow-2xl">
               <CardHeader className="text-center space-y-2 pb-6">
@@ -410,7 +415,7 @@ const LoginPage = () => {
               </CardContent>
             </Card>
           </motion.div>
-        </motion.div>
+        </div>
       </div>
     </div>
   );
