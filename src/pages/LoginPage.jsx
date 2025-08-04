@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { Mail, Apple, Chrome, Target, Users, Trophy } from 'lucide-react';
+import { Mail, Apple, Chrome, Target, Users, Trophy, TrendingUp, Heart, Zap } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { getAuthCallbackUrl, getBaseUrl } from '@/lib/config';
 
@@ -203,180 +203,218 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-sun-beige">
-      {/* Background animations */}
-      <div className="absolute inset-0 overflow-hidden">
-        <motion.div
-          className="absolute top-20 left-20 w-72 h-72 bg-leaf-green/20 rounded-full blur-3xl"
-          animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute bottom-20 right-20 w-96 h-96 bg-warm-orange/20 rounded-full blur-3xl"
-          animate={{ scale: [1.2, 1, 1.2], opacity: [0.4, 0.7, 0.4] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-        />
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Full-screen background with gradient overlay */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          background: `
+            linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%),
+            url('/images/welcome-bg.jpg')
+          `,
+          backgroundSize: 'cover, cover',
+          backgroundPosition: 'center, center',
+        }}
+      >
+        {/* Dark gradient overlay for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/60"></div>
       </div>
 
-      <div className="w-full max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center relative z-10">
-        {/* Left side content */}
-        <motion.div
-          initial={{ opacity: 0, x: -50 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="text-center lg:text-left space-y-8"
+      {/* Content */}
+      <div className="relative z-10 min-h-screen flex flex-col">
+        {/* Header & Tagline */}
+        <motion.div 
+          className="text-center pt-12 pb-8 px-4"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
         >
-          <div className="space-y-4">
-            <motion.div
-              className="inline-flex items-center gap-3 text-6xl font-bold"
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-            >
-              <img src="https://storage.googleapis.com/hostinger-horizons-assets-prod/3576ad99-fbe5-4d76-95b8-b9445d3273c9/f248d90957aab1199c7db78e9c6d6c49.png" alt="Growth App Logo" className="h-20" />
-              <span className="gradient-text">Growth</span>
-            </motion.div>
-            <motion.p
-              className="text-xl text-charcoal-gray/80 max-w-lg"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-            >
-              This is more than an app. It's a journey towards the best version of you!
-            </motion.p>
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <img 
+              src="https://storage.googleapis.com/hostinger-horizons-assets-prod/3576ad99-fbe5-4d76-95b8-b9445d3273c9/f248d90957aab1199c7db78e9c6d6c49.png" 
+              alt="Growth App Logo" 
+              className="h-12 w-12"
+            />
+            <h1 className="text-4xl md:text-5xl font-bold text-white drop-shadow-lg">
+              Growth
+            </h1>
           </div>
-
-          {/* Feature cards */}
-          <motion.div
-            className="flex flex-col sm:flex-row justify-center lg:justify-start gap-4"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6, staggerChildren: 0.1 }}
-          >
-            {[
-              { icon: <Target className="w-6 h-6 text-leaf-green" />, title: "Personalized Challenges" },
-              { icon: <Trophy className="w-6 h-6 text-warm-orange" />, title: "Track Progress" },
-              { icon: <Users className="w-6 h-6 text-forest-green" />, title: "Community Support" },
-            ].map((feature, index) => (
-              <motion.div key={index} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }} className="flex-1">
-                <Card className="bg-white/40 border-black/10 shadow-md h-full">
-                  <CardContent className="p-3 flex flex-col items-center text-center space-y-2">
-                    {feature.icon}
-                    <span className="text-xs font-medium text-charcoal-gray/80">{feature.title}</span>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </motion.div>
+          <p className="text-xl md:text-2xl font-bold text-white drop-shadow-lg max-w-4xl mx-auto leading-relaxed">
+            This is more than an app. It's a journey towards the best version of you!
+          </p>
         </motion.div>
 
-        {/* Right side - Auth form */}
-        <motion.div
-          initial={{ opacity: 0, x: 50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
+        {/* Feature Highlights Section */}
+        <motion.div 
+          className="flex-1 flex flex-col items-center justify-center px-4 pb-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
         >
-          <Card className="bg-white/50 border-black/10 shadow-2xl">
-            <CardHeader className="text-center space-y-4">
-              <CardTitle className="text-3xl font-bold text-forest-green">
-                {isLogin ? 'Welcome Back' : 'Join Growth'}
-              </CardTitle>
-              <CardDescription className="text-charcoal-gray/70">
-                {isLogin ? 'Continue your growth journey' : 'Start your transformation today'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-3">
-                <Button 
-                  onClick={handleGoogleLogin}
-                  variant="outline" 
-                  className="w-full h-12 bg-white/80 border-black/10 text-charcoal-gray hover:bg-white transition-all duration-300"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <div className="flex items-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-charcoal-gray mr-3"></div>
-                      Connecting...
-                    </div>
-                  ) : (
-                    <>
-                      <Chrome className="w-5 h-5 mr-3" />
-                      Continue with Google
-                    </>
+          {/* Badge */}
+          <motion.div 
+            className="mb-8 bg-teal-600 text-white px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.5 }}
+          >
+            <Target className="w-4 h-4" />
+            <Trophy className="w-4 h-4" />
+            <Users className="w-4 h-4" />
+            <span>Unlock 100+ badges as you grow</span>
+          </motion.div>
+
+          {/* Feature Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl w-full mb-12">
+            {[
+              {
+                icon: <Target className="w-8 h-8 text-green-600" />,
+                title: "Personalized Challenges",
+                subtitle: "Achieve your unique goals",
+                bgGradient: "from-green-400 to-emerald-400"
+              },
+              {
+                icon: <TrendingUp className="w-8 h-8 text-orange-600" />,
+                title: "Track Progress",
+                subtitle: "See how far you've come",
+                bgGradient: "from-orange-400 to-red-400"
+              },
+              {
+                icon: <Users className="w-8 h-8 text-blue-600" />,
+                title: "Community Support",
+                subtitle: "Grow together with others",
+                bgGradient: "from-blue-400 to-purple-400"
+              }
+            ].map((feature, index) => (
+              <motion.div
+                key={index}
+                className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.7 + index * 0.1 }}
+              >
+                <div className="text-center space-y-3">
+                  <div className="flex justify-center">
+                    {feature.icon}
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-800">{feature.title}</h3>
+                  <p className="text-sm text-gray-600">{feature.subtitle}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Login Section */}
+          <motion.div
+            className="w-full max-w-md mx-auto"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 1 }}
+          >
+            <Card className="bg-white/10 backdrop-blur-md border-white/20 shadow-2xl">
+              <CardHeader className="text-center space-y-2 pb-6">
+                <CardTitle className="text-2xl font-bold text-orange-500">
+                  WELCOME BACK
+                </CardTitle>
+                <div className="flex items-center justify-center">
+                  <div className="flex-1 h-px bg-gray-300"></div>
+                  <div className="flex-1 h-px bg-gray-300"></div>
+                </div>
+                <CardDescription className="text-white/90 text-base">
+                  Continue your growth journey
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent className="space-y-4">
+                {/* Social Login Buttons */}
+                <div className="space-y-3">
+                  <Button 
+                    onClick={handleGoogleLogin}
+                    className="w-full h-12 bg-white text-gray-800 hover:bg-gray-50 border border-gray-200 font-medium"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <div className="flex items-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-800 mr-3"></div>
+                        Connecting...
+                      </div>
+                    ) : (
+                      <>
+                        <Chrome className="w-5 h-5 mr-3" />
+                        Continue with Google
+                      </>
+                    )}
+                  </Button>
+                  
+                  <Button 
+                    onClick={handleAppleLogin}
+                    className="w-full h-12 bg-black text-white hover:bg-gray-900 font-medium"
+                    disabled={loading}
+                  >
+                    <Apple className="w-5 h-5 mr-3" />
+                    Continue with Apple
+                  </Button>
+                </div>
+
+                {/* Email/Password Form */}
+                <form onSubmit={handleEmailAuth} className="space-y-4">
+                  {!isLogin && (
+                    <Input 
+                      type="text" 
+                      placeholder="Full name" 
+                      value={fullName} 
+                      onChange={e => setFullName(e.target.value)} 
+                      className="h-12 bg-white/80 border-gray-200 text-gray-800 placeholder:text-gray-500 rounded-lg" 
+                      required
+                    />
                   )}
-                </Button>
-                <Button 
-                  onClick={handleAppleLogin}
-                  variant="outline" 
-                  className="w-full h-12 bg-white/80 border-black/10 text-charcoal-gray hover:bg-white transition-all duration-300"
-                  disabled={loading}
-                >
-                  <Apple className="w-5 h-5 mr-3" />
-                  Continue with Apple
-                </Button>
-              </div>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-black/10" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-sun-beige px-2 text-charcoal-gray/60">Or continue with email</span>
-                </div>
-              </div>
-
-              <form onSubmit={handleEmailAuth} className="space-y-4">
-                {!isLogin && (
                   <Input 
-                    type="text" 
-                    placeholder="Enter your full name" 
-                    value={fullName} 
-                    onChange={e => setFullName(e.target.value)} 
-                    className="h-12 bg-white/80 border-black/10 text-charcoal-gray placeholder:text-charcoal-gray/50" 
+                    type="email" 
+                    placeholder="Email" 
+                    value={email} 
+                    onChange={e => setEmail(e.target.value)} 
+                    className="h-12 bg-white/80 border-gray-200 text-gray-800 placeholder:text-gray-500 rounded-lg" 
                     required
                   />
-                )}
-                <Input 
-                  type="email" 
-                  placeholder="Enter your email" 
-                  value={email} 
-                  onChange={e => setEmail(e.target.value)} 
-                  className="h-12 bg-white/80 border-black/10 text-charcoal-gray placeholder:text-charcoal-gray/50" 
-                  required
-                />
-                <Input 
-                  type="password" 
-                  placeholder="Enter your password" 
-                  value={password} 
-                  onChange={e => setPassword(e.target.value)} 
-                  className="h-12 bg-white/80 border-black/10 text-charcoal-gray placeholder:text-charcoal-gray/50" 
-                  required
-                />
-                <Button 
-                  type="submit" 
-                  className="w-full bg-gradient-to-r from-forest-green to-leaf-green text-white font-bold py-6 text-base rounded-xl"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <div className="flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-3"></div>
-                      {isLogin ? 'Signing in...' : 'Creating account...'}
-                    </div>
-                  ) : (
-                    isLogin ? 'Sign In' : 'Create Account'
-                  )}
-                </Button>
-              </form>
+                  <Input 
+                    type="password" 
+                    placeholder="Password" 
+                    value={password} 
+                    onChange={e => setPassword(e.target.value)} 
+                    className="h-12 bg-white/80 border-gray-200 text-gray-800 placeholder:text-gray-500 rounded-lg" 
+                    required
+                  />
+                  <Button 
+                    type="submit" 
+                    className="w-full h-12 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded-lg hover:from-orange-600 hover:to-red-600 transition-all duration-300"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-3"></div>
+                        {isLogin ? 'Signing in...' : 'Creating account...'}
+                      </div>
+                    ) : (
+                      isLogin ? 'Start Your Growth Journey' : 'Create Account'
+                    )}
+                  </Button>
+                </form>
 
-              <div className="text-center">
-                <button
-                  onClick={() => setIsLogin(!isLogin)}
-                  className="text-sm text-charcoal-gray/70 hover:text-forest-green transition-colors"
-                >
-                  {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-                </button>
-              </div>
-            </CardContent>
-          </Card>
+                {/* Sign Up Link */}
+                <div className="text-center pt-2">
+                  <button
+                    onClick={() => setIsLogin(!isLogin)}
+                    className="text-sm text-white/80 hover:text-orange-400 transition-colors"
+                  >
+                    {isLogin ? "Don't have an account? " : "Already have an account? "}
+                    <span className="text-orange-400 underline font-medium">
+                      {isLogin ? "Sign up" : "Sign in"}
+                    </span>
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </motion.div>
       </div>
     </div>
