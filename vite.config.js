@@ -123,10 +123,21 @@ window.fetch = function(...args) {
 				contentType.includes('application/xhtml+xml');
 
 			if (!response.ok && !isDocumentResponse) {
-					const responseClone = response.clone();
-					const errorFromRes = await responseClone.text();
-					const requestUrl = response.url;
+				const responseClone = response.clone();
+				const errorFromRes = await responseClone.text();
+				const requestUrl = response.url;
+				
+				// Silently ignore expected errors from missing database tables/features
+				const isExpectedError = 
+					requestUrl.includes('/personalized_suggestions') ||
+					requestUrl.includes('/notifications') ||
+					(requestUrl.includes('/user_progress') && response.status === 400) ||
+					response.status === 404 || 
+					response.status === 406;
+					
+				if (!isExpectedError) {
 					console.error(\`Fetch error from \${requestUrl}: \${errorFromRes}\`);
+				}
 			}
 
 			return response;

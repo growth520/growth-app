@@ -26,10 +26,38 @@ const Comment = ({ comment, onReply, currentUser }) => {
   const fetchReplies = useCallback(async () => {
     const { data, error } = await supabase
       .from('comments')
-      .select('*, profiles:user_id(*)')
+      .select('*')
       .eq('parent_comment_id', comment.id)
       .order('created_at', { ascending: true });
-    if (!error) setReplies(data);
+    
+    if (!error && data && data.length > 0) {
+      // Fetch profiles separately for replies
+      const userIds = [...new Set(data.map(reply => reply.user_id).filter(Boolean))];
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url, username')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.error('Error fetching reply profiles:', profilesError);
+        setReplies(data);
+      } else {
+        const profilesMap = profiles.reduce((acc, profile) => {
+          acc[profile.id] = profile;
+          return acc;
+        }, {});
+
+        // Combine replies with profile data
+        const repliesWithProfiles = data.map(reply => ({
+          ...reply,
+          profiles: profilesMap[reply.user_id] || null
+        }));
+
+        setReplies(repliesWithProfiles);
+      }
+    } else if (!error) {
+      setReplies(data || []);
+    }
   }, [comment.id]);
 
   useEffect(() => {
@@ -76,7 +104,15 @@ const Comment = ({ comment, onReply, currentUser }) => {
             <AvatarFallback>{currentUser?.user_metadata?.full_name?.charAt(0)}</AvatarFallback>
           </Avatar>
           <Input value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder={`Replying to ${comment.profiles.full_name}...`} className="h-8 text-sm" />
-          <Button size="sm" className="h-8" onClick={handleReplySubmit}><Send className="w-4 h-4" /></Button>
+                        <Button 
+                size="sm" 
+                className="h-8" 
+                onClick={handleReplySubmit}
+                aria-label="Send reply"
+                title="Send reply"
+              >
+                <Send className="w-4 h-4" />
+              </Button>
         </div>
       )}
       {showReplies && replies.length > 0 && (

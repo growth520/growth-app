@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/components/ui/use-toast';
 import { Mail, Apple, Chrome, Target, Users, Trophy } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
+import { getAuthCallbackUrl, getBaseUrl } from '@/lib/config';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -21,10 +22,10 @@ const LoginPage = () => {
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/challenge`,
+          redirectTo: `${getBaseUrl()}/challenge`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent'
@@ -52,13 +53,55 @@ const LoginPage = () => {
     }
   };
 
+  // Function to create profile for confirmed users
+  const createProfileForUser = async (userId, fullName) => {
+    try {
+      // Check if profile already exists
+      const { data: existingProfile, error: checkError } = await supabase
+        .from('profiles')
+        .select('has_completed_assessment')
+        .eq('id', userId)
+        .single();
+      
+      if (checkError && checkError.code === 'PGRST116') {
+        // Profile doesn't exist, create new one
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: userId,
+            full_name: fullName,
+            has_completed_assessment: false
+          });
+        
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+        }
+      } else if (existingProfile) {
+        console.log('Profile already exists, preserving assessment status:', existingProfile.has_completed_assessment);
+        // Update name if needed but preserve assessment status
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({
+            full_name: fullName
+          })
+          .eq('id', userId);
+        
+        if (updateError) {
+          console.error('Profile update error:', updateError);
+        }
+      }
+    } catch (error) {
+      console.error('Error creating profile:', error);
+    }
+  };
+
   const handleAppleLogin = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'apple',
         options: {
-          redirectTo: `${window.location.origin}/challenge`,
+          redirectTo: `${getBaseUrl()}/challenge`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent'
@@ -107,14 +150,35 @@ const LoginPage = () => {
           });
         }
       } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
+        const { data, error } = await supabase.auth.signUp(
+          { email, password },
+          { 
             data: { full_name: fullName },
-          },
-        });
-        if (!error) {
+            emailRedirectTo: getAuthCallbackUrl()
+          }
+        );
+        
+        if (!error && data.user) {
+          // Wait a moment for the user to be fully created in auth.users
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Create profile immediately after successful signup
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert({
+              id: data.user.id,
+              full_name: fullName,
+              has_completed_assessment: false
+            });
+          
+          if (profileError) {
+            console.error('Profile creation error:', profileError);
+            // Don't fail the signup if profile creation fails
+          }
+          
+          // Let the existing trigger handle user_progress creation
+          // (if it exists) - if not, it will be created when needed
+          
           toast({ 
             title: "Account created! 🚀", 
             description: "Please check your email to verify your account." 

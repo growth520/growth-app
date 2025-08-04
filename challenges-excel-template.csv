@@ -1,0 +1,11 @@
+id,category,challenge_id_text,title,description,difficulty,xp_reward
+1,Confidence,CON-001,Make eye contact with someone for at least 3 seconds,Make eye contact with someone for at least 3 seconds,1,10
+2,Confidence,CON-002,Start a conversation with a stranger,Start a conversation with a stranger,1,10
+3,Confidence,CON-003,Give a genuine compliment to someone today,Give a genuine compliment to someone today,1,10
+4,Confidence,CON-004,Raise your hand or speak once in a group setting,Raise your hand or speak once in a group setting,2,15
+5,Confidence,CON-005,Record yourself saying something positive about yourself,Record yourself saying something positive about yourself,2,15
+6,Leadership,LEA-001,Lead a small group discussion,Lead a small group discussion,3,20
+7,Communication,COM-001,Practice active listening in a conversation,Practice active listening in a conversation,1,10
+8,Communication,COM-002,Ask someone a meaningful question and listen fully,Ask someone a meaningful question and listen fully,2,15
+9,Self-Control,SC-001,Wait 5 minutes before checking your phone when you feel the urge,Wait 5 minutes before checking your phone when you feel the urge,2,15
+10,Gratitude,GRAT-001,Write down 3 things you're grateful for today,Write down 3 things you're grateful for today,1,10 

@@ -4,9 +4,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App.jsx';
 import '@/index.css';
-import { AuthProvider } from '@/contexts/SupabaseAuthContext.jsx';
-import { DataProvider } from '@/contexts/DataContext.jsx';
-import { Toaster } from '@/components/ui/toaster';
+
 import { ErrorBoundary, preloadCriticalResources } from '@/lib/performance.jsx';
 
 // Preload critical resources for faster initial load
@@ -39,12 +37,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <ErrorBoundary>
       <BrowserRouter>
         <Suspense fallback={<ProductionLoader />}>
-          <AuthProvider>
-            <DataProvider>
-              <App />
-              <Toaster />
-            </DataProvider>
-          </AuthProvider>
+          <App />
         </Suspense>
       </BrowserRouter>
     </ErrorBoundary>

@@ -1,250 +1,440 @@
-import React, { useState, useEffect } from 'react';
-import { Badge } from '@/components/ui/badge';
+import React, { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { formatDistanceToNow } from 'date-fns';
+import { 
+  Heart, 
+  MessageSquare, 
+  Share2, 
+  MoreHorizontal,
+  User,
+  Target,
+  Clock,
+  Eye,
+  Trophy,
+  ThumbsUp
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, MessageCircle, Share2, Maximize2, MoreVertical, Trash2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/lib/customSupabaseClient';
 
-const formatTimeAgo = (timestamp) => {
-  const now = new Date();
-  const time = new Date(timestamp);
-  const diffInSeconds = Math.floor((now - time) / 1000);
-  if (diffInSeconds < 60) return 'Just now';
-  const diffInMinutes = Math.floor(diffInSeconds / 60);
-  if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-  const diffInHours = Math.floor(diffInMinutes / 60);
-  if (diffInHours < 24) return `${diffInHours}h ago`;
-  return `${Math.floor(diffInHours / 24)}d ago`;
-};
+const PostCard = ({ 
+  post, 
+  onLike, 
+  onComment, 
+  onShare, 
+  onProfileClick,
+  onViewComments,
+  isLiked = false,
+  isCommented = false
+}) => {
+  const { toast } = useToast();
+  const [likesCount, setLikesCount] = useState(0);
+  const [commentsCount, setCommentsCount] = useState(0);
+  const [sharesCount, setSharesCount] = useState(0);
+  const [viewsCount, setViewsCount] = useState(0);
+  const [recentComments, setRecentComments] = useState([]);
+  const [currentCommentIndex, setCurrentCommentIndex] = useState(0);
+  const [isLikedState, setIsLikedState] = useState(isLiked);
+  const [isLoading, setIsLoading] = useState(false);
 
-const growthAreaEmojis = {
-  Confidence: '💪',
-  'Self-Worth': '💎',
-  Mindfulness: '🧘',
-  Communication: '🗣️',
-  Resilience: '⚡',
-  'Self-Control': '🎯',
-  Discipline: '📚',
-  Fitness: '🏋️',
-  Purpose: '🌟',
-  Humility: '🙏',
-  Gratitude: '🙏',
-};
-
-const getCategoryIcon = (category) => growthAreaEmojis[category] || '🌟';
-
-const getCategoryColor = (category) =>
-  ({
-    Confidence: 'bg-red-500/10 text-red-500',
-    'Self-Worth': 'bg-purple-500/10 text-purple-500',
-    Mindfulness: 'bg-indigo-500/10 text-indigo-500',
-    Communication: 'bg-leaf-green/10 text-leaf-green',
-    Resilience: 'bg-warm-orange/10 text-warm-orange',
-    'Self-Control': 'bg-blue-500/10 text-blue-500',
-    Discipline: 'bg-yellow-500/10 text-yellow-500',
-    Fitness: 'bg-pink-500/10 text-pink-500',
-    Purpose: 'bg-green-500/10 text-green-500',
-    Humility: 'bg-gray-500/10 text-gray-500',
-    Gratitude: 'bg-orange-500/10 text-orange-500',
-  }[category] || 'bg-gray-500/10 text-gray-400');
-
-const RepliesModal = ({ open, onClose, replies }) => (
-  open ? (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-t-2xl w-full max-w-md mx-auto p-4 max-h-[60vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="font-bold text-lg mb-2">All Replies</div>
-        {replies.length === 0 ? (
-          <div className="text-charcoal-gray/60 italic">No replies yet — be the first to encourage 💬</div>
-        ) : (
-          replies.map(reply => (
-            <div key={reply.id} className="mb-3 flex items-center gap-2">
-              <span className="font-semibold">{reply.profiles?.full_name || 'User'}</span>
-              <span className="text-charcoal-gray/50">{reply.content}</span>
-            </div>
-          ))
-        )}
-        <Button variant="outline" className="mt-2 w-full" onClick={onClose}>Close</Button>
-      </div>
-    </div>
-  ) : null
-);
-
-const PostCard = ({ post, currentUser, onLike, onShare, onOpenComments, showDelete, onDelete }) => {
-  const [showFullImage, setShowFullImage] = useState(false);
-  const [showRepliesModal, setShowRepliesModal] = useState(false);
-  const [currentReplyIdx, setCurrentReplyIdx] = useState(0);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const isLikedByCurrentUser = post.likes.some(like => like.user_id === currentUser?.id);
-  const replies = post.comments.filter(c => c.parent_comment_id);
-  const hasReplies = replies.length > 0;
-  const navigate = useNavigate();
-
-  // Rotate replies every 5 seconds
+  // Update like state when isLiked prop changes
   useEffect(() => {
-    if (!hasReplies) return;
-    const interval = setInterval(() => {
-      setCurrentReplyIdx(idx => (idx + 1) % replies.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [replies.length, hasReplies]);
+    setIsLikedState(isLiked);
+  }, [isLiked, post.id]);
 
-  const handleDelete = () => {
-    setShowDeleteDialog(false);
-    onDelete();
+  // Initialize counts from post data and update when post changes
+  useEffect(() => {
+    setLikesCount(post.likes_count || 0);
+    setCommentsCount(post.comments_count || 0);
+    setSharesCount(post.shares_count || 0);
+    setViewsCount(post.views_count || 0);
+  }, [post.id, post.likes_count, post.comments_count, post.shares_count, post.views_count]);
+
+  // Fetch recent comments - temporarily disabled due to timeout issues
+  useEffect(() => {
+    // fetchRecentComments(); // Disabled due to database timeout issues
+  }, [post.id]);
+
+  // Rotate comments every 5 seconds
+  useEffect(() => {
+    if (recentComments.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentCommentIndex((prev) => 
+          prev === recentComments.length - 1 ? 0 : prev + 1
+        );
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [recentComments.length]);
+
+  const fetchRecentComments = async () => {
+    try {
+      // Add timeout and error handling for the comments query
+      const { data, error } = await supabase
+        .from('comments')
+        .select('*')
+        .eq('post_id', post.id)
+        .order('created_at', { ascending: false })
+        .limit(2); // Reduced limit to prevent timeout
+
+      if (error) {
+        console.warn('Comments fetch failed, continuing without comments:', error);
+        setRecentComments([]);
+        setCommentsCount(0);
+        return;
+      }
+
+      // Fetch profiles separately for comments
+      if (data && data.length > 0) {
+        const userIds = [...new Set(data.map(comment => comment.user_id).filter(Boolean))];
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url, username')
+          .in('id', userIds);
+
+        if (profilesError) {
+          console.error('Error fetching comment profiles:', profilesError);
+        } else {
+          const profilesMap = profiles.reduce((acc, profile) => {
+            acc[profile.id] = profile;
+            return acc;
+          }, {});
+
+          // Combine comments with profile data
+          const commentsWithProfiles = data.map(comment => ({
+            ...comment,
+            profiles: profilesMap[comment.user_id] || null
+          }));
+
+          setRecentComments(commentsWithProfiles);
+          setCommentsCount(commentsWithProfiles.length);
+          return;
+        }
+      }
+      
+      setRecentComments(data || []);
+      setCommentsCount(data?.length || 0);
+    } catch (error) {
+      console.warn('Comments fetch error, continuing without comments:', error);
+      setRecentComments([]);
+      setCommentsCount(0);
+    }
+  };
+
+  const handleLike = async () => {
+    if (isLoading) return;
+    
+    setIsLoading(true);
+    
+    try {
+      // Optimistic update
+      const newLikesCount = isLikedState ? Math.max(0, likesCount - 1) : likesCount + 1;
+      setLikesCount(newLikesCount);
+      setIsLikedState(!isLikedState);
+      
+      // Call the parent handler
+      await onLike();
+      
+    } catch (error) {
+      // Revert optimistic update on error
+      setLikesCount(isLikedState ? likesCount : Math.max(0, likesCount - 1));
+      setIsLikedState(isLikedState);
+      
+      console.error('Error handling like:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update like. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleComment = () => {
+    onComment();
+  };
+
+  const handleShare = async () => {
+    try {
+      const shareData = {
+        title: 'Growth Challenge',
+        text: post.reflection,
+        url: `${window.location.origin}/community/post/${post.id}`
+      };
+      
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        // Fallback: copy to clipboard
+        await navigator.clipboard.writeText(shareData.url);
+        toast({
+          title: "Shared!",
+          description: "Post link copied to clipboard.",
+        });
+      }
+      
+      // Update shares count
+      const { data: currentPost } = await supabase
+        .from('posts')
+        .select('shares_count')
+        .eq('id', post.id)
+        .single();
+      
+      if (currentPost) {
+        await supabase
+          .from('posts')
+          .update({ shares_count: (currentPost.shares_count || 0) + 1 })
+          .eq('id', post.id);
+      }
+      
+      setSharesCount(prev => prev + 1);
+      
+    } catch (error) {
+      console.error('Error sharing post:', error);
+    }
+  };
+
+  const getGrowthAreaEmoji = (growthArea) => {
+    const emojiMap = {
+      'spiritual': '🙏',
+      'emotional': '💝',
+      'physical': '💪',
+      'intellectual': '🧠',
+      'social': '🤝',
+      'financial': '💰',
+      'career': '💼',
+      'Self-Control': '🎯',
+      'Patience': '⏳',
+      'Kindness': '💝',
+      'Humility': '🙏',
+      'Gratitude': '🙏',
+      'Generosity': '🎁',
+      'Honesty': '🤝',
+      'Forgiveness': '💚',
+      'Compassion': '💕',
+      'Perseverance': '💪'
+    };
+    return emojiMap[growthArea] || '🌱';
+  };
+
+  const calculatePostScore = () => {
+    // This is now handled in the parent component
+    return 0;
+  };
+
+  const getTimeAgo = (dateString) => {
+    try {
+      return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+    } catch (error) {
+      return 'recently';
+    }
+  };
+
+  const getDisplayName = () => {
+    if (post.profiles?.full_name) {
+      return post.profiles.full_name;
+    }
+    if (post.profiles?.username) {
+      return post.profiles.username;
+    }
+    return 'Anonymous User';
+  };
+
+  const getAvatarUrl = () => {
+    return post.profiles?.avatar_url || null;
+  };
+
+  const getAvatarFallback = () => {
+    const name = getDisplayName();
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
   return (
-    <div className="w-full px-0 md:px-0 py-6 border-b border-black/10 bg-transparent">
-      {/* Challenge Title */}
-      <div className="font-bold text-lg text-forest-green mb-1 px-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span role="img" aria-label="challenge">🎯</span>
-          Challenge: {post.challenge_title}
-        </div>
-        {showDelete && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-charcoal-gray/50 hover:text-red-500 hover:bg-red-500/10 -mr-2"
-            onClick={() => setShowDeleteDialog(true)}
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+      {/* Post Header */}
+      <div className="p-4 border-b border-gray-100">
+        <div className="flex items-center space-x-3">
+          <Avatar 
+            className="h-10 w-10 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => onProfileClick(post.user_id)}
           >
-            <Trash2 className="w-5 h-5" />
-          </Button>
-        )}
-      </div>
-      
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="bg-white sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Delete Post</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this post? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex gap-3 justify-end mt-4">
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-              Cancel
-            </Button>
-            <Button 
-              variant="destructive" 
-              onClick={handleDelete}
-              className="bg-red-500 hover:bg-red-600 text-white"
-            >
-              Delete
-            </Button>
+            <AvatarImage src={getAvatarUrl()} alt={getDisplayName()} />
+            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-medium">
+              {getAvatarFallback()}
+            </AvatarFallback>
+          </Avatar>
+          
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => onProfileClick(post.user_id)}
+                className="font-semibold text-gray-900 hover:text-blue-600 transition-colors text-left truncate"
+              >
+                {getDisplayName()}
+              </button>
+              <span className="text-gray-400">•</span>
+              <span className="text-sm text-gray-500">{getTimeAgo(post.created_at)}</span>
+            </div>
+            
+            {/* Growth Area Badge */}
+            {post.category && (
+              <div className="flex items-center space-x-1 mt-1">
+                <Badge variant="outline" className="text-xs">
+                  {getGrowthAreaEmoji(post.category)} {post.category}
+                </Badge>
+              </div>
+            )}
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </div>
 
-      {/* User Info */}
-      <div className="flex items-center gap-2 text-xs text-charcoal-gray/60 px-4 mb-2">
-        <Avatar className="w-6 h-6 cursor-pointer" onClick={() => navigate(`/profile/${post.profiles.id}`)}>
-          <AvatarImage src={post.profiles.avatar_url} alt={post.profiles.full_name} />
-          <AvatarFallback className="bg-gradient-to-r from-forest-green to-leaf-green text-white">
-            {post.profiles.full_name?.charAt(0)}
-          </AvatarFallback>
-        </Avatar>
-        <span className="cursor-pointer font-semibold" onClick={() => navigate(`/profile/${post.profiles.id}`)}>{post.profiles.full_name}</span>
-        <span>•</span>
-        <span>{formatTimeAgo(post.created_at)}</span>
-        <span>•</span>
-        <Badge className={`capitalize px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${getCategoryColor(post.category)}`}>
-          <span>{getCategoryIcon(post.category)}</span> {post.category.replace('-', ' ')}
-        </Badge>
-      </div>
-      {/* Image (if any) */}
-      {post.photo_url && (
-        <div className="relative w-full flex justify-center mb-3">
-          <img
-            src={post.photo_url}
-            alt="reflection"
-            className={`rounded-lg object-cover w-full max-h-[250px] transition-all duration-300 cursor-pointer ${showFullImage ? 'max-h-[90vh] z-50 fixed top-0 left-0 right-0 mx-auto bg-black/90' : ''}`}
-            style={{ maxWidth: showFullImage ? '100vw' : '100%', height: 'auto' }}
-            onClick={() => setShowFullImage(!showFullImage)}
-          />
-          {!showFullImage && (
-            <button
-              className="absolute bottom-2 right-2 bg-white/80 rounded-full p-1 shadow"
-              onClick={() => setShowFullImage(true)}
-              aria-label="Expand image"
-            >
-              <Maximize2 className="w-5 h-5 text-charcoal-gray" />
-            </button>
-          )}
-          {showFullImage && (
-            <button
-              className="fixed top-4 right-4 z-50 bg-white/90 rounded-full p-2 shadow-lg"
-              onClick={() => setShowFullImage(false)}
-              aria-label="Close image"
-            >
-              ✕
-            </button>
-          )}
-        </div>
-      )}
-      {/* Reflection Section */}
-      <div className="px-4 pt-2 pb-2">
-        <div className="font-semibold text-charcoal-gray/80 mb-1">Reflection:</div>
-        <div className="text-base text-charcoal-gray/90 min-h-[32px]">
-          {post.reflection && post.reflection.trim() ? (
-            <span>{post.reflection}</span>
-          ) : (
-            <span className="italic text-charcoal-gray/50">No reflection added — just showing up 💪</span>
-          )}
-        </div>
-      </div>
-      {/* Reactions Row */}
-      <div className="flex items-center gap-8 px-4 pt-2 pb-1 text-charcoal-gray/70 border-t border-black/10 mt-2">
-        <Button onClick={() => onLike(post.id)} variant="ghost" size="sm" className={`flex items-center gap-1 text-base px-2 py-1 hover:text-red-500 hover:bg-red-500/10 ${isLikedByCurrentUser ? 'text-red-500' : ''}`} aria-label="Like">
-          <Heart className={`w-5 h-5 ${isLikedByCurrentUser ? 'fill-current' : ''}`} />
-          <span className="ml-1">Like</span>
-          <span className="ml-1">{post.likes.length}</span>
-        </Button>
-        <Button onClick={() => onOpenComments(post)} variant="ghost" size="sm" className="flex items-center gap-1 text-base px-2 py-1 hover:text-blue-500 hover:bg-blue-500/10" aria-label="Comments">
-          <MessageCircle className="w-5 h-5" />
-          <span className="ml-1">Comment</span>
-          <span className="ml-1">{post.comments.length}</span>
-        </Button>
-        <Button onClick={() => onShare(post)} variant="ghost" size="sm" className="flex items-center gap-1 text-base px-2 py-1 hover:text-leaf-green hover:bg-leaf-green/10" aria-label="Share">
-          <Share2 className="w-5 h-5" />
-          <span className="ml-1">Share</span>
-        </Button>
-      </div>
-      {/* Replies Section */}
-      <div className="px-4 pt-2 pb-1">
-        {hasReplies ? (
-          <div
-            className="rounded-lg bg-forest-green/5 px-3 py-2 mb-1 transition-opacity duration-500 animate-fade-in cursor-pointer flex items-center gap-2"
-            onClick={() => setShowRepliesModal(true)}
-            tabIndex={0}
-            role="button"
-            aria-label="View all replies"
-          >
-            <span className="font-semibold">
-              {(() => {
-                const name = replies[currentReplyIdx]?.profiles?.full_name || 'User';
-                return name.length > 12 ? name.slice(0, 12) + '…' : name;
-              })()}
-            </span>
-            <span className="ml-2 text-charcoal-gray/80 truncate">{replies[currentReplyIdx]?.content}</span>
+      {/* Post Content */}
+      <div className="p-4">
+        {/* Challenge Title */}
+        {post.challenge_title && (
+          <div className="mb-3">
+            <Badge variant="secondary" className="text-xs mb-2">
+              Challenge: {post.challenge_title}
+            </Badge>
           </div>
-        ) : (
-          <div className="italic text-charcoal-gray/50">No replies yet — be the first to encourage 💬</div>
         )}
-        <RepliesModal open={showRepliesModal} onClose={() => setShowRepliesModal(false)} replies={replies} />
+        
+        {/* Reflection Text */}
+        <div className="text-gray-800 leading-relaxed mb-4">
+          {post.reflection}
+        </div>
+        
+        {/* Photo */}
+        {post.photo_url && (
+          <div className="mb-4">
+            <img
+              src={post.photo_url}
+              alt="Post attachment"
+              className="w-full h-auto rounded-lg object-cover max-h-96"
+              loading="lazy"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Interaction Bar */}
+      <div className="px-4 pb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-6">
+            {/* Like Button */}
+            <button
+              onClick={handleLike}
+              disabled={isLoading}
+              className={`flex items-center space-x-2 text-sm transition-colors ${
+                isLikedState 
+                  ? 'text-red-500 hover:text-red-600' 
+                  : 'text-gray-500 hover:text-red-500'
+              }`}
+            >
+              <Heart 
+                className={`h-5 w-5 ${isLikedState ? 'fill-current' : ''}`} 
+              />
+              <span>{likesCount}</span>
+            </button>
+            
+            {/* Comment Button */}
+            <button
+              onClick={handleComment}
+              className={`flex items-center space-x-2 text-sm transition-colors ${
+                isCommented 
+                  ? 'text-blue-500 hover:text-blue-600' 
+                  : 'text-gray-500 hover:text-blue-500'
+              }`}
+            >
+              <MessageSquare className={`h-5 w-5 ${isCommented ? 'fill-current' : ''}`} />
+              <span>{commentsCount}</span>
+            </button>
+            
+            {/* Share Button */}
+            <button
+              onClick={handleShare}
+              className="flex items-center space-x-2 text-sm text-gray-500 hover:text-green-500 transition-colors"
+            >
+              <Share2 className="h-5 w-5" />
+              <span>{sharesCount}</span>
+            </button>
+          </div>
+          
+          {/* Views Count */}
+          <div className="flex items-center space-x-1 text-xs text-gray-400">
+            <Eye className="h-4 w-4" />
+            <span>{viewsCount}</span>
+          </div>
+        </div>
+        
+        {/* Comments Preview */}
+        {recentComments.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <div className="flex items-start space-x-2">
+              <Avatar className="h-6 w-6">
+                <AvatarImage 
+                  src={recentComments[currentCommentIndex]?.profiles?.avatar_url} 
+                  alt={recentComments[currentCommentIndex]?.profiles?.username} 
+                />
+                <AvatarFallback className="text-xs">
+                  {recentComments[currentCommentIndex]?.profiles?.username?.charAt(0)?.toUpperCase() || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium text-gray-900">
+                    {recentComments[currentCommentIndex]?.profiles?.username || 'Anonymous'}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {getTimeAgo(recentComments[currentCommentIndex]?.created_at)}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-700 mt-1">
+                  {recentComments[currentCommentIndex]?.content}
+                </p>
+              </div>
+            </div>
+            
+            {recentComments.length > 1 && (
+              <div className="flex items-center justify-between mt-2">
+                <div className="flex space-x-1">
+                  {recentComments.map((_, index) => (
+                    <div
+                      key={index}
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        index === currentCommentIndex ? 'bg-blue-500' : 'bg-gray-300'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <button
+                  onClick={onViewComments}
+                  className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  View all {commentsCount} comments
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* View Comments Link */}
+        {commentsCount > 0 && recentComments.length === 0 && (
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <button
+              onClick={onViewComments}
+              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+            >
+              View all {commentsCount} comments
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
 export default PostCard;
-
-// Add fade-in animation
-const style = document.createElement('style');
-style.innerHTML = `
-@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-.animate-fade-in { animation: fade-in 0.5s; }
-`;
-document.head.appendChild(style);

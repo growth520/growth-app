@@ -5,12 +5,39 @@ import { getCachedData, setCachedData } from '@/lib/performance.jsx';
 
 const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 
-// Validate OpenAI API key and warn in production
+// Show UI warning if OpenAI API key is missing in production
 if (import.meta.env.PROD && !OPENAI_API_KEY) {
+  // Create a user-friendly warning banner
+  if (typeof window !== 'undefined') {
+    const existingWarning = document.getElementById('openai-warning');
+    if (!existingWarning) {
+      const warningDiv = document.createElement('div');
+      warningDiv.id = 'openai-warning';
+      warningDiv.innerHTML = `
+        <div style="
+          position: fixed; 
+          top: 0; 
+          left: 0; 
+          right: 0; 
+          background: #fef3c7; 
+          color: #92400e; 
+          padding: 8px 16px; 
+          text-align: center; 
+          font-size: 14px; 
+          border-bottom: 1px solid #f59e0b;
+          z-index: 9999;
+          font-family: system-ui;
+        ">
+          ⚠️ AI features are using fallback suggestions. Add VITE_OPENAI_API_KEY to enable personalized AI coaching.
+        </div>
+      `;
+      document.body.appendChild(warningDiv);
+    }
+  }
   console.warn('⚠️ OpenAI API key not configured. AI features will use fallback suggestions.');
-} else if (!import.meta.env.PROD && !OPENAI_API_KEY) {
-  console.log('💡 Set VITE_OPENAI_API_KEY in .env for AI personalization features');
 }
+
+// Silently handle missing API key in development - no need to spam console
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 
 // Fallback suggestions if AI fails
@@ -85,6 +112,29 @@ const GROWTH_AREA_CONTEXT = {
   Purpose: "finding meaning and direction in life",
   Humility: "embracing modesty and learning from others",
   Gratitude: "appreciating the good in life and others"
+};
+
+// Feature flag for personalized suggestions - disable until database is set up
+const PERSONALIZED_SUGGESTIONS_ENABLED = false;
+
+// Helper function to check if personalized suggestions feature is available
+const checkPersonalizedSuggestionsAvailable = async (supabase) => {
+  // Feature is disabled for now to prevent 406 errors
+  if (!PERSONALIZED_SUGGESTIONS_ENABLED) {
+    return false;
+  }
+  
+  try {
+    // Simple query to check if table exists and is accessible
+    const { error } = await supabase
+      .from('personalized_suggestions')
+      .select('id')
+      .limit(0);
+    
+    return !error;
+  } catch (error) {
+    return false;
+  }
 };
 
 export const generatePersonalizedSuggestion = async ({
@@ -228,6 +278,12 @@ export const savePersonalizedSuggestion = async (supabase, {
   aiModel = 'gpt-4o-mini'
 }) => {
   try {
+    // First check if the feature is available
+    const isAvailable = await checkPersonalizedSuggestionsAvailable(supabase);
+    if (!isAvailable) {
+      return { success: false, error: 'Feature not available' };
+    }
+
     const { data, error } = await supabase
       .from('personalized_suggestions')
       .insert({
@@ -246,7 +302,11 @@ export const savePersonalizedSuggestion = async (supabase, {
     if (error) throw error;
     return { success: true, data };
   } catch (error) {
-    console.error('Error saving personalized suggestion:', error);
+    // Silently handle table not existing - feature not implemented yet
+    if (error?.code === 'PGRST106' || error?.status === 406) {
+      return { success: false, error: 'Feature not available' };
+    }
+    if (!import.meta.env.PROD) console.error('Error saving personalized suggestion:', error);
     return { success: false, error: error.message };
   }
 };
@@ -254,6 +314,12 @@ export const savePersonalizedSuggestion = async (supabase, {
 // Get active suggestion for user
 export const getActiveSuggestion = async (supabase, userId) => {
   try {
+    // First check if the feature is available
+    const isAvailable = await checkPersonalizedSuggestionsAvailable(supabase);
+    if (!isAvailable) {
+      return { success: true, data: null };
+    }
+
     const { data, error } = await supabase
       .from('personalized_suggestions')
       .select('*')
@@ -267,7 +333,11 @@ export const getActiveSuggestion = async (supabase, userId) => {
     if (error && error.code !== 'PGRST116') throw error; // PGRST116 is "not found"
     return { success: true, data: data || null };
   } catch (error) {
-    console.error('Error getting active suggestion:', error);
+    // Silently handle table not existing or other DB errors
+    if (error?.code === 'PGRST106' || error?.status === 406) {
+      return { success: true, data: null };
+    }
+    if (!import.meta.env.PROD) console.error('Error getting active suggestion:', error);
     return { success: false, error: error.message };
   }
 };
@@ -275,6 +345,12 @@ export const getActiveSuggestion = async (supabase, userId) => {
 // Mark suggestion as used
 export const markSuggestionAsUsed = async (supabase, suggestionId) => {
   try {
+    // First check if the feature is available
+    const isAvailable = await checkPersonalizedSuggestionsAvailable(supabase);
+    if (!isAvailable) {
+      return { success: false, error: 'Feature not available' };
+    }
+
     const { error } = await supabase
       .from('personalized_suggestions')
       .update({
@@ -286,7 +362,11 @@ export const markSuggestionAsUsed = async (supabase, suggestionId) => {
     if (error) throw error;
     return { success: true };
   } catch (error) {
-    console.error('Error marking suggestion as used:', error);
+    // Silently handle table not existing - feature not implemented yet
+    if (error?.code === 'PGRST106' || error?.status === 406) {
+      return { success: false, error: 'Feature not available' };
+    }
+    if (!import.meta.env.PROD) console.error('Error marking suggestion as used:', error);
     return { success: false, error: error.message };
   }
 }; 

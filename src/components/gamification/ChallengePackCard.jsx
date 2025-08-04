@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +15,10 @@ const ChallengePackCard = ({
   className = "",
   size = "default" // "default", "compact", "featured"
 }) => {
+  const navigate = useNavigate();
+  
   const {
+    id,
     title,
     description,
     icon,
@@ -47,19 +51,14 @@ const ChallengePackCard = ({
   const handleAction = () => {
     if (!isUnlocked) return;
     
-    if (isCompleted) {
-      onView?.(pack);
-    } else if (isStarted) {
-      onContinue?.(pack);
-    } else {
-      onStart?.(pack);
-    }
+    // Navigate to pack details page instead of handling actions here
+    navigate(`/challenge-pack/${id}`);
   };
 
   const getActionText = () => {
     if (isCompleted) return 'View Details';
     if (isStarted) return 'Continue';
-    return 'Start Pack';
+    return 'View Pack';
   };
 
   const cardVariants = {

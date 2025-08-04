@@ -6,10 +6,13 @@ import { DataProvider } from '@/contexts/DataContext';
 import { Toaster } from '@/components/ui/toaster';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import Navigation from '@/components/Navigation';
+import BackchatWidget from '@/components/BackchatWidget';
 import LoginPage from '@/pages/LoginPage'; // Keep login page eager for initial load
+import AuthCallbackPage from '@/pages/AuthCallbackPage'; // Keep auth callback eager for email confirmation
 import { 
   LazyChallengePage,
   LazyChallengeDetailsPage,
+  LazyChallengePackDetailsPage,
   LazyAssessmentPage,
   LazyCommunityPage,
   LazyProfilePage,
@@ -19,7 +22,9 @@ import {
   LazyAdminPage,
   LazySettingsPage,
   LazyLeaderboardPage,
-  PageLoader
+  LazyBadgesPage,
+  PageLoader,
+  LazyChallengeCompletionPage
 } from '@/components/LazyComponents';
 
 // Performance optimization - clear old timeouts
@@ -44,7 +49,7 @@ function AppContent() {
   }, [location.pathname]);
 
   const shouldShowNavigation = location.pathname !== '/login' && location.pathname !== '/assessment';
-  const paddingClass = shouldShowNavigation ? 'pb-20' : '';
+  const paddingClass = shouldShowNavigation ? 'pb-20 pt-16' : '';
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-sun-beige">
@@ -52,6 +57,7 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/challenge" element={
             <Suspense fallback={<PageLoader title="Challenge" />}>
               <LazyChallengePage />
@@ -60,6 +66,21 @@ function AppContent() {
           <Route path="/challenge-details" element={
             <Suspense fallback={<PageLoader title="Challenge Details" />}>
               <LazyChallengeDetailsPage />
+            </Suspense>
+          } />
+          <Route path="/challenge-completion/:challengeId" element={
+            <Suspense fallback={<PageLoader title="Challenge Completion" />}>
+              <LazyChallengeCompletionPage />
+            </Suspense>
+          } />
+          <Route path="/challenge-completion/:challengeId/:packId" element={
+            <Suspense fallback={<PageLoader title="Challenge Completion" />}>
+              <LazyChallengeCompletionPage />
+            </Suspense>
+          } />
+          <Route path="/challenge-pack/:packId" element={
+            <Suspense fallback={<PageLoader title="Challenge Pack Details" />}>
+              <LazyChallengePackDetailsPage />
             </Suspense>
           } />
           <Route path="/assessment" element={
@@ -73,6 +94,11 @@ function AppContent() {
             </Suspense>
           } />
           <Route path="/profile" element={
+            <Suspense fallback={<PageLoader title="Profile" />}>
+              <LazyProfilePage />
+            </Suspense>
+          } />
+          <Route path="/profile/:userId" element={
             <Suspense fallback={<PageLoader title="Profile" />}>
               <LazyProfilePage />
             </Suspense>
@@ -107,9 +133,15 @@ function AppContent() {
               <LazyLeaderboardPage />
             </Suspense>
           } />
+          <Route path="/badges" element={
+            <Suspense fallback={<PageLoader title="Badges" />}>
+              <LazyBadgesPage />
+            </Suspense>
+          } />
         </Routes>
       </div>
       {shouldShowNavigation && <Navigation />}
+      <BackchatWidget />
       <Toaster />
     </div>
   );

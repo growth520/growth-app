@@ -8,6 +8,7 @@
 		<link rel="manifest" href="/site.webmanifest">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-status-bar-style" content="default" />
 		<meta name="theme-color" content="#2D5A27" />
 		<title>Growth App</title>
@@ -15,5 +16,61 @@
 	<body>
 		<div id="root"></div>
 		<script type="module" src="/src/main.jsx"></script>
+		
+		<!-- Backchat Widget with timeout -->
+		<script>
+		(function(){
+			// Set a timeout to prevent infinite loading
+			const timeoutDuration = 10000; // 10 seconds
+			let loadTimeout;
+			
+			if(!window.backchatWidget||window.backchatWidget("getState")!=="initialized"){
+				window.backchatWidget=(...args)=>{
+					if(!window.backchatWidget.q)window.backchatWidget.q=[];
+					window.backchatWidget.q.push(args)
+				};
+				window.backchatWidget=new Proxy(window.backchatWidget,{
+					get(t,p){
+						if(p==="q")return t.q;
+						return(...a)=>t(p,...a)
+					}
+				})
+			}
+			
+			const onLoad=()=>{
+				const s=document.createElement("script");
+				s.src="https://backchat.ai/widget.js";
+				s.async=true;
+				
+				// Add timeout to prevent hanging
+				loadTimeout = setTimeout(() => {
+					console.warn('Backchat widget load timeout - service may be unavailable');
+					// Don't initialize if timeout reached
+				}, timeoutDuration);
+				
+				s.onload = () => {
+					clearTimeout(loadTimeout);
+					try {
+						window.backchatWidget("init",{"backchat-id":"1753136133541x251628824994250750"});
+					} catch (error) {
+						console.warn('Backchat widget initialization failed:', error);
+					}
+				};
+				
+				s.onerror = () => {
+					clearTimeout(loadTimeout);
+					console.warn('Failed to load backchat widget script');
+				};
+				
+				document.body.appendChild(s);
+			};
+			
+			if(document.readyState==="complete"){
+				onLoad();
+			} else {
+				window.addEventListener("load",onLoad);
+			}
+		})();
+		</script>
 	</body>
 </html>

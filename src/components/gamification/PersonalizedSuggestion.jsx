@@ -42,12 +42,40 @@ const PersonalizedSuggestion = ({
       if (!user) return;
 
       setLoading(true);
-      const result = await getActiveSuggestion(supabase, user.id);
-      
-      if (result.success) {
-        setSuggestion(result.data);
-      } else {
-        setError(result.error);
+      try {
+        const result = await getActiveSuggestion(supabase, user.id);
+        
+        if (result.success) {
+          setSuggestion(result.data);
+          setError(null);
+        } else {
+          // Don't show error for feature not available or missing table
+          if (result.error && 
+              !result.error.includes('not found') && 
+              !result.error.includes('PGRST116') &&
+              !result.error.includes('relation') &&
+              !result.error.includes('does not exist') &&
+              !result.error.includes('Feature not available')) {
+            setError(result.error);
+          } else {
+            setError(null);
+            setSuggestion(null);
+          }
+        }
+      } catch (err) {
+        if (!import.meta.env.PROD) console.error('Error fetching suggestion:', err);
+        // Only show error for actual problems, not missing tables or no data
+        if (err.message && 
+            !err.message.includes('relation') && 
+            !err.message.includes('does not exist') &&
+            !err.message.includes('PGRST116') &&
+            !err.message.includes('not found') &&
+            !err.message.includes('Feature not available')) {
+          setError(err.message);
+        } else {
+          setError(null);
+        }
+        setSuggestion(null);
       }
       setLoading(false);
     };
@@ -74,7 +102,7 @@ const PersonalizedSuggestion = ({
         throw new Error(result.error);
       }
     } catch (error) {
-      console.error('Error using suggestion:', error);
+              if (!import.meta.env.PROD) console.error('Error using suggestion:', error);
       toast({
         title: "Error",
         description: "Failed to accept challenge. Please try again.",
@@ -126,23 +154,26 @@ const PersonalizedSuggestion = ({
     );
   }
 
-  // Error state
+  // Error state - only show for actual errors, not missing data
   if (error) {
     return (
       <Card className={`border-red-200 bg-red-50 ${className}`}>
         <CardContent className="p-4">
           <div className="flex items-center gap-3">
-                            <Bot className="w-5 h-5 text-red-500" />
+            <Bot className="w-5 h-5 text-red-500" />
             <div className="flex-1">
               <p className="text-sm text-red-700">
                 Unable to load personalized suggestions
               </p>
+              <p className="text-xs text-red-600 mt-1">{error}</p>
             </div>
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={handleRefresh}
               className="text-red-600 hover:text-red-700"
+              aria-label="Retry loading suggestions"
+              title="Retry"
             >
               <RefreshCw className="w-4 h-4" />
             </Button>
@@ -213,6 +244,8 @@ const PersonalizedSuggestion = ({
                       size="sm"
                       onClick={handleDismiss}
                       className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
+                      aria-label="Dismiss suggestion"
+                      title="Dismiss suggestion"
                     >
                       <X className="w-4 h-4" />
                     </Button>
@@ -276,6 +309,8 @@ const PersonalizedSuggestion = ({
                   size={compact ? "sm" : "default"}
                   onClick={handleRefresh}
                   className="text-gray-600 hover:text-gray-800"
+                  aria-label="Refresh suggestions"
+                  title="Get new suggestions"
                 >
                   <RefreshCw className="w-4 h-4" />
                 </Button>

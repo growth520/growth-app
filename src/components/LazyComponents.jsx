@@ -13,6 +13,16 @@ export const LazyChallengeDetailsPage = createLazyComponent(
   'ChallengeDetailsPage'
 );
 
+export const LazyChallengeCompletionPage = createLazyComponent(
+  () => import('@/pages/ChallengeCompletionPage'),
+  'ChallengeCompletionPage'
+);
+
+export const LazyChallengePackDetailsPage = createLazyComponent(
+  () => import('@/pages/ChallengePackDetailsPage'),
+  'ChallengePackDetailsPage'
+);
+
 export const LazyAssessmentPage = createLazyComponent(
   () => import('@/pages/AssessmentPage'),
   'AssessmentPage'
@@ -56,6 +66,11 @@ export const LazySettingsPage = createLazyComponent(
 export const LazyLeaderboardPage = createLazyComponent(
   () => import('@/pages/LeaderboardPage'),
   'LeaderboardPage'
+);
+
+export const LazyBadgesPage = createLazyComponent(
+  () => import('@/pages/BadgesPage'),
+  'BadgesPage'
 );
 
 // Lazy load heavy gamification components
@@ -126,6 +141,8 @@ export const PageLoader = ({ title = 'page' }) => (
 export default {
   LazyChallengePage,
   LazyChallengeDetailsPage,
+  LazyChallengeCompletionPage,
+  LazyChallengePackDetailsPage,
   LazyAssessmentPage,
   LazyCommunityPage,
   LazyProfilePage,

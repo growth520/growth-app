@@ -16,22 +16,68 @@ const PostPage = () => {
   const [showComments, setShowComments] = useState(false);
   const currentUser = getCurrentUser();
 
-  useEffect(() => {
+  const fetchPost = async () => {
     if (!postId) return;
+    
     setLoading(true);
-    supabase
-      .from('posts')
-      .select('*, profiles:user_id ( id, full_name, avatar_url ), likes ( user_id ), comments ( id, user_id, parent_comment_id, content, profiles:user_id(full_name, avatar_url) )')
-      .eq('id', postId)
-      .single()
-      .then(({ data, error }) => {
-        if (error || !data) {
-          setNotFound(true);
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*, likes ( user_id ), comments ( id, user_id, parent_comment_id, content )')
+        .eq('id', postId)
+        .single();
+
+      if (error) throw error;
+
+      // Fetch profile data separately
+      if (data && data.user_id) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url')
+          .eq('id', data.user_id)
+          .single();
+
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
         } else {
-          setPost(data);
+          data.profiles = profileData;
         }
-        setLoading(false);
-      });
+      }
+
+      // Fetch comment profiles separately
+      if (data && data.comments && data.comments.length > 0) {
+        const commentUserIds = [...new Set(data.comments.map(comment => comment.user_id).filter(Boolean))];
+        const { data: commentProfiles, error: commentProfilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url')
+          .in('id', commentUserIds);
+
+        if (commentProfilesError) {
+          console.error('Error fetching comment profiles:', commentProfilesError);
+        } else {
+          const profilesMap = commentProfiles.reduce((acc, profile) => {
+            acc[profile.id] = profile;
+            return acc;
+          }, {});
+          
+          data.comments = data.comments.map(comment => ({
+            ...comment,
+            profiles: profilesMap[comment.user_id] || null
+          }));
+        }
+      }
+
+      setPost(data);
+    } catch (error) {
+      console.error('Error fetching post:', error);
+      setNotFound(true); // Changed from setError to setNotFound
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPost();
   }, [postId]);
 
   const handleLike = async (postId) => {
@@ -84,20 +130,21 @@ const PostPage = () => {
   return (
     <div className="min-h-screen bg-sun-beige flex items-center justify-center">
       <div className="w-full max-w-xl mx-auto">
-        <PostCard post={post} currentUser={currentUser} onLike={handleLike} onShare={handleShare} onOpenComments={handleOpenComments} />
+        <PostCard 
+          post={post} 
+          isLiked={post.likes?.some(l => l.user_id === currentUser?.id) || false}
+          onLike={handleLike} 
+          onComment={handleOpenComments}
+          onShare={handleShare} 
+          onViewComments={handleOpenComments}
+        />
         <CommentsModal
           isOpen={showComments}
-          setIsOpen={setShowComments}
-          post={post}
-          currentUser={currentUser}
-          onCommentPosted={() => {
+          postId={post.id}
+          onClose={() => setShowComments(false)}
+          onCommentAdded={() => {
             // Refetch post to update comments
-            supabase
-              .from('posts')
-              .select('*, profiles:user_id ( id, full_name, avatar_url ), likes ( user_id ), comments ( id, user_id, parent_comment_id, content, profiles:user_id(full_name, avatar_url) )')
-              .eq('id', postId)
-              .single()
-              .then(({ data }) => setPost(data));
+            fetchPost(); // Call fetchPost to refetch and update post
           }}
         />
       </div>

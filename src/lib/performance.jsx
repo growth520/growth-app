@@ -20,11 +20,9 @@ export const measurePerformance = (name, fn) => {
       
       if (import.meta.env.PROD) {
         // Only log slow operations in production
-        if (end - start > 500) {
+        if (end - start > 1000) {
           console.warn(`🐌 Slow operation "${name}": ${Math.round(end - start)}ms`);
         }
-      } else {
-        console.log(`⚡ "${name}": ${Math.round(end - start)}ms`);
       }
       
       return result;
@@ -192,14 +190,14 @@ export class ErrorBoundary extends Component {
 export const preloadCriticalResources = () => {
   if (typeof window === 'undefined') return;
   
-  // Preload fonts
-  const fontPreload = document.createElement('link');
-  fontPreload.rel = 'preload';
-  fontPreload.as = 'font';
-  fontPreload.type = 'font/woff2';
-  fontPreload.crossOrigin = 'anonymous';
-  fontPreload.href = '/fonts/inter-var.woff2'; // Adjust to your font path
-  document.head.appendChild(fontPreload);
+  // Preload fonts (disabled - font file not available)
+  // const fontPreload = document.createElement('link');
+  // fontPreload.rel = 'preload';
+  // fontPreload.as = 'font';
+  // fontPreload.type = 'font/woff2';
+  // fontPreload.crossOrigin = 'anonymous';
+  // fontPreload.href = '/fonts/inter-var.woff2'; // Adjust to your font path
+  // document.head.appendChild(fontPreload);
   
   // Preload critical API endpoints (DNS prefetch)
   const apiPrefetch = document.createElement('link');

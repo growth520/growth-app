@@ -167,7 +167,7 @@ const AssessmentPage = () => {
     };
 
     // Calculate scores from all answers
-    Object.values(answersObj).forEach(answer => {
+    Object.values(answersObj).forEach((answer) => {
       const option = answer.option;
       if (option && option.scores) {
         Object.entries(option.scores).forEach(([category, points]) => {
@@ -190,12 +190,18 @@ const AssessmentPage = () => {
           .sort(([,a], [,b]) => a - b) // Sort by lowest scores first
           .slice(0, 1)[0];
 
-    return {
+    const result = {
       scores,
       topRecommendation: { category: topRecommendation[0], score: topRecommendation[1] },
-      primaryGrowthArea: topRecommendation[0],
+      // Don't set primaryGrowthArea here - it should be set by user selection
       allAreas: Object.entries(scores).map(([category, score]) => ({ category, score }))
     };
+    
+    console.log('Areas needing improvement:', areasNeedingImprovement);
+    console.log('Top recommendation:', topRecommendation);
+    console.log('Final result:', result);
+    
+    return result;
   };
 
   const calculateResults = () => {
@@ -256,7 +262,16 @@ const AssessmentPage = () => {
   };
 
   const handleSelectGrowthArea = async (area) => {
-    if (!user || !results) return;
+    
+    if (!user || !results) {
+      console.error('Early return - missing user or results:', { user: !!user, results: !!results });
+      toast({
+        title: "Error",
+        description: "Missing user data or assessment results. Please refresh the page.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsSubmitting(true);
     
@@ -264,19 +279,53 @@ const AssessmentPage = () => {
       answers,
       scores: results.scores,
       topRecommendation: results.topRecommendation,
-      primaryGrowthArea: results.primaryGrowthArea,
+      primaryGrowthArea: area, // Use the user's selection, not the calculated recommendation
       userSelection: area,
     };
+
+    // First check if user has a profile
+    const { data: existingProfile, error: profileCheckError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', user.id)
+      .single();
+
+    if (profileCheckError || !existingProfile) {
+      console.error('Profile check error:', profileCheckError);
+      console.log('Existing profile:', existingProfile);
+      
+      // Try to create profile if it doesn't exist
+      const { error: createError } = await supabase
+        .from('profiles')
+        .insert({
+          id: user.id,
+          full_name: user.user_metadata?.full_name || 'User',
+          has_completed_assessment: false
+        });
+
+      if (createError) {
+        console.error('Profile creation error:', createError);
+        toast({
+          title: "Error Creating Profile",
+          description: createError.message,
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+    }
 
     const { error } = await supabase
       .from('profiles')
       .update({
         assessment_results: assessmentData,
+        growth_area: area, // Update the growth_area field with user's selection
         has_completed_assessment: true,
       })
       .eq('id', user.id);
 
     if (error) {
+      console.error('Update error:', error);
       toast({
         title: "Error Saving Assessment",
         description: error.message,
@@ -324,7 +373,10 @@ const AssessmentPage = () => {
                         {growthAreas[results.topRecommendation.category]?.description}
                       </p>
                       <Button
-                        onClick={() => handleSelectGrowthArea(results.topRecommendation.category)}
+                        onClick={() => {
+                          console.log('Main button clicked for:', results.topRecommendation.category);
+                          handleSelectGrowthArea(results.topRecommendation.category);
+                        }}
                         disabled={isSubmitting}
                         className="bg-gradient-to-r from-forest-green to-leaf-green text-white font-bold py-4 px-8 text-lg rounded-xl min-h-[60px] touch-manipulation"
                       >
@@ -342,7 +394,10 @@ const AssessmentPage = () => {
                         .map(([area, { emoji, description }]) => (
                         <Card
                           key={area}
-                          onClick={() => handleSelectGrowthArea(area)}
+                          onClick={() => {
+                            console.log('Card clicked for area:', area);
+                            handleSelectGrowthArea(area);
+                          }}
                           className="bg-white/40 border-black/10 hover:border-warm-orange hover:bg-white/80 cursor-pointer transition-all duration-300 p-4"
                         >
                           <div className="text-center">

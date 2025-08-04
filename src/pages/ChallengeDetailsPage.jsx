@@ -1,106 +1,200 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/components/ui/use-toast';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, CheckCircle, Camera, Lock, Globe, Upload, Trash2 } from 'lucide-react';
-import { supabase } from '@/lib/customSupabaseClient';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Progress } from '@/components/ui/progress';
+import { ArrowLeft, Flame, Trophy, Gift, Sparkles, Crown, Target } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { supabase } from '@/lib/customSupabaseClient';
+import { useToast } from '@/components/ui/use-toast';
+import { getLevelInfo } from '@/lib/levelSystem';
+import LevelUpModal from '@/components/gamification/LevelUpModal';
+import PackCompletionModal from '@/components/gamification/PackCompletionModal';
 
-const dataURLtoBlob = (dataurl) => {
-    let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
-        bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
-    while(n--){
-        u8arr[n] = bstr.charCodeAt(n);
-    }
-    return new Blob([u8arr], {type:mime});
-}
+// Gamification Modal Components
+const StreakModal = ({ open, onOpenChange, streakCount }) => (
+  <motion.div
+    initial={{ opacity: 0, scale: 0.8 }}
+    animate={{ opacity: 1, scale: 1 }}
+    exit={{ opacity: 0, scale: 0.8 }}
+    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+    onClick={onOpenChange}
+  >
+    <motion.div
+      initial={{ y: 50 }}
+      animate={{ y: 0 }}
+      exit={{ y: 50 }}
+      className="bg-white rounded-2xl p-8 mx-4 max-w-sm text-center shadow-2xl"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="mb-4">
+        <Flame className="w-16 h-16 text-orange-500 mx-auto mb-2" />
+        <h2 className="text-2xl font-bold text-gray-900">🔥 Streak Day {streakCount}!</h2>
+      </div>
+      <p className="text-gray-600 mb-6">Keep the momentum going! You're building an amazing habit.</p>
+      <Button onClick={onOpenChange} className="w-full bg-orange-500 hover:bg-orange-600">
+        Continue Growing! 
+      </Button>
+    </motion.div>
+  </motion.div>
+);
 
-
-const compressImage = (file, quality = 0.6, maxWidth = 800) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target.result;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        
-        let { width, height } = img;
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width;
-          width = maxWidth;
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        ctx.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL(file.type, quality);
-        resolve(dataUrl);
-      };
-      img.onerror = (error) => reject(error);
-    };
-    reader.onerror = (error) => reject(error);
-  });
-};
+const BonusModal = ({ open, onOpenChange, bonusType, bonusAmount }) => (
+  <motion.div
+    initial={{ opacity: 0, scale: 0.8 }}
+    animate={{ opacity: 1, scale: 1 }}
+    exit={{ opacity: 0, scale: 0.8 }}
+    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+    onClick={onOpenChange}
+  >
+    <motion.div
+      initial={{ y: 50 }}  
+      animate={{ y: 0 }}
+      exit={{ y: 50 }}
+      className="bg-white rounded-2xl p-8 mx-4 max-w-sm text-center shadow-2xl"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="mb-4">
+        <Gift className="w-16 h-16 text-green-500 mx-auto mb-2" />
+        <h2 className="text-2xl font-bold text-gray-900">🎁 Bonus Unlocked!</h2>
+      </div>
+      <p className="text-gray-600 mb-6">
+        {bonusType === 'tokens' && `+${bonusAmount} Streak Freeze Token${bonusAmount > 1 ? 's' : ''}!`}
+        {bonusType === 'milestone' && `Milestone completed! +${bonusAmount} bonus XP!`}
+      </p>
+      <Button onClick={onOpenChange} className="w-full bg-green-500 hover:bg-green-600">
+        Awesome!
+      </Button>
+    </motion.div>
+  </motion.div>
+);
 
 const ChallengeDetailsPage = () => {
-  const { user } = useAuth();
-  const { progress, loading, refreshAllData, triggerLevelUp } = useData();
-  const [challenge, setChallenge] = useState(null);
-  const [reflection, setReflection] = useState('');
-  const [privacy, setPrivacy] = useState('public');
-  const [photoPreview, setPhotoPreview] = useState(null);
-  const [photoFile, setPhotoFile] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [view, setView] = useState('details');
+  const { challengeId, packId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
+  const { profile, progress, refreshAllData, triggerChallengeCompletionRefresh } = useData();
   const { toast } = useToast();
-  const fileInputRef = useRef(null);
-  const [showTooSoonDialog, setShowTooSoonDialog] = useState(false);
-  const [showExtraChallenge, setShowExtraChallenge] = useState(false);
-  const [extraChallenge, setExtraChallenge] = useState(null);
-  const [extraReflection, setExtraReflection] = useState('');
-  const [isSubmittingExtra, setIsSubmittingExtra] = useState(false);
   const navigateTimeoutRef = useRef(null);
 
-  const fetchChallengeDetails = useCallback(async () => {
+  // State management
+  const [challenge, setChallenge] = useState(null);
+  const [packProgress, setPackProgress] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Gamification modal states
+  const [levelUpModal, setLevelUpModal] = useState({ open: false, newLevel: 0 });
+  const [streakModal, setStreakModal] = useState({ open: false, streakCount: 0 });
+  const [bonusModal, setBonusModal] = useState({ open: false, bonusType: '', bonusAmount: 0 });
+  const [completionModal, setCompletionModal] = useState({ isOpen: false, isCompleting: false });
+
+  const fetchChallengeDetails = async () => {
+    console.log('ChallengeDetailsPage: fetchChallengeDetails called');
+    console.log('ChallengeDetailsPage: location.state:', location.state);
+    console.log('ChallengeDetailsPage: location.state?.challenge:', location.state?.challenge);
+    
+    // Debug user's growth area selection
+    console.log('=== CHALLENGE DETAILS DEBUG ===');
+    console.log('User profile:', profile);
+    console.log('User selected growth area:', profile?.assessment_results?.userSelection);
+    console.log('Challenge category from location:', location.state?.challenge?.category);
+    console.log('Mismatch detected:', profile?.assessment_results?.userSelection !== location.state?.challenge?.category);
+    
+    // Check for growth area mismatch and regenerate challenge if needed
+    const userSelectedArea = profile?.assessment_results?.userSelection;
+    const challengeFromLocation = location.state?.challenge;
+    
+    if (userSelectedArea && challengeFromLocation && challengeFromLocation.category !== userSelectedArea) {
+      console.log('=== GROWTH AREA MISMATCH DETECTED ===');
+      console.log('Regenerating challenge for user selected area:', userSelectedArea);
+      
+      // Import the challenge generation logic
+      const { fetchChallengesFromCSV } = await import('@/lib/utils');
+      
+      try {
+        // Fetch all challenges
+        const allChallenges = await fetchChallengesFromCSV();
+        
+        // Filter challenges for the user's selected growth area
+        const filteredChallenges = allChallenges.filter(c => c.category === userSelectedArea);
+        
+        console.log(`Found ${filteredChallenges.length} challenges for ${userSelectedArea}`);
+        
+        if (filteredChallenges.length > 0) {
+          // Select a random challenge from the user's selected growth area
+          const randomChallenge = filteredChallenges[Math.floor(Math.random() * filteredChallenges.length)];
+          
+          console.log('Generated new challenge:', randomChallenge);
+          
+          // Update the challenge state with the new challenge
+          setChallenge({
+            title: randomChallenge.title,
+            description: randomChallenge.description,
+            category: randomChallenge.category,
+            id: Number(randomChallenge.id),
+          });
+          
+          setLoading(false);
+          return;
+        } else {
+          console.log(`No challenges found for ${userSelectedArea}, using fallback`);
+        }
+      } catch (error) {
+        console.error('Error regenerating challenge:', error);
+      }
+    }
+    
     // First, try to use the challenge passed via navigation state
     if (location.state?.challenge) {
+      console.log('ChallengeDetailsPage: Using challenge from location.state:', location.state.challenge);
       setChallenge(location.state.challenge);
+      setLoading(false); // Set loading to false since we have the challenge
       return;
     }
     
+    console.log('ChallengeDetailsPage: No challenge in location.state, trying fallback...');
+    
     // Fallback: try to fetch from challenges table by numeric id
     if (progress?.current_challenge_id) {
+      console.log('ChallengeDetailsPage: Fetching challenge by ID:', progress.current_challenge_id);
       const { data, error } = await supabase
         .from('challenges')
         .select('*')
         .eq('id', progress.current_challenge_id)
         .single();
       if (error) {
-        console.error('Error fetching challenge:', error);
+        if (!import.meta.env.PROD) console.error('Error fetching challenge:', error);
         toast({ title: 'Error', description: 'Could not fetch challenge details.', variant: 'destructive' });
         navigate('/challenge');
       } else {
+        console.log('ChallengeDetailsPage: Fetched challenge from database:', data);
         setChallenge(data);
+        setLoading(false); // Set loading to false since we have the challenge
       }
     } else if (!loading) {
+      console.log('ChallengeDetailsPage: No current_challenge_id, navigating back to challenge page');
       navigate('/challenge');
     }
-  }, [progress, loading, navigate, toast, location.state]);
+  };
 
   useEffect(() => {
+    console.log('ChallengeDetailsPage: useEffect triggered');
+    console.log('ChallengeDetailsPage: progress:', progress);
+    console.log('ChallengeDetailsPage: loading:', loading);
+    console.log('ChallengeDetailsPage: location.state:', location.state);
     fetchChallengeDetails();
-  }, [fetchChallengeDetails]);
+  }, [progress, loading, navigate, toast, location.state]);
+
+  // Debug when challenge state changes
+  useEffect(() => {
+    console.log('ChallengeDetailsPage: challenge state updated:', challenge);
+  }, [challenge]);
 
   // Cleanup navigation timeout on unmount
   useEffect(() => {
@@ -111,477 +205,168 @@ const ChallengeDetailsPage = () => {
     };
   }, []);
 
-  const handleComplete = () => {
-    // Check if challenge was assigned less than 3 minutes ago
-    if (progress?.challenge_assigned_at) {
-      const assignedAt = new Date(progress.challenge_assigned_at);
-      const now = new Date();
-      const diffMs = now - assignedAt;
-      if (diffMs < 3 * 60 * 1000) {
-        setShowTooSoonDialog(true);
-        return;
-      }
-    }
-    setView('reflection');
-  };
-
-  const handlePhotoUpload = async (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      try {
-        const compressedDataUrl = await compressImage(file);
-        setPhotoPreview(compressedDataUrl);
-        setPhotoFile(file);
-      } catch (error) {
-        toast({
-          title: "Error Uploading Photo",
-          description: "There was an issue processing your photo. Please try another one.",
-          variant: "destructive",
-        });
-      }
-    }
-  };
-  
-  const handleRemovePhoto = () => {
-    setPhotoPreview(null);
-    setPhotoFile(null);
-    if(fileInputRef.current) {
-        fileInputRef.current.value = "";
-    }
-  };
-
-  // XP and Level logic
-  const getProgress = () => {
-    const xp = parseInt(localStorage.getItem('xp') || '0', 10);
-    const level = parseInt(localStorage.getItem('level') || '1', 10);
-    const badges = JSON.parse(localStorage.getItem('badges') || '[]');
-    return { xp, level, badges };
-  };
-
-  const setProgress = ({ xp, level, badges }) => {
-    localStorage.setItem('xp', xp);
-    localStorage.setItem('level', level);
-    localStorage.setItem('badges', JSON.stringify(badges));
-  };
-
-  const XP_PER_CHALLENGE = 10;
-  const XP_TO_LEVEL = (level) => 50 + (level - 1) * 25;
-
-  const handleSubmitReflection = async () => {
-    if (!reflection.trim()) {
-      toast({
-        title: "Reflection Required",
-        description: "Please share your thoughts to complete the challenge!",
-        variant: "destructive",
-      });
-      return;
-    }
-    setIsSubmitting(true);
-    try {
-      // 1. Send to webhook and wait for response
-      let aiResponse;
-      try {
-        const webhookResponse = await fetch("https://hook.eu2.make.com/ajcskoiwdq5de96vc2z6fi5jxti1wsva", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            user_id: user.id,
-            growth_area: challenge.category,
-            user_reflection: reflection
-          })
-        });
-
-        if (webhookResponse.ok) {
-          aiResponse = await webhookResponse.json().catch(() => null);
-          
-          if (aiResponse?.newChallenge) {
-            // Store the AI-generated challenge for later
-            const { data: insertData, error: insertError } = await supabase
-              .from('ai_challenges')
-              .insert({
-                user_id: user.id,
-                growth_area: challenge.category,
-                challenge_text: aiResponse.newChallenge,
-                reflection_id: null, // Will be updated after reflection is saved
-                status: 'pending'
-              })
-              .select()
-              .single();
-
-            if (insertError) {
-              console.error('Error saving AI challenge:', insertError);
-            } else {
-              toast({
-                title: "🤖 New Challenge Generated!",
-                description: "AI has created a personalized challenge based on your reflection.",
-              });
-            }
-          }
-        } else {
-          console.error('Webhook error:', webhookResponse.statusText);
-        }
-      } catch (webhookError) {
-        console.error('Webhook error:', webhookError);
-        // Continue with the rest of the submission even if webhook fails
-      }
-
-      // 2. Mark challenge as completed
-      let insertData;
-      let insertError;
-      
-      // First, try to ensure the challenge exists in the challenges table
-      try {
-        const { error: insertChallengeError } = await supabase.from('challenges').upsert({
-          id: challenge.id,
-          category: challenge.category,
-          title: challenge.title,
-          description: challenge.description || challenge.title,
-          challenge_id_text: challenge.id.toString()
-        }, { onConflict: 'id' });
-        
-        if (insertChallengeError) {
-          console.error('Error upserting challenge:', insertChallengeError);
-        }
-      } catch (challengeInsertError) {
-        console.error('Error with challenge upsert:', challengeInsertError);
-      }
-      
-      // Now try to insert the completed challenge
-      const insertResult = await supabase.from('completed_challenges').insert({
-        user_id: user.id,
-        challenge_id: challenge.id,
-        completed_at: new Date().toISOString(),
-        reflection,
-        photo_url: null,
-        category: challenge.category
-      }).select().single();
-      
-      insertData = insertResult.data;
-      insertError = insertResult.error;
-      
-      // If foreign key constraint still fails, insert without the challenge_id reference
-      if (insertError && insertError.code === '23503') {
-        console.warn('Foreign key constraint failed, inserting completed challenge without challenge_id reference');
-        const fallbackResult = await supabase.from('completed_challenges').insert({
-          user_id: user.id,
-          challenge_id: null, // Remove the foreign key reference
-          completed_at: new Date().toISOString(),
-          reflection,
-          photo_url: null,
-          category: challenge.category
-        }).select().single();
-        
-        insertData = fallbackResult.data;
-        insertError = fallbackResult.error;
-        
-        if (insertError) {
-          throw insertError;
-        }
-      } else if (insertError) {
-        throw insertError;
-      }
-
-      if (insertError) {
-        throw insertError;
-      }
-
-      // 3. If we have both the AI challenge and the completed challenge, link them
-      if (aiResponse?.newChallenge) {
-        await supabase
-          .from('ai_challenges')
-          .update({ reflection_id: insertData.id })
-          .eq('user_id', user.id)
-          .is('reflection_id', null)
-          .order('created_at', { ascending: false })
-          .limit(1);
-      }
-
-      // 4. Update XP, level, streak in user_progress
-      let newXp = (progress?.xp || 0) + 10;
-      let newLevel = progress?.level || 1;
-      let leveledUp = false;
-      const xpToLevel = 50 + (newLevel - 1) * 25;
-      if (newXp >= xpToLevel) {
-        newXp -= xpToLevel;
-        newLevel += 1;
-        leveledUp = true;
-      }
-      await supabase.from('user_progress').update({
-        xp: newXp,
-        level: newLevel,
-        current_challenge_id: null, // Clear current challenge after completion
-      }).eq('user_id', user.id);
-
-      // Clear the cached challenge since it's now completed
-      localStorage.removeItem('currentChallenge');
-
-      // 4.5. Generate AI personalized suggestion if reflection exists
-      if (reflection.trim() && profile?.assessment_results?.userSelection) {
-        try {
-          const { generatePersonalizedSuggestion, savePersonalizedSuggestion } = await import('@/lib/openaiClient');
-          
-          const aiResult = await generatePersonalizedSuggestion({
-            reflection: reflection.trim(),
-            growthArea: profile.assessment_results.userSelection,
-            userLevel: newLevel,
-            recentChallenges: [], // Could fetch recent challenges here if needed
-          });
-
-          if (aiResult.success || aiResult.source === 'fallback') {
-            await savePersonalizedSuggestion(supabase, {
-              userId: user.id,
-              reflectionId: insertData.id,
-              motivationalMessage: aiResult.motivationalMessage,
-              challengeSuggestion: aiResult.challengeSuggestion,
-              growthArea: profile.assessment_results.userSelection,
-              aiModel: aiResult.source === 'fallback' ? 'fallback' : 'gpt-4o-mini'
-            });
-          }
-        } catch (aiError) {
-          console.error('Error generating AI suggestion:', aiError);
-          // Don't fail the challenge completion if AI suggestion fails
-        }
-      }
-
-      // 5. Award badges if needed
-      const { data: completed } = await supabase.from('completed_challenges').select('id').eq('user_id', user.id);
-      const completedCount = completed ? completed.length : 0;
-      const badgeInserts = [];
-      if (completedCount === 1) badgeInserts.push({ user_id: user.id, badge_type: 'FIRST_CHALLENGE' });
-      if (completedCount >= 5) badgeInserts.push({ user_id: user.id, badge_type: 'CHALLENGES_5' });
-      if (completedCount >= 10) badgeInserts.push({ user_id: user.id, badge_type: 'CHALLENGES_10' });
-      if (completedCount >= 25) badgeInserts.push({ user_id: user.id, badge_type: 'CHALLENGES_25' });
-      if (completedCount >= 50) badgeInserts.push({ user_id: user.id, badge_type: 'CHALLENGES_50' });
-      if (leveledUp) badgeInserts.push({ user_id: user.id, badge_type: `LEVEL_${newLevel}` });
-      
-      for (const badge of badgeInserts) {
-        await supabase.from('user_badges').upsert(badge, { onConflict: ['user_id', 'badge_type'] });
-      }
-
-      await refreshAllData();
-      
-      // 6. Show success messages
-      toast({
-        title: "🌟 Challenge Completed!",
-        description: `You earned 10 XP! Keep up the great work.`,
-      });
-
-      if (leveledUp) {
-        setTimeout(() => toast({ 
-          title: "🎉 Level Up!", 
-          description: `You reached level ${newLevel}!` 
-        }), 500);
-      }
-
-      if (badgeInserts.length > 0) {
-        toast({ 
-          title: "🏅 Badge Unlocked!", 
-          description: `You've earned new badges! Check them out on your Progress page.` 
-        });
-      }
-
-      // Show extra challenge option
-      setShowExtraChallenge(true);
-      // Set a timeout to navigate back to /challenge after 1.5s
-      navigateTimeoutRef.current = setTimeout(() => navigate('/challenge'), 1500);
-
-    } catch (error) {
-      console.error('Error in handleSubmitReflection:', error);
-      toast({ 
-        title: "Error Saving Progress", 
-        description: error.message || "Something went wrong. Please try again.", 
-        variant: "destructive" 
-      });
-      setIsSubmitting(false);
-    }
-  };
-
-  // Handle extra challenge reflection submission
-  const handleSubmitExtraReflection = async () => {
-    if (!extraReflection.trim()) {
-      toast({ title: "Reflection Required", description: "Please share your thoughts to complete the extra challenge!", variant: "destructive" });
-      return;
-    }
-    setIsSubmittingExtra(true);
-    try {
-      await supabase.from('completed_challenges').insert({
-        user_id: user.id,
-        challenge_id: extraChallenge.id,
-        completed_at: new Date().toISOString(),
-        reflection: extraReflection,
-        photo_url: null,
-        category: extraChallenge.category
-      });
-      // Add 5 XP only
-      let newXp = (progress?.xp || 0) + 5;
-      await supabase.from('user_progress').update({ xp: newXp }).eq('user_id', user.id);
-      await refreshAllData();
-      toast({ title: "🎁 Extra Challenge Completed!", description: `You earned 5 XP!` });
-      setShowExtraChallenge(false);
-      setExtraChallenge(null);
-      setExtraReflection('');
-      setTimeout(() => navigate('/challenge'), 1500);
-    } catch (error) {
-      toast({ title: "Error Saving Progress", description: error.message || "Something went wrong. Please try again.", variant: "destructive" });
-      setIsSubmittingExtra(false);
-    }
-  };
-
-  // Helper to get a random extra challenge from the same area, not already completed
-  const getRandomExtraChallenge = async () => {
-    // Fetch all completed challenge IDs
-    const { data: completed } = await supabase
-      .from('completed_challenges')
-      .select('challenge_id')
-      .eq('user_id', user.id);
-    const completedIds = completed ? completed.map(row => Number(row.challenge_id)) : [];
-    // Fetch all challenges from Supabase
-    const { data: all } = await supabase
-      .from('challenges')
-      .select('*')
-      .eq('category', challenge.category);
-    const available = all.filter(c => !completedIds.includes(Number(c.id)) && c.id !== challenge.id);
-    if (available.length === 0) return null;
-    return available[Math.floor(Math.random() * available.length)];
-  };
-
   if (loading || !challenge) {
     return <div className="min-h-screen flex items-center justify-center bg-sun-beige"><div className="text-charcoal-gray">Loading...</div></div>;
   }
 
   return (
-    <div className="min-h-screen bg-sun-beige text-charcoal-gray font-lato">
-      <div className="container mx-auto px-4 pt-8 pb-24">
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
-          <Button onClick={() => navigate('/challenge')} variant="ghost" className="mb-6 text-charcoal-gray">
+    <div className="min-h-screen p-4 bg-sun-beige pb-20">
+      <div className="max-w-2xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-6">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(packId ? `/challenge-packs/${packId}` : '/challenge')}
+            className="text-forest-green hover:bg-forest-green/10"
+          >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Challenges
+            Back
           </Button>
-        </motion.div>
+          <div>
+            <h1 className="text-2xl font-bold text-forest-green">Complete Challenge</h1>
+            <p className="text-charcoal-gray/70">Share your experience to earn rewards</p>
+          </div>
+        </div>
 
-        {/* Growth takes a moment dialog */}
-        <Dialog open={showTooSoonDialog} onOpenChange={setShowTooSoonDialog}>
-          <DialogContent className="bg-sun-beige border-forest-green/20 font-lato">
-            <DialogHeader>
-              <DialogTitle className="font-poppins text-2xl text-forest-green text-center">Growth takes a moment.</DialogTitle>
-              <DialogDescription className="text-center text-charcoal-gray/80 pt-4">
-                <p className="text-lg">It looks like you’re finishing this challenge quickly. Have you had a chance to really try it out?</p>
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid grid-cols-2 gap-4 mt-6">
-              <Button onClick={() => { setShowTooSoonDialog(false); setView('details'); }} variant="outline" className="border-forest-green text-forest-green hover:bg-forest-green/10 hover:text-forest-green">
-                I’ll come back
-              </Button>
-              <Button onClick={() => { setShowTooSoonDialog(false); setView('reflection'); }} className="bg-forest-green text-white">
-                I’ve done it
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {view === 'details' && (
-          <motion.div key="details" initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 50 }}>
-            <Card className="bg-white/50 border-black/10 shadow-lg rounded-2xl">
-              <CardHeader className="p-6">
-                <CardTitle className="font-poppins text-3xl font-bold text-forest-green">Challenge Details</CardTitle>
-                <CardDescription className="text-charcoal-gray/80 text-base pt-1">{challenge.title}</CardDescription>
-              </CardHeader>
-              <CardContent className="p-6 pt-0 space-y-6">
-                <p className="text-lg text-charcoal-gray leading-relaxed">{challenge.description}</p>
-                <Button onClick={handleComplete} className="w-full bg-gradient-to-r from-warm-orange to-orange-400 text-white font-bold py-6 text-base rounded-xl min-h-[60px] touch-manipulation">
-                  <CheckCircle className="w-5 h-5 mr-2" /> Complete Challenge
-                </Button>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
-        {view === 'reflection' && !showExtraChallenge && (
-          <motion.div key="reflection" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }}>
-            <Card className="bg-white/50 border-black/10 shadow-lg rounded-2xl">
-              <CardHeader className="p-6">
-                <CardTitle className="font-poppins text-3xl font-bold text-forest-green">Reflect on Your Experience</CardTitle>
-                <CardDescription className="text-charcoal-gray/80 text-base pt-1">
-                  Completing the challenge is just the beginning. Reflection is where growth happens.
+        {/* Challenge Card */}
+        <Card className="bg-white shadow-lg">
+          <CardHeader>
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-forest-green/10 rounded-full">
+                <Target className="w-6 h-6 text-forest-green" />
+              </div>
+              <div>
+                <CardTitle className="text-xl text-forest-green">
+                  {challenge?.title || 'Today\'s Challenge'}
+                </CardTitle>
+                <CardDescription>
+                  Read through your challenge and prepare to complete it
                 </CardDescription>
-              </CardHeader>
-              <CardContent className="p-6 pt-0 space-y-6">
-                <Textarea
-                  value={reflection}
-                  onChange={(e) => setReflection(e.target.value)}
-                  placeholder="How did this challenge make you feel? What did you learn about yourself?"
-                  className="min-h-[150px] text-base rounded-xl bg-white/80 border-charcoal-gray/20"
-                  disabled={isSubmitting}
-                />
-                {photoPreview && (
-                  <div className="relative w-full h-48 rounded-xl overflow-hidden group">
-                    <img src={photoPreview} alt="Reflection preview" className="w-full h-full object-cover" />
-                     {!isSubmitting && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button variant="destructive" size="icon" onClick={handleRemovePhoto}>
-                                <Trash2 className="w-5 h-5" />
-                            </Button>
-                        </div>
-                    )}
-                  </div>
-                )}
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handlePhotoUpload}
-                  className="hidden"
-                  accept="image/*"
-                  disabled={isSubmitting}
-                />
-                <Button 
-                  variant="outline" 
-                  className="w-full border-charcoal-gray/30 text-charcoal-gray font-bold py-6 text-base rounded-xl" 
-                  onClick={() => fileInputRef.current.click()}
-                  disabled={isSubmitting}
-                >
-                  <Camera className="w-5 h-5 mr-2" /> {photoPreview ? 'Change Photo' : 'Upload Photo'}
-                </Button>
-                <Select value={privacy} onValueChange={setPrivacy} disabled={isSubmitting}>
-                  <SelectTrigger className="w-full border-charcoal-gray/30 text-charcoal-gray font-bold py-6 text-base rounded-xl">
-                    <SelectValue placeholder="Select privacy..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="public"><div className="flex items-center gap-2"><Globe className="w-4 h-4" /> Public (share to community)</div></SelectItem>
-                    <SelectItem value="private"><div className="flex items-center gap-2"><Lock className="w-4 h-4" /> Private</div></SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button onClick={handleSubmitReflection} disabled={isSubmitting} className="w-full bg-gradient-to-r from-forest-green to-leaf-green text-white font-bold py-6 text-base rounded-xl min-h-[60px] touch-manipulation">
-                  <Upload className="w-5 h-5 mr-2" /> {isSubmitting ? 'Submitting...' : 'Submit Reflection'}
-                </Button>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-        {/* Extra Challenge Flow */}
-        {showExtraChallenge && extraChallenge && (
-          <motion.div key="extra" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }}>
-            <Card className="bg-white/50 border-black/10 shadow-lg rounded-2xl">
-              <CardHeader className="p-6">
-                <CardTitle className="font-poppins text-3xl font-bold text-forest-green">Extra Challenge</CardTitle>
-                <CardDescription className="text-charcoal-gray/80 text-base pt-1">{extraChallenge.title}</CardDescription>
-              </CardHeader>
-              <CardContent className="p-6 pt-0 space-y-6">
-                <p className="text-lg text-charcoal-gray leading-relaxed">{extraChallenge.title}</p>
-                <Textarea
-                  value={extraReflection}
-                  onChange={(e) => setExtraReflection(e.target.value)}
-                  placeholder="How did this extra challenge make you feel? What did you learn?"
-                  className="min-h-[150px] text-base rounded-xl bg-white/80 border-charcoal-gray/20"
-                  disabled={isSubmittingExtra}
-                />
-                <Button onClick={handleSubmitExtraReflection} disabled={isSubmittingExtra} className="w-full bg-gradient-to-r from-warm-orange to-orange-400 text-white font-bold py-6 text-base rounded-xl">
-                  <Upload className="w-5 h-5 mr-2" /> {isSubmittingExtra ? 'Submitting...' : 'Submit Reflection'}
-                </Button>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <h3 className="font-semibold text-lg text-gray-900 mb-2">
+                {challenge?.title}
+              </h3>
+              <p className="text-gray-700 leading-relaxed">
+                {challenge?.description}
+              </p>
+            </div>
+
+            {/* Challenge Info */}
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="bg-forest-green/10 text-forest-green">
+                {challenge?.xp_reward || 10} XP
+              </Badge>
+              {challenge?.category && (
+                <Badge variant="outline">
+                  {challenge.category}
+                </Badge>
+              )}
+            </div>
+
+            {/* Complete Challenge Button */}
+            <Button
+              onClick={() => navigate(`/challenge-completion/${challenge?.id}${packId ? `/${packId}` : ''}`, { 
+                state: { challenge: challenge } 
+              })}
+              className="w-full py-3 bg-forest-green hover:bg-forest-green/90 text-white"
+              size="lg"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Complete Challenge
+            </Button>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Gamification Modals */}
+      <LevelUpModal 
+        open={levelUpModal.open} 
+        onOpenChange={() => setLevelUpModal({ open: false, newLevel: 0 })}
+        newLevel={levelUpModal.newLevel}
+      />
+
+      <AnimatePresence>
+        {streakModal.open && (
+          <StreakModal
+            open={streakModal.open}
+            onOpenChange={() => setStreakModal({ open: false, streakCount: 0 })}
+            streakCount={streakModal.streakCount}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {bonusModal.open && (
+          <BonusModal
+            open={bonusModal.open}
+            onOpenChange={() => setBonusModal({ open: false, bonusType: '', bonusAmount: 0 })}
+            bonusType={bonusModal.bonusType}
+            bonusAmount={bonusModal.bonusAmount}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Pack Completion Modal */}
+      {packId && (
+        <PackCompletionModal
+          isOpen={completionModal.isOpen}
+          onClose={() => setCompletionModal({ isOpen: false, isCompleting: false })}
+          pack={challenge?.pack}
+          onComplete={async (completionData) => {
+            setCompletionModal(prev => ({ ...prev, isCompleting: true }));
+            try {
+              const { data, error } = await supabase.rpc('complete_pack_challenge', {
+                p_user_id: user.id,
+                p_pack_id: parseInt(packId), // Convert to BIGINT for challenge_packs.id
+                p_final_reflection: completionData.reflection.trim(),
+                p_image_url: completionData.imageUrl || null,
+                p_visibility: completionData.visibility || 'public'
+              });
+
+              if (error) throw error;
+
+              setCompletionModal({ isOpen: false, isCompleting: false });
+              
+              toast({
+                title: "🎉 Pack Completed!",
+                description: `Congratulations! You earned ${data.xp_awarded} XP${data.community_post_created ? ' and shared with the community' : ''}.`,
+                duration: 5000,
+              });
+
+              if (data.community_post_created) {
+                window.dispatchEvent(new CustomEvent('newCommunityPost', {
+                  detail: {
+                    type: 'pack_completion',
+                    packTitle: data.pack_title,
+                    reflection: completionData.reflection,
+                    xpAwarded: data.xp_awarded
+                  }
+                }));
+              }
+
+              setTimeout(() => {
+                navigate('/progress');
+              }, 3000);
+
+            } catch (error) {
+              console.error('Error completing pack:', error);
+              toast({
+                title: "Error Completing Pack",
+                description: error.message || "Something went wrong. Please try again.",
+                variant: "destructive"
+              });
+            } finally {
+              setCompletionModal(prev => ({ ...prev, isCompleting: false }));
+            }
+          }}
+          isCompleting={completionModal.isCompleting}
+        />
+      )}
     </div>
   );
 };

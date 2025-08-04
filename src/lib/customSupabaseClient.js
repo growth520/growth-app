@@ -66,12 +66,7 @@ const createSupabaseClient = () => {
       }
     });
     
-    // Add connection monitoring for production debugging
-    if (import.meta.env.PROD) {
-      supabaseInstance.auth.onAuthStateChange((event, session) => {
-        console.log('Auth state changed:', event, session ? 'Session active' : 'No session');
-      });
-    }
+    // Auth state monitoring removed to clean up console output
   }
   
   return supabaseInstance;

@@ -28,6 +28,8 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "cmdk": "^0.2.0",
+    "date-fns": "^4.1.0",
+    "dotenv": "^17.2.1",
     "framer-motion": "^10.16.4",
     "lucide-react": "^0.285.0",
     "papaparse": "^5.5.3",

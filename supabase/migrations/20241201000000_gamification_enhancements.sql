@@ -104,10 +104,8 @@ CREATE TABLE IF NOT EXISTS public.level_rewards (
 
 -- 8. ADD TOKENS TO USER_PROGRESS TABLE
 -- =====================================================
-ALTER TABLE public.user_progress 
-ADD COLUMN IF NOT EXISTS tokens INTEGER DEFAULT 0,
-ADD COLUMN IF NOT EXISTS streak_freezes_used INTEGER DEFAULT 0,
-ADD COLUMN IF NOT EXISTS last_streak_freeze_date DATE;
+-- Note: These columns are now created in the user_progress table creation migration
+-- No need to add them here since they're already included in the table definition
 
 -- =====================================================
 -- INDEXES FOR PERFORMANCE

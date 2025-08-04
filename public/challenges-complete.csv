@@ -1,0 +1,111 @@
+id,created_at,category,title,description,challenge_id_text
+1,2025-07-22T08:53:28.265343,Mindfulness,Pause Before Reacting,"Before responding to frustration, take 3 deep breaths and ask yourself: 'What would a calmer version of me do?'",MIN-0001
+2,2025-07-22T08:53:28.265343,Mindfulness,Single-Task Focus,"Choose one task today to do with complete focus — no multitasking, no distractions.",MIN-0002
+3,2025-07-22T08:53:28.265343,Mindfulness,Win the Morning,Wake up 20 minutes earlier than usual and use that time for something that fuels you (not your phone).,MIN-0003
+4,2025-07-22T08:53:28.265343,Mindfulness,Speak Up Once,"Share one idea, opinion, or thought in a group or conversation — even if you feel unsure.",MIN-0004
+5,2025-07-22T08:53:28.265343,Mindfulness,Celebrate a Small Win,"At the end of the day, write down one thing you did well — no matter how small.",MIN-0005
+6,2025-07-22T08:53:28.265343,Mindfulness,Reframe a Setback,"Think of one recent failure and write what it taught you. Let it become a tool, not a weight.",MIN-0006
+7,2025-07-22T08:53:28.265343,Mindfulness,Walk & Reflect,Go on a 10-minute walk without your phone. Use the time to think about how you're growing.,MIN-0007
+8,2025-07-22T08:53:28.265343,Mindfulness,Reach Out,Send a voice note or message to someone you've been meaning to reconnect with.,MIN-0008
+9,2025-07-22T08:53:28.265343,Mindfulness,Breathe Before You Eat,"Before your next meal or snack, pause for 10 seconds and take a breath. Then decide mindfully.",MIN-0009
+10,2025-07-22T08:53:28.265343,Mindfulness,Create a Quiet Space,Choose 10 minutes today to be completely screen-free and in silence.,MIN-0010
+11,2025-07-22T08:53:28.265343,Resilience,Embrace a Setback,"When something goes wrong today, write down one positive lesson you can learn from it.",RES-0001
+12,2025-07-22T08:53:28.265343,Resilience,Bounce Back,"After a difficult moment, take 5 minutes to reset and then continue with your day.",RES-0002
+13,2025-07-22T08:53:28.265343,Resilience,Find Strength,"Identify one challenge you overcame in the past and remind yourself of your inner strength.",RES-0003
+14,2025-07-22T08:53:28.265343,Resilience,Adapt to Change,"When plans change unexpectedly, find one positive aspect of the new situation.",RES-0004
+15,2025-07-22T08:53:28.265343,Resilience,Learn from Failure,"Think of a recent mistake and write down what it taught you about yourself.",RES-0005
+16,2025-07-22T08:53:28.265343,Resilience,Stay Grounded,"When feeling overwhelmed, practice 3 deep breaths and focus on what you can control.",RES-0006
+17,2025-07-22T08:53:28.265343,Resilience,Build Support,"Reach out to someone who can help you through a current challenge.",RES-0007
+18,2025-07-22T08:53:28.265343,Resilience,Find Meaning,"In a difficult situation, identify one way it's helping you grow.",RES-0008
+19,2025-07-22T08:53:28.265343,Resilience,Practice Patience,"When waiting for something, use the time to practice being present.",RES-0009
+20,2025-07-22T08:53:28.265343,Resilience,Embrace Uncertainty,"Do something today that's outside your comfort zone.",RES-0010
+21,2025-07-22T08:53:28.265343,Communication,Active Listening,"Have a conversation where you focus entirely on understanding the other person without planning your response.",COM-0001
+22,2025-07-22T08:53:28.265343,Communication,Express Clearly,"Practice explaining a complex idea to someone in simple terms.",COM-0002
+23,2025-07-22T08:53:28.265343,Communication,Ask Questions,"In your next conversation, ask at least 3 thoughtful questions to learn more about the other person.",COM-0003
+24,2025-07-22T08:53:28.265343,Communication,Share Feelings,"Express your emotions honestly to someone you trust today.",COM-0004
+25,2025-07-22T08:53:28.265343,Communication,Give Feedback,"Provide constructive feedback to someone in a kind and helpful way.",COM-0005
+26,2025-07-22T08:53:28.265343,Communication,Resolve Conflict,"Address a disagreement with someone using 'I feel' statements.",COM-0006
+27,2025-07-22T08:53:28.265343,Communication,Public Speaking,"Share your thoughts in a group setting, even if it makes you nervous.",COM-0007
+28,2025-07-22T08:53:28.265343,Communication,Write Clearly,"Send a message or email that clearly communicates your thoughts and feelings.",COM-0008
+29,2025-07-22T08:53:28.265343,Communication,Show Empathy,"Respond to someone's problem by acknowledging their feelings before offering solutions.",COM-0009
+30,2025-07-22T08:53:28.265343,Communication,Build Rapport,"Find common ground with someone you don't know well.",COM-0010
+31,2025-07-22T08:53:28.265343,Purpose,Define Your Why,"Write down your top 3 values and how they guide your decisions.",PUR-0001
+32,2025-07-22T08:53:28.265343,Purpose,Align Actions,"Choose one action today that aligns with your deeper purpose.",PUR-0002
+33,2025-07-22T08:53:28.265343,Purpose,Inspire Others,"Share something meaningful with someone that might help them find their own purpose.",PUR-0003
+34,2025-07-22T08:53:28.265343,Purpose,Reflect on Impact,"Think about how your actions today contribute to something larger than yourself.",PUR-0004
+35,2025-07-22T08:53:28.265343,Purpose,Set Meaningful Goals,"Write down one goal that connects to your deeper values.",PUR-0005
+36,2025-07-22T08:53:28.265343,Purpose,Find Your Calling,"Explore one activity that makes you lose track of time.",PUR-0006
+37,2025-07-22T08:53:28.265343,Purpose,Make a Difference,"Do something today that helps someone else without expecting anything in return.",PUR-0007
+38,2025-07-22T08:53:28.265343,Purpose,Connect to Values,"Make a decision today based on your values rather than convenience.",PUR-0008
+39,2025-07-22T08:53:28.265343,Purpose,Share Your Story,"Tell someone about a time when you felt most alive and engaged.",PUR-0009
+40,2025-07-22T08:53:28.265343,Purpose,Create Legacy,"Think about what you want to be remembered for and take one step toward that.",PUR-0010
+41,2025-07-22T08:53:28.265343,Fitness,Move Your Body,"Do 20 minutes of any physical activity that gets your heart rate up.",FIT-0001
+42,2025-07-22T08:53:28.265343,Fitness,Strength Training,"Complete 10 push-ups, 10 squats, and 10 lunges.",FIT-0002
+43,2025-07-22T08:53:28.265343,Fitness,Flexibility,"Spend 10 minutes stretching and improving your flexibility.",FIT-0003
+44,2025-07-22T08:53:28.265343,Fitness,Cardio Boost,"Go for a 15-minute brisk walk or run.",FIT-0004
+45,2025-07-22T08:53:28.265343,Fitness,Balance Practice,"Stand on one leg for 30 seconds on each side.",FIT-0005
+46,2025-07-22T08:53:28.265343,Fitness,Core Work,"Do 20 crunches and 20 plank holds.",FIT-0006
+47,2025-07-22T08:53:28.265343,Fitness,Active Recovery,"Take a gentle yoga class or do some light stretching.",FIT-0007
+48,2025-07-22T08:53:28.265343,Fitness,Endurance,"Try an activity that challenges your stamina for 30 minutes.",FIT-0008
+49,2025-07-22T08:53:28.265343,Fitness,Functional Movement,"Practice movements that mimic daily activities like squatting and reaching.",FIT-0009
+50,2025-07-22T08:53:28.265343,Fitness,Rest Day,"Take a complete rest day and focus on recovery.",FIT-0010
+51,2025-07-22T08:53:28.265343,Self-Worth,Celebrate Yourself,"Write down 3 things you like about yourself today.",SW-0001
+52,2025-07-22T08:53:28.265343,Self-Worth,Accept Compliments,"When someone compliments you today, simply say 'Thank you' without downplaying it.",SW-0002
+53,2025-07-22T08:53:28.265343,Self-Worth,Self-Care,"Do something kind for yourself today, no matter how small.",SW-0003
+54,2025-07-22T08:53:28.265343,Self-Worth,Set Boundaries,"Say 'no' to something that doesn't align with your values.",SW-0004
+55,2025-07-22T08:53:28.265343,Self-Worth,Own Your Success,"Acknowledge one achievement today without attributing it to luck.",SW-0005
+56,2025-07-22T08:53:28.265343,Self-Worth,Positive Self-Talk,"Replace one negative thought with a positive one about yourself.",SW-0006
+57,2025-07-22T08:53:28.265343,Self-Worth,Value Your Time,"Treat your time as precious and don't waste it on things that don't matter.",SW-0007
+58,2025-07-22T08:53:28.265343,Self-Worth,Embrace Imperfection,"Allow yourself to make mistakes and learn from them.",SW-0008
+59,2025-07-22T08:53:28.265343,Self-Worth,Speak Your Truth,"Express an opinion that might be unpopular but is important to you.",SW-0009
+60,2025-07-22T08:53:28.265343,Self-Worth,Know Your Worth,"Remind yourself that you deserve respect, love, and happiness.",SW-0010
+61,2025-07-22T08:53:28.265343,Discipline,Complete a Task,"Finish one task you have been putting off today.",DIS-0001
+62,2025-07-22T08:53:28.265343,Discipline,Stick to a Schedule,"Follow your planned schedule for at least 4 hours today.",DIS-0002
+63,2025-07-22T08:53:28.265343,Discipline,Delayed Gratification,"Choose to do something important now instead of something immediately pleasurable.",DIS-0003
+64,2025-07-22T08:53:28.265343,Discipline,Morning Routine,"Wake up at the same time and follow a consistent morning routine.",DIS-0004
+65,2025-07-22T08:53:28.265343,Discipline,Work Focus,"Work on one task for 45 minutes without checking your phone.",DIS-0005
+66,2025-07-22T08:53:28.265343,Discipline,Healthy Habits,"Make one healthy choice that requires discipline today.",DIS-0006
+67,2025-07-22T08:53:28.265343,Discipline,Financial Discipline,"Save money or avoid an unnecessary purchase today.",DIS-0007
+68,2025-07-22T08:53:28.265343,Discipline,Consistent Practice,"Practice a skill for 30 minutes even if you don't feel like it.",DIS-0008
+69,2025-07-22T08:53:28.265343,Discipline,Follow Through,"Complete something you started even when it gets difficult.",DIS-0009
+70,2025-07-22T08:53:28.265343,Discipline,Build Willpower,"Resist one temptation that you normally give in to.",DIS-0010
+71,2025-07-22T08:53:28.265343,Confidence,Speak Up,"Share your opinion in a group setting today.",CON-0001
+72,2025-07-22T08:53:28.265343,Confidence,Try Something New,"Do something outside your comfort zone today.",CON-0002
+73,2025-07-22T08:53:28.265343,Confidence,Stand Tall,"Practice confident body language for 5 minutes today.",CON-0003
+74,2025-07-22T08:53:28.265343,Confidence,Take Initiative,"Start a conversation or activity without waiting for others.",CON-0004
+75,2025-07-22T08:53:28.265343,Confidence,Own Your Space,"Walk into a room with your head held high and shoulders back.",CON-0005
+76,2025-07-22T08:53:28.265343,Confidence,Share Your Ideas,"Present an idea to someone even if you're not sure it's perfect.",CON-0006
+77,2025-07-22T08:53:28.265343,Confidence,Ask for What You Want,"Request something you need or want from someone today.",CON-0007
+78,2025-07-22T08:53:28.265343,Confidence,Embrace Challenges,"Take on a task that feels slightly beyond your current abilities.",CON-0008
+79,2025-07-22T08:53:28.265343,Confidence,Celebrate Wins,"Acknowledge your accomplishments without downplaying them.",CON-0009
+80,2025-07-22T08:53:28.265343,Confidence,Trust Yourself,"Make a decision based on your intuition and stick with it.",CON-0010
+81,2025-07-22T08:53:28.265343,Self-Control,Resist Temptation,"Say no to one unhealthy temptation today.",SC-0001
+82,2025-07-22T08:53:28.265343,Self-Control,Manage Emotions,"When you feel angry or frustrated, pause for 10 seconds before reacting.",SC-0002
+83,2025-07-22T08:53:28.265343,Self-Control,Stay Focused,"Work on one task for 30 minutes without checking your phone or social media.",SC-0003
+84,2025-07-22T08:53:28.265343,Self-Control,Control Impulses,"Wait 5 minutes before making any non-essential purchase today.",SC-0004
+85,2025-07-22T08:53:28.265343,Self-Control,Regulate Emotions,"Practice deep breathing when you feel stressed or overwhelmed.",SC-0005
+86,2025-07-22T08:53:28.265343,Self-Control,Delay Gratification,"Choose a healthier option over an immediate pleasure.",SC-0006
+87,2025-07-22T08:53:28.265343,Self-Control,Manage Stress,"Use a healthy coping mechanism instead of an unhealthy one.",SC-0007
+88,2025-07-22T08:53:28.265343,Self-Control,Control Reactions,"Respond calmly to a situation that normally upsets you.",SC-0008
+89,2025-07-22T08:53:28.265343,Self-Control,Stay Committed,"Follow through on a commitment even when you don't feel like it.",SC-0009
+90,2025-07-22T08:53:28.265343,Self-Control,Build Willpower,"Practice saying 'no' to small temptations throughout the day.",SC-0010
+91,2025-07-22T08:53:28.265343,Humility,Learn from Others,"Ask someone for advice or help with something today.",HUM-0001
+92,2025-07-22T08:53:28.265343,Humility,Admit a Mistake,"When you make a mistake today, acknowledge it and apologize if needed.",HUM-0002
+93,2025-07-22T08:53:28.265343,Humility,Celebrate Others,"Genuinely congratulate someone else on their success today.",HUM-0003
+94,2025-07-22T08:53:28.265343,Humility,Listen More,"Spend more time listening than talking in conversations today.",HUM-0004
+95,2025-07-22T08:53:28.265343,Humility,Accept Feedback,"Receive constructive criticism without becoming defensive.",HUM-0005
+96,2025-07-22T08:53:28.265343,Humility,Share Credit,"Acknowledge others' contributions to your success.",HUM-0006
+97,2025-07-22T08:53:28.265343,Humility,Stay Grounded,"Remind yourself that everyone has strengths and weaknesses.",HUM-0007
+98,2025-07-22T08:53:28.265343,Humility,Learn from Everyone,"Find something to learn from someone you normally wouldn't ask for advice.",HUM-0008
+99,2025-07-22T08:53:28.265343,Humility,Be Teachable,"Admit when you don't know something and ask for help.",HUM-0009
+100,2025-07-22T08:53:28.265343,Humility,Practice Gratitude,"Thank someone who has helped you, even in a small way.",HUM-0010
+101,2025-07-22T08:53:28.265343,Gratitude,Thank Someone,"Express genuine gratitude to someone who has helped you.",GRA-0001
+102,2025-07-22T08:53:28.265343,Gratitude,Appreciate the Small Things,"Notice and appreciate 5 small things that bring you joy today.",GRA-0002
+103,2025-07-22T08:53:28.265343,Gratitude,Write a Thank You,"Write a thank you note or message to someone who has made a difference in your life.",GRA-0003
+104,2025-07-22T08:53:28.265343,Gratitude,Count Your Blessings,"Write down 10 things you're grateful for today.",GRA-0004
+105,2025-07-22T08:53:28.265343,Gratitude,Express Appreciation,"Tell someone specifically what you appreciate about them.",GRA-0005
+106,2025-07-22T08:53:28.265343,Gratitude,Notice Beauty,"Take time to appreciate something beautiful in your environment.",GRA-0006
+107,2025-07-22T08:53:28.265343,Gratitude,Thank Yourself,"Acknowledge one thing you did well today and thank yourself for it.",GRA-0007
+108,2025-07-22T08:53:28.265343,Gratitude,Appreciate Challenges,"Find something to be grateful for in a difficult situation.",GRA-0008
+109,2025-07-22T08:53:28.265343,Gratitude,Share Gratitude,"Share something you're grateful for with someone else.",GRA-0009
+110,2025-07-22T08:53:28.265343,Gratitude,Practice Mindful Gratitude,"Take 5 minutes to reflect on what you're grateful for right now.",GRA-0010 

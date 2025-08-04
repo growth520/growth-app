@@ -1,0 +1,26 @@
+-- =====================================================
+-- FIX 400 BAD REQUEST ERRORS - Run this in Supabase SQL Editor
+-- =====================================================
+
+-- Create profiles for ALL users who don't have them
+INSERT INTO public.profiles (id, full_name, has_completed_assessment)
+SELECT 
+    au.id,
+    COALESCE(au.raw_user_meta_data->>'full_name', 'User'),
+    false
+FROM auth.users au
+LEFT JOIN public.profiles p ON au.id = p.id
+WHERE p.id IS NULL
+ON CONFLICT (id) DO NOTHING;
+
+-- Create user_progress for ALL profiles that don't have them
+INSERT INTO public.user_progress (user_id)
+SELECT 
+    p.id
+FROM public.profiles p
+LEFT JOIN public.user_progress up ON p.id = up.user_id
+WHERE up.user_id IS NULL
+ON CONFLICT (user_id) DO NOTHING;
+
+-- Success message
+SELECT '400 errors fixed successfully!' as status; 

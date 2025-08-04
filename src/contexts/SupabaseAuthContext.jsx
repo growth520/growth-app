@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
+import { getBaseUrl } from '@/lib/config';
 
 const AuthContext = createContext(undefined);
 
@@ -75,7 +76,7 @@ export const AuthProvider = ({ children }) => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/challenge`,
+          redirectTo: `${getBaseUrl()}/challenge`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent'

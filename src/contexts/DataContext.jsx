@@ -1,221 +1,559 @@
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth as useSupabaseAuth } from './SupabaseAuthContext';
 import LevelUpModal from '@/components/gamification/LevelUpModal';
 import ConfettiCelebration from '@/components/gamification/ConfettiCelebration';
 
-const DataContext = createContext();
+const DataContext = createContext(undefined);
+
+// Feature flags to prevent 404 errors on non-existent tables
+const NOTIFICATIONS_ENABLED = false;
+const GAMIFICATION_ENABLED = true;
+const COMMUNITY_PRELOAD_ENABLED = true;
+
+// Feature flags for optional features
+const DAILY_LOGIN_BONUS_ENABLED = false; // Disable until database function is properly deployed
 
 export const DataProvider = ({ children }) => {
   const { user } = useSupabaseAuth();
-  const [profile, setProfile] = useState(null);
-  const [progress, setProgress] = useState(null);
-  const [userBadges, setUserBadges] = useState([]);
-  const [hasNewNotifications, setHasNewNotifications] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [levelUpInfo, setLevelUpInfo] = useState({ show: false, newLevel: 0 });
-  const [showConfetti, setShowConfetti] = useState(false);
-
-
-  const fetchAllData = useCallback(async (userId) => {
-    setLoading(true);
-    try {
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-      
-      if (profileError) throw profileError;
-      setProfile(profileData);
-
-      if (profileData.has_completed_assessment) {
-        const { data: progressData, error: progressError } = await supabase
-          .from('user_progress')
-          .select('*')
-          .eq('user_id', userId)
-          .single();
-        
-        if (progressError) throw progressError;
-        setProgress(progressData);
-
-        const { data: badgesData, error: badgesError } = await supabase
-          .from('user_badges')
-          .select('*')
-          .eq('user_id', userId);
-
-        if (badgesError) throw badgesError;
-        setUserBadges(badgesData || []);
-
-      } else {
-        setProgress(null);
-        setUserBadges([]);
-      }
-    } catch (error) {
-      console.error('Error fetching user data:', error.message);
-      setProfile(null);
-      setProgress(null);
-      setUserBadges([]);
-    } finally {
-      setLoading(false);
+  
+  // Combine related state for better performance
+  const [appState, setAppState] = useState({
+    profile: null,
+    progress: null,
+    userBadges: [],
+    loading: true,
+    hasNewNotifications: false,
+    notificationCheckInProgress: false,
+    // Community preloading state
+    communityData: {
+      posts: [],
+      loading: false,
+      lastFetched: null,
+      preloaded: false
     }
-  }, []); // No dependencies needed since this is only called with user.id
+  });
+  
+  const [modalState, setModalState] = useState({
+    levelUp: { show: false, newLevel: 0 },
+    showConfetti: false
+  });
+
+  // Check daily login bonus when user loads
+  useEffect(() => {
+    const checkLoginBonus = async () => {
+      if (!user || !DAILY_LOGIN_BONUS_ENABLED) return;
+      
+      try {
+        const { data, error } = await supabase.rpc('check_daily_login_bonus', {
+          p_user_id: user.id
+        });
+        
+        if (data && !error) {
+          // User earned login bonus
+          // This could trigger a toast notification
+        }
+      } catch (error) {
+        // Silently handle login bonus errors
+        console.warn('Login bonus check failed:', error);
+      }
+    };
+
+    // Check login bonus after a delay to not interfere with main loading
+    if (user && !appState.loading) {
+      setTimeout(checkLoginBonus, 2000);
+    }
+  }, [user, appState.loading]);
+
+  // Memoized callbacks to prevent unnecessary re-renders
+  const fetchAllData = useCallback(async (userId) => {
+    if (!userId) return;
+    
+    setAppState(prev => ({ ...prev, loading: true }));
+    
+    try {
+      // Batch all queries together for better performance
+      const [profileResult, progressResult, badgesResult] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', userId).single(),
+        supabase.from('user_progress').select('*').eq('user_id', userId).single(),
+        supabase.from('user_badges').select('*').eq('user_id', userId)
+      ]);
+
+      const updates = {};
+      
+      if (!profileResult.error) {
+        updates.profile = profileResult.data;
+      }
+      
+      if (!progressResult.error) {
+        updates.progress = progressResult.data;
+      }
+      
+      if (!badgesResult.error) {
+        updates.userBadges = badgesResult.data || [];
+      }
+      
+      updates.loading = false;
+      setAppState(prev => ({ ...prev, ...updates }));
+      
+    } catch (error) {
+      if (!import.meta.env.PROD) console.error('Error fetching user data:', error.message);
+      setAppState(prev => ({ ...prev, loading: false }));
+    }
+  }, []);
 
   const refreshProfile = useCallback(async () => {
     if (!user) return;
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-
-    if (error) console.error('Error fetching profile:', error);
-    else setProfile(data);
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      if (!error) {
+        setAppState(prev => ({ ...prev, profile: data }));
+      }
+    } catch (error) {
+      if (!import.meta.env.PROD) console.error('Error refreshing profile:', error);
+    }
   }, [user]);
 
   const refreshProgress = useCallback(async () => {
     if (!user) return;
-    const { data, error } = await supabase
-      .from('user_progress')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
-
-    if (error) console.error('Error fetching progress:', error);
-    else setProgress(data);
+    
+    console.log('🔄 DataContext: Refreshing progress for user:', user.id);
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_progress')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (!error) {
+        console.log('✅ DataContext: Progress refreshed:', {
+          xp: data.xp,
+          level: data.level,
+          streak: data.streak
+        });
+        setAppState(prev => ({ ...prev, progress: data }));
+      } else {
+        console.log('❌ DataContext: Progress refresh error:', error.message);
+      }
+    } catch (error) {
+      console.error('❌ DataContext: Error refreshing progress:', error);
+    }
   }, [user]);
 
   const refreshHasNewNotifications = useCallback(async () => {
-    if (!user || !progress) {
-      setHasNewNotifications(false);
-      return;
-    }
-    await new Promise(resolve => setTimeout(resolve, 500));
+    if (!user || appState.notificationCheckInProgress) return;
     
-    const { data, error } = await supabase.rpc('check_new_notifications', {
-      p_user_id: user.id,
-      p_last_viewed: progress.last_viewed_notifications || new Date(0).toISOString()
-    });
-
-    if (error) {
-      console.error('Error checking for new notifications:', error);
-    } else {
-      setHasNewNotifications(data);
+    // Set flag to prevent multiple simultaneous requests
+    setAppState(prev => ({ ...prev, notificationCheckInProgress: true }));
+    
+    try {
+      const { data, error } = await supabase
+        .rpc('get_unread_notification_count', { p_user_id: user.id });
+      
+      if (error) {
+        console.error('Error fetching notification count:', error);
+        setAppState(prev => ({ 
+          ...prev, 
+          hasNewNotifications: false,
+          notificationCheckInProgress: false 
+        }));
+      } else {
+        setAppState(prev => ({ 
+          ...prev, 
+          hasNewNotifications: (data || 0) > 0,
+          notificationCheckInProgress: false 
+        }));
+      }
+    } catch (error) {
+      console.error('Error checking notifications:', error);
+      setAppState(prev => ({ 
+        ...prev, 
+        hasNewNotifications: false,
+        notificationCheckInProgress: false 
+      }));
     }
-  }, [user, progress]);
+  }, [user, appState.notificationCheckInProgress]);
+
+  const refreshAllData = useCallback(() => {
+    if (user) {
+      fetchAllData(user.id);
+    }
+  }, [user, fetchAllData]);
+
+  // Add manual refresh function for debugging
+  const manualRefreshProgress = useCallback(async () => {
+    console.log('🔧 Manual progress refresh triggered');
+    await refreshProgress();
+  }, [refreshProgress]);
+
+  // Expose manual refresh to window for debugging
+  if (typeof window !== 'undefined') {
+    window.manualRefreshProgress = manualRefreshProgress;
+    window.refreshAllData = refreshAllData;
+  }
+
+  const triggerLevelUp = useCallback((newLevel) => {
+    setModalState(prev => ({
+      ...prev,
+      levelUp: { show: true, newLevel },
+      showConfetti: true
+    }));
+  }, []);
 
   const updateLastViewedNotifications = useCallback(async () => {
     if (!user) return;
-    const { error } = await supabase
-      .from('user_progress')
-      .update({ last_viewed_notifications: new Date().toISOString() })
-      .eq('user_id', user.id);
-    if (error) console.error('Error updating last viewed notifications:', error);
-    else {
-      setHasNewNotifications(false);
-      refreshProgress();
+
+    try {
+      const { error } = await supabase
+        .rpc('mark_notifications_as_read', { p_user_id: user.id });
+
+      if (!error) {
+        setAppState(prev => ({
+          ...prev,
+          hasNewNotifications: false
+        }));
+      } else {
+        console.error('Error marking notifications as read:', error);
+      }
+    } catch (error) {
+      console.error('Error updating notifications:', error);
     }
-  }, [user, refreshProgress]);
+  }, [user]);
 
-  const triggerLevelUp = (newLevel) => {
-    setLevelUpInfo({ show: true, newLevel });
-    setShowConfetti(true);
-  };
-  
-  const clearLocalData = () => {
-      setProfile(null);
-      setProgress(null);
-      setUserBadges([]);
-      setHasNewNotifications(false);
-      setLoading(true);
-  }
+  // Add function to trigger UI refresh after challenge completion
+  const triggerChallengeCompletionRefresh = useCallback((completionData) => {
+    // Dispatch custom event for real-time UI updates
+    window.dispatchEvent(new CustomEvent('challengeCompleted', {
+      detail: {
+        userId: user?.id,
+        xpGained: completionData.xp_gained,
+        newLevel: completionData.new_level,
+        newStreak: completionData.new_streak,
+        tokensEarned: completionData.tokens_earned,
+        levelUp: completionData.level_up,
+        streakIncreased: completionData.streak_increased
+      }
+    }));
 
+    // Call get_user_leaderboard_rank function as requested in requirements
+    const updateUserRanks = async () => {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase.rpc('get_user_leaderboard_rank', {
+          p_user_id: user.id,
+          p_rank_by: 'xp'
+        });
+
+        if (error) {
+          console.error('Error updating user ranks after challenge completion:', error);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          const ranks = data[0];
+          console.log('User ranks updated after challenge completion:', {
+            xpRank: ranks.xp_rank,
+            streakRank: ranks.streak_rank,
+            challengesRank: ranks.challenges_rank
+          });
+          
+          // Store updated ranks in localStorage
+          localStorage.setItem('userRanks', JSON.stringify(ranks));
+        }
+      } catch (error) {
+        console.error('Error in updateUserRanks:', error);
+      }
+    };
+
+    // Update user ranks immediately
+    updateUserRanks();
+
+    // Also refresh all data to ensure consistency
+    setTimeout(() => {
+      refreshAllData();
+    }, 1000);
+  }, [user?.id, refreshAllData]);
+
+  // Community data preloading function - runs in background
+  const preloadCommunityData = useCallback(async () => {
+    if (!user || !COMMUNITY_PRELOAD_ENABLED) return;
+    
+    // Don't preload if already loaded recently (within 5 minutes)
+    const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+    if (appState.communityData?.lastFetched && appState.communityData.lastFetched > fiveMinutesAgo) {
+      return;
+    }
+
+    setAppState(prev => ({
+      ...prev,
+      communityData: { ...prev.communityData, loading: true }
+    }));
+
+    try {
+      // Simplified query for preloading - just basic post data
+      const { data: postsData, error } = await supabase
+        .from('posts')
+        .select(`
+          id,
+          reflection,
+          challenge_title,
+          created_at,
+          category,
+          user_id,
+          visibility,
+          flagged
+        `)
+        .eq('visibility', 'public')
+        .is('flagged', false)
+        .order('created_at', { ascending: false })
+        .limit(15); // Preload fewer posts for speed
+
+      if (error) throw error;
+
+      if (postsData && postsData.length > 0) {
+        // Fetch profiles separately to avoid relationship conflicts
+        const userIds = [...new Set(postsData.map(post => post.user_id).filter(Boolean))];
+        let profilesData = {};
+        
+        if (userIds.length > 0) {
+          const { data: profiles, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id, full_name, avatar_url, username')
+            .in('id', userIds);
+          
+          if (profilesError) {
+            console.error('Error fetching profiles for community preload:', profilesError);
+          } else {
+            profilesData = profiles.reduce((acc, profile) => {
+              acc[profile.id] = profile;
+              return acc;
+            }, {});
+          }
+        }
+
+        // Combine posts with profile data
+        const postsWithProfiles = postsData.map(post => ({
+          ...post,
+          profiles: profilesData[post.user_id] || null
+        }));
+
+        // Get engagement data for preloaded posts
+        const postIds = postsData.map(p => p.id);
+        
+        const [likesResult, commentsResult] = await Promise.all([
+          supabase.from('likes').select('post_id, user_id').in('post_id', postIds),
+          supabase.from('comments').select('id, post_id, user_id, parent_comment_id').in('post_id', postIds).is('parent_comment_id', null)
+        ]);
+
+        // Process engagement data
+        const likesMap = {};
+        const commentsMap = {};
+
+        (likesResult.data || []).forEach(like => {
+          if (!likesMap[like.post_id]) likesMap[like.post_id] = [];
+          likesMap[like.post_id].push(like);
+        });
+
+        (commentsResult.data || []).forEach(comment => {
+          if (!commentsMap[comment.post_id]) commentsMap[comment.post_id] = [];
+          commentsMap[comment.post_id].push(comment);
+        });
+
+        // Combine data with engagement
+        const postsWithEngagement = postsWithProfiles.map(post => ({
+          ...post,
+          likes: likesMap[post.id] || [],
+          comments: commentsMap[post.id] || [],
+          ranking_score: ((likesMap[post.id] || []).length * 2) + 
+                        ((commentsMap[post.id] || []).length * 3) +
+                        (1 / ((Date.now() - new Date(post.created_at)) / (1000 * 60 * 60) + 2))
+        }));
+
+        // Sort by ranking score
+        const sortedPosts = postsWithEngagement.sort((a, b) => b.ranking_score - a.ranking_score);
+
+        setAppState(prev => ({
+          ...prev,
+          communityData: {
+            posts: sortedPosts,
+            loading: false,
+            lastFetched: Date.now(),
+            preloaded: true
+          }
+        }));
+      } else {
+        setAppState(prev => ({
+          ...prev,
+          communityData: {
+            posts: [],
+            loading: false,
+            lastFetched: Date.now(),
+            preloaded: true
+          }
+        }));
+      }
+    } catch (error) {
+      // Silently handle preloading errors to not affect main app
+      if (!import.meta.env.PROD) console.warn('Community preload failed:', error);
+      setAppState(prev => ({
+        ...prev,
+        communityData: { ...prev.communityData, loading: false }
+      }));
+    }
+  }, [user, appState.communityData?.lastFetched]);
+
+  // Background preloading - starts after main data loads
+  useEffect(() => {
+    if (user && !appState.loading && COMMUNITY_PRELOAD_ENABLED) {
+      // Delay preloading to not interfere with main app performance
+      const preloadTimeout = setTimeout(() => {
+        preloadCommunityData();
+      }, 3000); // Wait 3 seconds after main data loads
+
+      return () => clearTimeout(preloadTimeout);
+    }
+  }, [user, appState.loading, preloadCommunityData]);
+
+  // Optimized useEffect with proper dependencies
   useEffect(() => {
     if (user) {
       fetchAllData(user.id);
     } else {
-      clearLocalData();
-      setLoading(false);
+      setAppState({
+        profile: null,
+        progress: null,
+        userBadges: [],
+        loading: false,
+        hasNewNotifications: false,
+        notificationCheckInProgress: false,
+        // Reset community data when no user
+        communityData: {
+          posts: [],
+          loading: false,
+          lastFetched: null,
+          preloaded: false
+        }
+      });
     }
   }, [user, fetchAllData]);
 
+  // Debounced notification refresh - reduced frequency to improve performance
   useEffect(() => {
-    if (progress) {
-      refreshHasNewNotifications();
+    if (appState.progress && user) {
+      const timeoutId = setTimeout(() => {
+        refreshHasNewNotifications();
+      }, 2000); // Increased from 100ms to 2s to reduce API calls
+      return () => clearTimeout(timeoutId);
     }
-  }, [progress, refreshHasNewNotifications]);
+  }, [appState.progress?.id, user?.id]); // More stable dependencies
 
+  // Optimized realtime subscriptions
   useEffect(() => {
     if (!user) return;
 
-    const handleInserts = (payload) => {
+    const channels = [];
+    
+    // Single notification handler for better performance
+    const handleNotificationUpdate = () => {
       refreshHasNewNotifications();
     };
 
+    // Subscribe to relevant changes only
     const likesChannel = supabase.channel('public:likes')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'likes' }, handleInserts)
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'likes',
+        filter: `post_id=in.(${user.id})` // Only user's posts
+      }, handleNotificationUpdate)
       .subscribe();
 
     const commentsChannel = supabase.channel('public:comments')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, handleInserts)
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'comments',
+        filter: `post_id=in.(${user.id})` // Only user's posts
+      }, handleNotificationUpdate)
       .subscribe();
-      
-    const progressListener = supabase
-        .channel('public:user_progress')
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'user_progress', filter: `user_id=eq.${user.id}` }, 
-            (payload) => {
-                setProgress(payload.new);
-            }
-        )
-        .subscribe();
     
-    const badgesListener = supabase
-        .channel('public:user_badges')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'user_badges', filter: `user_id=eq.${user.id}` },
-            async () => {
-                const { data: badgesData, error: badgesError } = await supabase
-                    .from('user_badges')
-                    .select('*')
-                    .eq('user_id', user.id);
-                if (!badgesError) setUserBadges(badgesData || []);
-            }
-        )
-        .subscribe();
+    const progressChannel = supabase.channel('public:user_progress')
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'user_progress', 
+        filter: `user_id=eq.${user.id}` 
+      }, (payload) => {
+        setAppState(prev => ({ ...prev, progress: payload.new }));
+      })
+      .subscribe();
+
+    channels.push(likesChannel, commentsChannel, progressChannel);
 
     return () => {
-      supabase.removeChannel(likesChannel);
-      supabase.removeChannel(commentsChannel);
-      supabase.removeChannel(progressListener);
-      supabase.removeChannel(badgesListener);
+      channels.forEach(channel => supabase.removeChannel(channel));
     };
   }, [user, refreshHasNewNotifications]);
 
-  const value = {
-    profile,
-    progress,
-    userBadges,
-    loading,
-    hasNewNotifications,
+  // Memoized context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({
+    profile: appState.profile,
+    progress: appState.progress,
+    userBadges: appState.userBadges,
+    loading: appState.loading,
+    hasNewNotifications: appState.hasNewNotifications,
+    // Community preloading data
+    communityData: appState.communityData,
+    preloadCommunityData,
     refreshProfile,
     refreshProgress,
-    refreshAllData: () => user ? fetchAllData(user.id) : null,
-    updateLastViewedNotifications,
+    refreshAllData,
     refreshHasNewNotifications,
     triggerLevelUp,
-    clearLocalData,
-    user: useSupabaseAuth().user
-  };
+    updateLastViewedNotifications,
+    triggerChallengeCompletionRefresh
+  }), [
+    appState.profile,
+    appState.progress,
+    appState.userBadges,
+    appState.loading,
+    appState.hasNewNotifications,
+    appState.communityData,
+    preloadCommunityData,
+    refreshProfile,
+    refreshProgress,
+    refreshAllData,
+    refreshHasNewNotifications,
+    triggerLevelUp,
+    updateLastViewedNotifications,
+    triggerChallengeCompletionRefresh
+  ]);
 
   return (
-    <DataContext.Provider value={value}>
-        {children}
-        {showConfetti && <ConfettiCelebration onComplete={() => setShowConfetti(false)} />}
-        <LevelUpModal
-            open={levelUpInfo.show}
-            onOpenChange={(isOpen) => !isOpen && setLevelUpInfo({ show: false, newLevel: 0 })}
-            newLevel={levelUpInfo.newLevel}
+    <DataContext.Provider value={contextValue}>
+      {children}
+      
+      {/* Modals */}
+      <LevelUpModal 
+        isOpen={modalState.levelUp.show}
+        onClose={() => setModalState(prev => ({ ...prev, levelUp: { show: false, newLevel: 0 } }))}
+        newLevel={modalState.levelUp.newLevel}
+      />
+      
+      {modalState.showConfetti && (
+        <ConfettiCelebration 
+          onComplete={() => setModalState(prev => ({ ...prev, showConfetti: false }))} 
         />
+      )}
     </DataContext.Provider>
   );
 };

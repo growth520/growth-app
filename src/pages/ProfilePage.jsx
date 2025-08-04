@@ -22,6 +22,8 @@ import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from "@/components/ui/skeleton";
 import { useData } from '@/contexts/DataContext'; // Add useData import
+import CompletedPacksSection from '@/components/gamification/CompletedPacksSection';
+import { getLevelInfo } from '@/lib/levelSystem';
 
 const DEFAULT_USER_SETTINGS = {
   show_streak: true,
@@ -65,7 +67,7 @@ const ProfilePage = () => {
   const { userId: paramUserId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { userBadges } = useData(); // Add userBadges from DataContext
+  const { userBadges, refreshAllData } = useData(); // Add userBadges from DataContext
   const isOwnProfile = !paramUserId || paramUserId === user?.id;
   const userId = isOwnProfile ? user?.id : paramUserId;
   const [profile, setProfile] = useState(null);
@@ -106,6 +108,7 @@ const ProfilePage = () => {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [postsHasMore, setPostsHasMore] = useState(true);
   const ITEMS_PER_PAGE = 20;
   const [userSettings, setUserSettings] = useState(DEFAULT_USER_SETTINGS);
   const [progressData, setProgressData] = useState({
@@ -115,28 +118,33 @@ const ProfilePage = () => {
     badges: []
   });
 
-  // Prefetch next page of posts
+  // Prefetch next page of posts (simplified)
   const prefetchNextPage = useCallback(async () => {
-    if (!userId) return;
+    if (!userId || !profile) return;
     const nextPage = Math.ceil(posts.length / ITEMS_PER_PAGE) + 1;
     const from = nextPage * ITEMS_PER_PAGE;
     const to = from + ITEMS_PER_PAGE - 1;
 
     const { data } = await supabase
       .from('posts')
-      .select(`
-        *,
-        profiles:user_id (id, full_name, avatar_url),
-        likes (user_id),
-        comments (id, user_id, parent_comment_id, content, profiles:user_id(full_name, avatar_url))
-      `)
+      .select('id, reflection, challenge_title, photo_url, category, created_at, user_id, likes_count, comments_count, shares_count, views_count')
       .eq('user_id', userId)
       .eq('visibility', 'public')
       .order('created_at', { ascending: false })
       .range(from, to);
 
+    if (data && data.length > 0) {
+      return data.map(post => ({
+        ...post,
+        profiles: {
+          id: profile.id,
+          full_name: profile.full_name,
+          avatar_url: profile.avatar_url
+        }
+      }));
+    }
     return data;
-  }, [userId, posts.length]);
+  }, [userId, posts.length, profile]);
 
   // Load initial data
   useEffect(() => {
@@ -145,29 +153,49 @@ const ProfilePage = () => {
     const loadInitialData = async () => {
       setLoading(true);
       try {
-        const [profileData, postsData, followersCount, followingData, settingsData, progressDataResult] = await Promise.all([
-          // Profile
-          supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .single()
-            .then(({ data }) => data),
+        // Load profile first (most important)
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
 
-          // Initial posts
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
+          toast({
+            title: "Error",
+            description: "Failed to load profile data. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        setProfile(profileData);
+
+        // Load other data in parallel (less critical)
+        const [postsData, followersCount, followingData, settingsData, progressDataResult] = await Promise.all([
+          // Initial posts (simplified query)
           supabase
             .from('posts')
-            .select(`
-              *,
-              profiles:user_id (id, full_name, avatar_url),
-              likes (user_id),
-              comments (id, user_id, parent_comment_id, content, profiles:user_id(full_name, avatar_url))
-            `)
+            .select('id, reflection, challenge_title, photo_url, category, created_at, user_id, likes_count, comments_count, shares_count, views_count')
             .eq('user_id', userId)
             .eq('visibility', 'public')
             .order('created_at', { ascending: false })
             .range(0, ITEMS_PER_PAGE - 1)
-            .then(({ data }) => data),
+            .then(async ({ data }) => {
+              if (data && data.length > 0) {
+                // Add profile data to posts
+                return data.map(post => ({
+                  ...post,
+                  profiles: {
+                    id: profileData.id,
+                    full_name: profileData.full_name,
+                    avatar_url: profileData.avatar_url
+                  }
+                }));
+              }
+              return data || [];
+            }),
 
           // Followers count
           supabase
@@ -176,7 +204,7 @@ const ProfilePage = () => {
             .eq('followed_id', userId)
             .then(({ count }) => count || 0),
 
-          // Following status
+          // Following status (only if not own profile)
           !isOwnProfile && user.id !== userId
             ? supabase
                 .from('follows')
@@ -186,15 +214,20 @@ const ProfilePage = () => {
                 .then(({ data }) => data)
             : Promise.resolve(null),
 
-          // User settings
+          // User settings (with fallback)
           supabase
             .from('user_settings')
             .select('*')
             .eq('user_id', userId)
             .single()
-            .then(({ data }) => data),
+            .then(({ data, error }) => {
+              if (error && error.code === 'PGRST116') {
+                return DEFAULT_USER_SETTINGS;
+              }
+              return data || DEFAULT_USER_SETTINGS;
+            }),
 
-          // Progress data
+          // Progress data (with fallback)
           supabase
             .from('user_progress')
             .select('*')
@@ -202,39 +235,28 @@ const ProfilePage = () => {
             .single()
             .then(({ data, error }) => {
               if (error) {
-                console.error('Error fetching progress:', error);
                 return { level: 1, xp: 0, streak: 0 };
               }
               return data;
             })
         ]);
 
-        setProfile(profileData);
-        setPosts(postsData || []);
-        setPostState(postsData || []);
+        setPosts(postsData);
+        setPostState(postsData);
+        setPostsHasMore(postsData.length === ITEMS_PER_PAGE);
         setFollowers(followersCount);
         setIsFollowing(!!(followingData && followingData.length > 0));
-        if (settingsData) setUserSettings(settingsData);
+        setUserSettings(settingsData);
 
         // Set progress data
         if (progressDataResult) {
-          // Always fetch badges from database initially
-          const { data: badgesData } = await supabase
-            .from('user_badges')
-            .select('*')
-            .eq('user_id', userId);
-          
           setProgressData({
             level: progressDataResult.level || 1,
             xp: progressDataResult.xp || 0,
             streak: progressDataResult.streak || 0,
-            badges: badgesData || []
+            badges: [] // Will be loaded from DataContext for own profile
           });
-          
         }
-
-        // Prefetch next page
-        prefetchNextPage();
         
       } catch (error) {
         console.error('Error loading profile data:', error);
@@ -260,6 +282,37 @@ const ProfilePage = () => {
       }) : null);
     }
   }, [userBadges, isOwnProfile]);
+
+  // Refresh follower/following counts periodically
+  useEffect(() => {
+    if (!user || !userId) return;
+    
+    const refreshCounts = async () => {
+      try {
+        // Refresh followers count
+        const { count: followersCount } = await supabase
+          .from('follows')
+          .select('follower_id', { count: 'exact', head: true })
+          .eq('followed_id', userId);
+        
+        // Refresh following count
+        const { count: followingCount } = await supabase
+          .from('follows')
+          .select('followed_id', { count: 'exact', head: true })
+          .eq('follower_id', userId);
+        
+        setFollowers(followersCount || 0);
+        setFollowing(followingCount || 0);
+      } catch (error) {
+        console.error('Error refreshing counts:', error);
+      }
+    };
+    
+    // Refresh counts every 30 seconds
+    const interval = setInterval(refreshCounts, 30000);
+    
+    return () => clearInterval(interval);
+  }, [user, userId]);
 
   useEffect(() => {
     if (profile) {
@@ -339,6 +392,25 @@ const ProfilePage = () => {
     fetchSettings();
   }, [userId, isOwnProfile]);
 
+  // Listen for follow status changes from other components
+  useEffect(() => {
+    const handleFollowStatusChange = async (event) => {
+      const { followerId, followedId, isFollowing } = event.detail;
+      
+      // If the current user is involved in the follow action, refresh counts
+      if (followerId === user?.id || followedId === userId) {
+        await refreshFollowerCount(userId);
+        await refreshFollowingCount(user?.id);
+      }
+    };
+
+    window.addEventListener('followStatusChanged', handleFollowStatusChange);
+    
+    return () => {
+      window.removeEventListener('followStatusChanged', handleFollowStatusChange);
+    };
+  }, [user?.id, userId]);
+
   // Filter posts by growth area
   const filteredPosts = areaFilter === 'all' ? postState : postState.filter(p => p.category === areaFilter);
   const uniqueAreas = Array.from(new Set(posts.map(p => p.category))).filter(Boolean);
@@ -350,10 +422,22 @@ const ProfilePage = () => {
         const { error } = await supabase.from('follows').delete().match({ follower_id: user.id, followed_id: userId });
         if (error) throw error;
         setIsFollowing(false);
+        // Refresh follower count for the target user
+        await refreshFollowerCount(userId);
+        // Refresh following count for the current user
+        await refreshFollowingCount(user.id);
+        // Refresh all data globally
+        await refreshAllData();
       } else {
         const { error } = await supabase.from('follows').insert({ follower_id: user.id, followed_id: userId });
         if (error) throw error;
         setIsFollowing(true);
+        // Refresh follower count for the target user
+        await refreshFollowerCount(userId);
+        // Refresh following count for the current user
+        await refreshFollowingCount(user.id);
+        // Refresh all data globally
+        await refreshAllData();
       }
     } catch (err) {
       toast({
@@ -593,40 +677,61 @@ const ProfilePage = () => {
       const from = pageNumber * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
       
-      const { data, error, count } = await supabase
+      // First, get the follow relationships
+      const { data: followsData, error, count } = await supabase
         .from('follows')
-        .select(`
-          follower:follower_id (
-            id,
-            full_name,
-            username,
-            avatar_url,
-            assessment_results
-          )
-        `, { count: 'exact' })
+        .select('follower_id, created_at', { count: 'exact' })
         .eq('followed_id', userId)
         .order('created_at', { ascending: false })
         .range(from, to);
 
       if (error) throw error;
 
+      if (!followsData || followsData.length === 0) {
+        setFollowersList([]);
+        setHasMore(false);
+        return;
+      }
+
+      // Then, fetch the user profiles separately
+      const followerIds = followsData.map(f => f.follower_id);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, username, avatar_url, assessment_results')
+        .in('id', followerIds);
+
+      if (profilesError) throw profilesError;
+
+      // Create a map of user profiles
+      const profilesMap = {};
+      profilesData.forEach(profile => {
+        profilesMap[profile.id] = profile;
+      });
+
       // Get follow status for each user
       const followStatuses = await Promise.all(
-        data.map(async (d) => {
+        followsData.map(async (follow) => {
+          const profile = profilesMap[follow.follower_id];
+          if (!profile) return null;
+
           const { data: isFollowing } = await supabase
             .from('follows')
             .select('id')
             .eq('follower_id', user?.id)
-            .eq('followed_id', d.follower.id)
+            .eq('followed_id', profile.id)
             .single();
-          return { ...d.follower, isFollowing: !!isFollowing };
+          
+          return { ...profile, isFollowing: !!isFollowing };
         })
       );
 
+      // Filter out any null entries
+      const validFollowStatuses = followStatuses.filter(Boolean);
+
       if (pageNumber === 0) {
-        setFollowersList(followStatuses);
+        setFollowersList(validFollowStatuses);
       } else {
-        setFollowersList(current => [...current, ...followStatuses]);
+        setFollowersList(current => [...current, ...validFollowStatuses]);
       }
 
       setHasMore(count > (pageNumber + 1) * ITEMS_PER_PAGE);
@@ -650,40 +755,61 @@ const ProfilePage = () => {
       const from = pageNumber * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
 
-      const { data, error, count } = await supabase
+      // First, get the follow relationships
+      const { data: followsData, error, count } = await supabase
         .from('follows')
-        .select(`
-          following:followed_id (
-            id,
-            full_name,
-            username,
-            avatar_url,
-            assessment_results
-          )
-        `, { count: 'exact' })
+        .select('followed_id, created_at', { count: 'exact' })
         .eq('follower_id', userId)
         .order('created_at', { ascending: false })
         .range(from, to);
 
       if (error) throw error;
 
+      if (!followsData || followsData.length === 0) {
+        setFollowingList([]);
+        setHasMore(false);
+        return;
+      }
+
+      // Then, fetch the user profiles separately
+      const followedIds = followsData.map(f => f.followed_id);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, username, avatar_url, assessment_results')
+        .in('id', followedIds);
+
+      if (profilesError) throw profilesError;
+
+      // Create a map of user profiles
+      const profilesMap = {};
+      profilesData.forEach(profile => {
+        profilesMap[profile.id] = profile;
+      });
+
       // Get follow status for each user
       const followStatuses = await Promise.all(
-        data.map(async (d) => {
+        followsData.map(async (follow) => {
+          const profile = profilesMap[follow.followed_id];
+          if (!profile) return null;
+
           const { data: isFollowing } = await supabase
             .from('follows')
             .select('id')
             .eq('follower_id', user?.id)
-            .eq('followed_id', d.following.id)
+            .eq('followed_id', profile.id)
             .single();
-          return { ...d.following, isFollowing: !!isFollowing };
+          
+          return { ...profile, isFollowing: !!isFollowing };
         })
       );
 
+      // Filter out any null entries
+      const validFollowStatuses = followStatuses.filter(Boolean);
+
       if (pageNumber === 0) {
-        setFollowingList(followStatuses);
+        setFollowingList(validFollowStatuses);
       } else {
-        setFollowingList(current => [...current, ...followStatuses]);
+        setFollowingList(current => [...current, ...validFollowStatuses]);
       }
 
       setHasMore(count > (pageNumber + 1) * ITEMS_PER_PAGE);
@@ -710,6 +836,52 @@ const ProfilePage = () => {
     }
   };
 
+  // Load more posts
+  const handleLoadMorePosts = async () => {
+    if (!userId || !profile) return;
+    
+    setLoadingMore(true);
+    try {
+      const nextPage = Math.ceil(posts.length / ITEMS_PER_PAGE) + 1;
+      const from = nextPage * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+
+      const { data, error } = await supabase
+        .from('posts')
+        .select('id, reflection, challenge_title, photo_url, category, created_at, user_id, likes_count, comments_count, shares_count, views_count')
+        .eq('user_id', userId)
+        .eq('visibility', 'public')
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (error) {
+        console.error('Error loading more posts:', error);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        const newPosts = data.map(post => ({
+          ...post,
+          profiles: {
+            id: profile.id,
+            full_name: profile.full_name,
+            avatar_url: profile.avatar_url
+          }
+        }));
+        
+        setPosts(prev => [...prev, ...newPosts]);
+        setPostState(prev => [...prev, ...newPosts]);
+        setPostsHasMore(newPosts.length === ITEMS_PER_PAGE);
+      } else {
+        setPostsHasMore(false);
+      }
+    } catch (error) {
+      console.error('Error loading more posts:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
   const handleFollowToggle = async (targetUserId) => {
     if (!user) return;
     
@@ -731,6 +903,13 @@ const ProfilePage = () => {
         setFollowersList(updateList);
         setFollowingList(updateList);
         setFollowing(prev => prev - 1);
+        
+        // Refresh follower count for the target user's profile
+        await refreshFollowerCount(targetUserId);
+        // Refresh following count for the current user
+        await refreshFollowingCount(user.id);
+        // Refresh all data globally
+        await refreshAllData();
       } else {
         await supabase
           .from('follows')
@@ -744,6 +923,13 @@ const ProfilePage = () => {
         setFollowersList(updateList);
         setFollowingList(updateList);
         setFollowing(prev => prev + 1);
+        
+        // Refresh follower count for the target user's profile
+        await refreshFollowerCount(targetUserId);
+        // Refresh following count for the current user
+        await refreshFollowingCount(user.id);
+        // Refresh all data globally
+        await refreshAllData();
       }
     } catch (error) {
       toast({
@@ -751,6 +937,40 @@ const ProfilePage = () => {
         description: "Failed to update follow status. Please try again.",
         variant: "destructive",
       });
+    }
+  };
+
+  // Function to refresh follower count for a specific user
+  const refreshFollowerCount = async (targetUserId) => {
+    try {
+      const { count } = await supabase
+        .from('follows')
+        .select('follower_id', { count: 'exact', head: true })
+        .eq('followed_id', targetUserId);
+      
+      // If this is the current user's profile, update the followers count
+      if (targetUserId === userId) {
+        setFollowers(count || 0);
+      }
+    } catch (error) {
+      console.error('Error refreshing follower count:', error);
+    }
+  };
+
+  // Function to refresh following count for a specific user
+  const refreshFollowingCount = async (targetUserId) => {
+    try {
+      const { count } = await supabase
+        .from('follows')
+        .select('followed_id', { count: 'exact', head: true })
+        .eq('follower_id', targetUserId);
+      
+      // If this is the current user's profile, update the following count
+      if (targetUserId === userId) {
+        setFollowing(count || 0);
+      }
+    } catch (error) {
+      console.error('Error refreshing following count:', error);
     }
   };
 
@@ -835,6 +1055,11 @@ const ProfilePage = () => {
       setFollowingList(current => current.filter(f => f.id !== followingId));
       setFollowing(prev => prev - 1);
 
+      // Refresh following count for the current user
+      await refreshFollowingCount(user.id);
+      // Refresh all data globally
+      await refreshAllData();
+
       toast({
         title: "Unfollowed",
         description: "You are no longer following this user.",
@@ -866,10 +1091,10 @@ const ProfilePage = () => {
     return titles[level] || `Level ${level} Master`;
   };
 
-  // Calculate XP progress
+  // Calculate XP progress using quadratic level system
   const calculateXpProgress = (xp, level) => {
-    const xpToLevel = 50 + (level - 1) * 25;
-    return Math.round((xp / xpToLevel) * 100);
+    const levelInfo = getLevelInfo(xp);
+    return Math.round(levelInfo.progressPercentage);
   };
 
   // Helper function to get badge emoji
@@ -1099,142 +1324,14 @@ const ProfilePage = () => {
             </Card>
           </motion.div>
         )}
-        {/* Edit Profile Modal */}
-        {showEditModal && (
-          <Dialog open={showEditModal} onOpenChange={open => {
-            // Prevent closing if name or username is empty
-            if (!open && (!editName.trim() || !editUsername.trim())) return;
-            setShowEditModal(open);
-          }}>
-            <DialogContent className="bg-white max-w-lg w-full max-h-[90vh] flex flex-col">
-              <DialogHeader className="px-6 pt-6">
-                <DialogTitle>Edit Profile</DialogTitle>
-                <DialogDescription>
-                  Update your profile information. All fields marked with * are required.
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="flex-1 overflow-y-auto px-6">
-                <div className="flex flex-col items-center mb-4">
-                  <Avatar className="w-24 h-24 mb-2 mx-auto">
-                    <AvatarImage src={editAvatar || profile.avatar_url} alt={editName} />
-                    <AvatarFallback>{editName?.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex gap-2 justify-center mt-2">
-                    <Button variant="outline" size="sm" onClick={handleAvatarEdit}>Edit Photo</Button>
-                    {editAvatar && <Button variant="outline" size="sm" onClick={handleAvatarDelete}>Delete Photo</Button>}
-                  </div>
-                  <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAvatarChange} />
-                </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <label className="w-24 text-sm font-medium text-charcoal-gray">Name:</label>
-                    <Input value={editName} onChange={handleInputCapitalize(setEditName)} placeholder="Full Name" required />
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <label className="w-24 text-sm font-medium text-charcoal-gray">Username:</label>
-                    <Input value={editUsername} onChange={handleUsernameChange} placeholder="Username" required />
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <label className="w-24 text-sm font-medium text-charcoal-gray">Location:</label>
-                    <div className="relative w-full">
-                      <Input 
-                        value={editLocation} 
-                        onChange={handleLocationInput} 
-                        placeholder="Start typing country..." 
-                        autoComplete="off" 
-                        onFocus={() => setShowLocationDropdown(true)}
-                        className="pr-8"
-                      />
-                      <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
-                        <svg width="12" height="12" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M4 6L7.5 9.5L11 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      </div>
-                      {editLocation && filteredCountries.length > 0 && showLocationDropdown && (
-                        <div className="absolute z-10 bg-white border rounded w-full max-h-40 overflow-y-auto shadow">
-                          {filteredCountries.map(c => (
-                            <div key={c.value} className="px-3 py-2 hover:bg-leaf-green/10 cursor-pointer" onClick={() => handleLocationSelect(c)}>{c.label}</div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <label className="w-24 text-sm font-medium text-charcoal-gray">Gender:</label>
-                    <div className="relative w-full">
-                      <select 
-                        value={editGender} 
-                        onChange={e => setEditGender(e.target.value)} 
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none pr-8"
-                      >
-                        <option value="">Select Gender</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Prefer not to say">Prefer not to say</option>
-                      </select>
-                      <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
-                        <svg width="12" height="12" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M4 6L7.5 9.5L11 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-4">
-                    <label className="w-24 text-sm font-medium text-charcoal-gray pt-2">Bio:</label>
-                    <Textarea value={editBio} onChange={handleInputCapitalize(setEditBio)} placeholder="Bio (tell us about yourself)" className="min-h-[80px]" />
-                  </div>
-                  {editError && <div className="text-red-500 text-sm mt-1">{editError}</div>}
-                </div>
+        {/* Completed Packs Section */}
+        <CompletedPacksSection 
+          userId={userId} 
+          isOwnProfile={isOwnProfile}
+        />
 
-                <div className="mt-8 pt-4 border-t border-gray-200">
-                  <div className="text-sm text-red-500 font-medium mb-2">Danger Zone</div>
-                  <Button 
-                    onClick={() => {
-                      const confirmDelete = window.confirm(
-                        "Are you absolutely sure you want to delete your account?\n\n" +
-                        "This will permanently delete:\n" +
-                        "- Your profile information\n" +
-                        "- All your posts and comments\n" +
-                        "- Your growth progress and achievements\n" +
-                        "- All other associated data\n\n" +
-                        "This action CANNOT be undone."
-                      );
-                      if (confirmDelete) {
-                        supabase.from('profiles').delete().eq('id', user.id)
-                          .then(() => {
-                            supabase.auth.signOut();
-                            navigate('/');
-                          });
-                      }
-                    }}
-                    variant="outline"
-                    className="w-full border-red-500 text-red-500 hover:bg-red-500/10"
-                  >
-                    Delete Account
-                  </Button>
-                </div>
-              </div>
-
-              <div className="border-t border-gray-200 bg-gray-50 px-6 py-4 mt-6">
-                <div className="flex gap-2">
-                  <Button onClick={handleEditProfile} className="bg-leaf-green text-white flex-1">Save</Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => { 
-                      if (editName.trim() && editUsername.trim()) setShowEditModal(false); 
-                    }} 
-                    className="flex-1" 
-                    disabled={!editName.trim() || !editUsername.trim()}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-        )}
+        {/* Posts Section */}
         {/* Posts Filter */}
         <div className="flex items-center gap-2 mb-4">
           <Filter className="w-5 h-5 text-forest-green" />
@@ -1254,34 +1351,55 @@ const ProfilePage = () => {
               <PostCard
                 key={post.id}
                 post={post}
-                currentUser={{ id: user?.id }}
-                onLike={handleLikeToggle}
-                onShare={handleShare}
-                onOpenComments={() => handleOpenComments(post)}
-                showDelete={post.user_id === user?.id}
-                onDelete={() => handleDeletePost(post.id)}
+                isLiked={post.likes?.some(l => l.user_id === user?.id) || false}
+                onLike={() => handleLikeToggle(post.id)}
+                onComment={() => handleOpenComments(post)}
+                onShare={() => handleShare(post)}
+                onViewComments={() => handleOpenComments(post)}
+                onProfileClick={() => {}} // Profile page doesn't need profile clicks
               />
             ))
+          )}
+          
+          {/* Load More Posts Button */}
+          {postsHasMore && filteredPosts.length > 0 && (
+            <div className="flex justify-center pt-6">
+              <Button
+                onClick={handleLoadMorePosts}
+                variant="outline"
+                disabled={loadingMore}
+                className="px-6"
+              >
+                {loadingMore ? (
+                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mr-2" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 mr-2" />
+                )}
+                Load More Posts
+              </Button>
+            </div>
           )}
         </div>
         {/* Comments Modal */}
         {selectedPost && (
           <CommentsModal
             isOpen={isCommentsModalOpen}
-            setIsOpen={setIsCommentsModalOpen}
-            post={selectedPost}
-            onCommentPosted={() => {
-              // Refetch posts to update comments
-              supabase
-                .from('posts')
-                .select('*, profiles:user_id ( id, full_name, avatar_url ), likes ( user_id ), comments ( id, user_id, parent_comment_id, content, profiles:user_id(full_name, avatar_url) )')
-                .eq('user_id', userId)
-                .eq('visibility', 'public')
-                .order('created_at', { ascending: false })
-                .then(({ data }) => {
-                  setPosts(data || []);
-                  setPostState(data || []);
-                });
+            postId={selectedPost.id}
+            onClose={() => setIsCommentsModalOpen(false)}
+            onCommentAdded={() => {
+              // Simple refetch - just update the comments count
+              if (selectedPost) {
+                setPosts(prev => prev.map(post => 
+                  post.id === selectedPost.id 
+                    ? { ...post, comments_count: (post.comments_count || 0) + 1 }
+                    : post
+                ));
+                setPostState(prev => prev.map(post => 
+                  post.id === selectedPost.id 
+                    ? { ...post, comments_count: (post.comments_count || 0) + 1 }
+                    : post
+                ));
+              }
             }}
           />
         )}
@@ -1526,6 +1644,140 @@ const ProfilePage = () => {
             </DialogContent>
           </Dialog>
         )}
+
+        {/* Edit Profile Modal */}
+        <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+          <DialogContent className="bg-white sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Profile</DialogTitle>
+              <DialogDescription>
+                Update your profile information
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              {/* Avatar Section */}
+              <div className="flex flex-col items-center space-y-4">
+                <div className="relative">
+                  <Avatar className="w-20 h-20 cursor-pointer" onClick={handleAvatarEdit}>
+                    <AvatarImage src={editAvatar} alt="Profile" />
+                    <AvatarFallback>{editName?.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div className="absolute -bottom-1 -right-1 bg-forest-green text-white rounded-full p-1 cursor-pointer" onClick={handleAvatarEdit}>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </div>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                />
+              </div>
+
+              {/* Name Field */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Full Name *</label>
+                <Input
+                  value={editName}
+                  onChange={handleInputCapitalize(setEditName)}
+                  placeholder="Enter your full name"
+                  className="border-gray-300 focus:border-forest-green focus:ring-forest-green"
+                />
+              </div>
+
+              {/* Username Field */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Username *</label>
+                <Input
+                  value={editUsername}
+                  onChange={handleUsernameChange}
+                  placeholder="Enter username"
+                  className="border-gray-300 focus:border-forest-green focus:ring-forest-green"
+                />
+                <p className="text-xs text-gray-500">Username can only contain letters, numbers, and underscores</p>
+              </div>
+
+              {/* Location Field */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Location</label>
+                <div className="relative">
+                  <Input
+                    value={editLocation}
+                    onChange={handleLocationInput}
+                    placeholder="Enter your location"
+                    className="border-gray-300 focus:border-forest-green focus:ring-forest-green"
+                  />
+                  {showLocationDropdown && filteredCountries.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                      {filteredCountries.slice(0, 10).map((country) => (
+                        <div
+                          key={country.value}
+                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => handleLocationSelect(country)}
+                        >
+                          {country.label}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Gender Field */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Gender *</label>
+                <select
+                  value={editGender}
+                  onChange={(e) => setEditGender(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-forest-green focus:border-forest-green"
+                >
+                  <option value="">Select gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                  <option value="prefer_not_to_say">Prefer not to say</option>
+                </select>
+              </div>
+
+              {/* Bio Field */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Bio</label>
+                <Textarea
+                  value={editBio}
+                  onChange={(e) => setEditBio(e.target.value)}
+                  placeholder="Tell us about yourself..."
+                  rows={3}
+                  className="border-gray-300 focus:border-forest-green focus:ring-forest-green"
+                />
+              </div>
+
+              {/* Error Message */}
+              {editError && (
+                <div className="text-red-500 text-sm">{editError}</div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4">
+                <Button
+                  onClick={handleEditProfile}
+                  className="bg-forest-green hover:bg-forest-green/90 text-white flex-1"
+                >
+                  Save Changes
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowEditModal(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Block Confirmation Dialog */}
         <Dialog open={showBlockConfirmDialog} onOpenChange={setShowBlockConfirmDialog}>

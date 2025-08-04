@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
-import { Heart, MessageCircle, CornerUpRight, BellOff, Bell } from 'lucide-react';
+import { Heart, MessageCircle, CornerUpRight, BellOff, Bell, Users } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useData } from '@/contexts/DataContext';
@@ -31,14 +31,18 @@ const NotificationsPage = () => {
     if (!user) return;
     setLoading(true);
 
-    const { data, error } = await supabase.rpc('get_user_notifications', { p_user_id: user.id });
+    try {
+      const { data, error } = await supabase.rpc('get_user_notifications', { p_user_id: user.id });
 
-    if (error) {
+      if (error) {
         console.error('Error fetching notifications:', error);
         setNotifications([]);
-    } else {
-        const sortedNotifications = data.sort((a, b) => new Date(b.notification_timestamp) - new Date(a.notification_timestamp));
-        setNotifications(sortedNotifications);
+      } else {
+        setNotifications(data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      setNotifications([]);
     }
     setLoading(false);
   }, [user]);
@@ -52,10 +56,8 @@ const NotificationsPage = () => {
     if (!user) return;
 
     const handleInserts = (payload) => {
-        // Simple and effective: just refetch all notifications on any new activity.
-        // For a high-traffic app, you might want to merge the new payload into the existing state.
+        // Refetch notifications when new activity occurs
         fetchNotifications();
-        updateLastViewedNotifications();
     };
 
     const likesChannel = supabase
@@ -68,33 +70,52 @@ const NotificationsPage = () => {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, handleInserts)
       .subscribe();
 
+    const followsChannel = supabase
+      .channel('public:follows:notifications')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'follows' }, handleInserts)
+      .subscribe();
+
+    const notificationsChannel = supabase
+      .channel('public:notifications:realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, handleInserts)
+      .subscribe();
+
     return () => {
       supabase.removeChannel(likesChannel);
       supabase.removeChannel(commentsChannel);
+      supabase.removeChannel(followsChannel);
+      supabase.removeChannel(notificationsChannel);
     };
-  }, [user, fetchNotifications, updateLastViewedNotifications]);
+  }, [user, fetchNotifications]);
 
   const renderNotificationContent = (notif) => {
     switch (notif.type) {
       case 'like':
         return (
           <>
-            <span className="font-bold text-forest-green">{notif.interactor_name}</span>
+            <span className="font-bold text-forest-green">{notif.actor_name}</span>
             <span> liked your post.</span>
           </>
         );
       case 'comment':
         return (
           <>
-            <span className="font-bold text-forest-green">{notif.interactor_name}</span>
+            <span className="font-bold text-forest-green">{notif.actor_name}</span>
             <span> commented on your post:</span>
           </>
         );
       case 'reply':
         return (
           <>
-            <span className="font-bold text-forest-green">{notif.interactor_name}</span>
+            <span className="font-bold text-forest-green">{notif.actor_name}</span>
             <span> replied to your comment:</span>
+          </>
+        );
+      case 'follow':
+        return (
+          <>
+            <span className="font-bold text-forest-green">{notif.actor_name}</span>
+            <span> started following you.</span>
           </>
         );
       default:
@@ -110,6 +131,8 @@ const NotificationsPage = () => {
         return <MessageCircle className="w-4 h-4 text-blue-500 fill-blue-500/20" />;
       case 'reply':
         return <CornerUpRight className="w-4 h-4 text-leaf-green" />;
+      case 'follow':
+        return <Users className="w-4 h-4 text-purple-500" />;
       default:
         return null;
     }
@@ -154,9 +177,9 @@ const NotificationsPage = () => {
                     <CardContent className="p-4 flex items-center gap-4">
                       <div className="relative">
                         <Avatar className="w-12 h-12 border-2 border-white">
-                          <AvatarImage src={notif.interactor_avatar} />
+                          <AvatarImage src={notif.actor_avatar} />
                           <AvatarFallback className="bg-gradient-to-br from-warm-orange to-red-400 text-white">
-                            {notif.interactor_name?.charAt(0)}
+                            {notif.actor_name?.charAt(0)}
                           </AvatarFallback>
                         </Avatar>
                         <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5">
@@ -174,15 +197,21 @@ const NotificationsPage = () => {
                         )}
                         <p className="text-xs text-charcoal-gray/50 mt-1">{formatTimeAgo(notif.notification_timestamp)}</p>
                       </div>
-                      <Link to={`/post/${notif.post_id}`}>
-                        {notif.post_photo ? (
-                          <img src={notif.post_photo} alt="Post preview" className="w-16 h-16 object-cover rounded-md hover:scale-105 transition-transform" />
-                        ) : (
-                          <div className="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center text-center text-xs p-1 text-gray-500">
-                            Post
-                          </div>
-                        )}
-                      </Link>
+                      {notif.post_id ? (
+                        <Link to={`/post/${notif.post_id}`}>
+                          {notif.post_photo ? (
+                            <img src={notif.post_photo} alt="Post preview" className="w-16 h-16 object-cover rounded-md hover:scale-105 transition-transform" />
+                          ) : (
+                            <div className="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center text-center text-xs p-1 text-gray-500">
+                              Post
+                            </div>
+                          )}
+                        </Link>
+                      ) : notif.type === 'follow' ? (
+                        <div className="w-16 h-16 bg-purple-100 rounded-md flex items-center justify-center">
+                          <Users className="w-6 h-6 text-purple-500" />
+                        </div>
+                      ) : null}
                     </CardContent>
                   </Card>
                 </motion.div>

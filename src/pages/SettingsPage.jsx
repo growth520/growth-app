@@ -4,14 +4,17 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { ArrowLeft } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ArrowLeft, Target } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useData } from '@/contexts/DataContext';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 
 const SettingsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { profile, refreshAllData } = useData();
   const { toast } = useToast();
   const [settings, setSettings] = useState({
     show_streak: true,
@@ -21,6 +24,21 @@ const SettingsPage = () => {
     allow_following_view: true,
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [isUpdatingGrowthArea, setIsUpdatingGrowthArea] = useState(false);
+
+  const growthAreas = {
+    Confidence: { emoji: '💪', description: 'Build unshakable self-belief and assertiveness' },
+    'Self-Worth': { emoji: '💎', description: 'Recognize your value and cultivate self-love' },
+    Mindfulness: { emoji: '🧘', description: 'Stay present, reduce stress, and find inner peace' },
+    Communication: { emoji: '🗣️', description: 'Express yourself clearly and build stronger connections' },
+    Resilience: { emoji: '⚡', description: 'Bounce back from adversity and handle stress effectively' },
+    'Self-Control': { emoji: '🎯', description: 'Master impulses and make conscious choices' },
+    Discipline: { emoji: '📚', description: 'Build strong habits and consistently work towards goals' },
+    Fitness: { emoji: '🏋️', description: 'Improve physical health and boost energy levels' },
+    Purpose: { emoji: '🎯', description: 'Find meaning and direction in life' },
+    Humility: { emoji: '🙏', description: 'Embrace modesty and learning from others' },
+    Gratitude: { emoji: '🌟', description: 'Appreciate the good in life and others' }
+  };
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -82,6 +100,45 @@ const SettingsPage = () => {
     }
   };
 
+  const handleGrowthAreaChange = async (newGrowthArea) => {
+    if (!user || !profile) return;
+    
+    setIsUpdatingGrowthArea(true);
+    
+    try {
+      // Update the assessment results with the new growth area
+      const updatedAssessmentResults = {
+        ...profile.assessment_results,
+        userSelection: newGrowthArea
+      };
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          assessment_results: updatedAssessmentResults
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      await refreshAllData();
+      
+      toast({
+        title: "Growth Area Updated! 🎯",
+        description: `Your focus has been changed to ${newGrowthArea}. New challenges will reflect this change.`,
+      });
+    } catch (error) {
+      console.error('Error updating growth area:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update growth area. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingGrowthArea(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-sun-beige text-charcoal-gray font-lato">
       <div className="container mx-auto px-4 pt-8 pb-24 max-w-2xl">
@@ -104,6 +161,67 @@ const SettingsPage = () => {
           transition={{ delay: 0.1 }}
           className="space-y-6"
         >
+          {/* Growth Focus Area */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="w-5 h-5 text-forest-green" />
+                Growth Focus
+              </CardTitle>
+              <CardDescription>
+                Change your primary growth area. This will affect the challenges you receive.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <div className="text-sm font-medium">Current Focus Area</div>
+                    <div className="text-sm text-charcoal-gray/70">
+                      {profile?.assessment_results?.userSelection ? (
+                        <div className="flex items-center gap-2">
+                          <span>{growthAreas[profile.assessment_results.userSelection]?.emoji}</span>
+                          <span>{profile.assessment_results.userSelection}</span>
+                        </div>
+                      ) : (
+                        'No focus area selected'
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Change Focus Area</label>
+                  <Select 
+                    onValueChange={handleGrowthAreaChange}
+                    disabled={isUpdatingGrowthArea}
+                    value={profile?.assessment_results?.userSelection || ''}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a growth area..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(growthAreas).map(([area, { emoji, description }]) => (
+                        <SelectItem key={area} value={area}>
+                          <div className="flex items-center gap-2">
+                            <span>{emoji}</span>
+                            <div>
+                              <div className="font-medium">{area}</div>
+                              <div className="text-xs text-gray-500">{description}</div>
+                            </div>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {isUpdatingGrowthArea && (
+                    <div className="text-xs text-gray-500">Updating your focus area...</div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Profile Visibility */}
           <Card>
             <CardHeader>

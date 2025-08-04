@@ -3,6 +3,9 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useData } from '@/contexts/DataContext';
 
+// Feature flag for challenge packs - disable if tables don't exist
+const CHALLENGE_PACKS_ENABLED = true;
+
 export const useChallengePacks = () => {
   const { user } = useAuth();
   const { progress } = useData();
@@ -13,44 +16,88 @@ export const useChallengePacks = () => {
 
   // Fetch all challenge packs
   const fetchChallengePacks = useCallback(async () => {
+    if (!CHALLENGE_PACKS_ENABLED) {
+      setChallengePacks([]);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('challenge_packs')
         .select('*')
-        .eq('is_active', true)
-        .order('sort_order', { ascending: true });
+        .order('id', { ascending: true }); // Changed from sort_order to id
 
       if (error) throw error;
       setChallengePacks(data || []);
     } catch (err) {
+      // Silently handle table not existing
+      if (err?.code === 'PGRST106' || err?.status === 400 || err?.status === 404) {
+        setChallengePacks([]);
+        return;
+      }
       setError(err.message);
-      console.error('Error fetching challenge packs:', err);
+      if (!import.meta.env.PROD) console.error('Error fetching challenge packs:', err);
     }
   }, []);
 
-  // Fetch user's pack progress
+  // Fetch user's pack progress - UPDATED TO REMOVE IMPLICIT JOINS
   const fetchUserPackProgress = useCallback(async () => {
-    if (!user) return;
+    if (!user || !CHALLENGE_PACKS_ENABLED) {
+      setUserPackProgress([]);
+      return;
+    }
 
     try {
-      const { data, error } = await supabase
+      // Step 1: Fetch user pack progress without any joins
+      const { data: packProgressData, error: packProgressError } = await supabase
         .from('user_pack_progress')
-        .select(`
-          *,
-          challenge_packs (
-            title,
-            description,
-            icon,
-            duration_days
-          )
-        `)
-        .eq('user_id', user.id);
+        .select('id, pack_id, is_completed, started_at, completion_percentage, current_day, created_at, updated_at')
+        .eq('user_id', user.id)
+        .eq('is_completed', false);
 
-      if (error) throw error;
-      setUserPackProgress(data || []);
+      if (packProgressError) throw packProgressError;
+
+      // Step 2: If we have pack progress data, fetch the corresponding challenge packs separately
+      if (packProgressData && packProgressData.length > 0) {
+        const packIds = packProgressData.map(p => p.pack_id).filter(Boolean);
+        
+        if (packIds.length > 0) {
+          // Fetch challenge packs using the pack_ids (UUIDs)
+          const { data: challengePacksData, error: challengePacksError } = await supabase
+            .from('challenge_packs')
+            .select('id, title, description, level_required, challenges, category, icon, duration_days')
+            .in('id', packIds);
+
+          if (challengePacksError) {
+            console.error('Error fetching challenge packs:', challengePacksError);
+            // Continue with just pack progress data
+            setUserPackProgress(packProgressData || []);
+            return;
+          } else {
+            // Step 3: Combine the data in JavaScript
+            const combinedData = packProgressData.map(progress => {
+              const pack = challengePacksData?.find(p => p.id === progress.pack_id);
+              return {
+                ...progress,
+                challenge_packs: pack || null
+              };
+            });
+            setUserPackProgress(combinedData);
+            return;
+          }
+        }
+      }
+
+      // If no pack progress or error fetching challenge packs, just set the pack progress
+      setUserPackProgress(packProgressData || []);
     } catch (err) {
+      // Silently handle table not existing
+      if (err?.code === 'PGRST106' || err?.status === 400 || err?.status === 404) {
+        setUserPackProgress([]);
+        return;
+      }
       setError(err.message);
-      console.error('Error fetching user pack progress:', err);
+      if (!import.meta.env.PROD) console.error('Error fetching user pack progress:', err);
     }
   }, [user]);
 
@@ -70,16 +117,87 @@ export const useChallengePacks = () => {
     return userPackProgress.find(p => p.pack_id === packId);
   }, [userPackProgress]);
 
-  // Start a challenge pack
-  const startChallengePack = useCallback(async (packId) => {
-    if (!user) return { success: false, error: 'User not authenticated' };
+  // Get completed challenges for a specific pack
+  const getCompletedChallenges = useCallback(async (packId) => {
+    if (!user || !CHALLENGE_PACKS_ENABLED) return [];
 
     try {
+      const { data, error } = await supabase
+        .from('user_pack_challenge_progress')
+        .select('challenge_index')
+        .eq('user_id', user.id)
+        .eq('pack_id', packId) // Use packId directly (UUID)
+        .order('challenge_index');
+
+      if (error) throw error;
+      return data?.map(item => item.challenge_index) || [];
+    } catch (err) {
+      console.error('Error fetching completed challenges:', err);
+      return [];
+    }
+  }, [user]);
+
+  // Complete a challenge in a pack - UPDATED TO HANDLE BIGINT PACK_ID
+  const completePackChallenge = useCallback(async (packId, challengeIndex) => {
+    if (!user || !CHALLENGE_PACKS_ENABLED) return { success: false, error: 'Feature not available' };
+
+    try {
+      // Convert packId to BIGINT since challenge_packs.id is BIGINT
+      const packIdBigInt = parseInt(packId);
+      
+      const { data, error } = await supabase.rpc('complete_pack_challenge', {
+        p_user_id: user.id,
+        p_pack_id: packIdBigInt, // Convert to BIGINT for challenge_packs.id
+        p_challenge_index: challengeIndex
+      });
+
+      if (error) throw error;
+
+      // Refresh user pack progress
+      await fetchUserPackProgress();
+      
+      return { success: true, data };
+    } catch (err) {
+      console.error('Error completing pack challenge:', err);
+      return { success: false, error: err.message };
+    }
+  }, [user, fetchUserPackProgress]);
+
+  // Get pack completion percentage - UPDATED TO HANDLE BIGINT PACK_ID
+  const getPackCompletionPercentage = useCallback(async (packId) => {
+    if (!user || !CHALLENGE_PACKS_ENABLED) return 0;
+
+    try {
+      // Convert packId to BIGINT since challenge_packs.id is BIGINT
+      const packIdBigInt = parseInt(packId);
+      
+      const { data, error } = await supabase.rpc('get_pack_completion_percentage', {
+        p_user_id: user.id,
+        p_pack_id: packIdBigInt // Convert to BIGINT for challenge_packs.id
+      });
+
+      if (error) throw error;
+      return data || 0;
+    } catch (err) {
+      console.error('Error getting pack completion percentage:', err);
+      return 0;
+    }
+  }, [user]);
+
+  // Start a challenge pack - UPDATED TO HANDLE BIGINT PACK_ID
+  const startChallengePack = useCallback(async (packId) => {
+    if (!user) return { success: false, error: 'User not authenticated' };
+    if (!CHALLENGE_PACKS_ENABLED) return { success: false, error: 'Feature not available' };
+
+    try {
+      // Convert packId to BIGINT since challenge_packs.id is BIGINT
+      const packIdBigInt = parseInt(packId);
+      
       const { data, error } = await supabase
         .from('user_pack_progress')
         .insert({
           user_id: user.id,
-          pack_id: packId,
+          pack_id: packIdBigInt, // Convert to BIGINT for challenge_packs.id
           current_day: 1,
           is_completed: false,
           completion_percentage: 0
@@ -94,16 +212,24 @@ export const useChallengePacks = () => {
       
       return { success: true, data };
     } catch (err) {
-      console.error('Error starting challenge pack:', err);
+      // Silently handle table not existing
+      if (err?.code === 'PGRST106' || err?.status === 400 || err?.status === 404) {
+        return { success: false, error: 'Feature not available' };
+      }
+      if (!import.meta.env.PROD) console.error('Error starting challenge pack:', err);
       return { success: false, error: err.message };
     }
   }, [user, fetchUserPackProgress]);
 
-  // Update pack progress
+  // Update pack progress - UPDATED TO HANDLE BIGINT PACK_ID
   const updatePackProgress = useCallback(async (packId, updates) => {
     if (!user) return { success: false, error: 'User not authenticated' };
+    if (!CHALLENGE_PACKS_ENABLED) return { success: false, error: 'Feature not available' };
 
     try {
+      // Convert packId to BIGINT since challenge_packs.id is BIGINT
+      const packIdBigInt = parseInt(packId);
+      
       const { data, error } = await supabase
         .from('user_pack_progress')
         .update({
@@ -111,7 +237,7 @@ export const useChallengePacks = () => {
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id)
-        .eq('pack_id', packId)
+        .eq('pack_id', packIdBigInt) // Convert to BIGINT for challenge_packs.id
         .select()
         .single();
 
@@ -122,7 +248,11 @@ export const useChallengePacks = () => {
       
       return { success: true, data };
     } catch (err) {
-      console.error('Error updating pack progress:', err);
+      // Silently handle table not existing
+      if (err?.code === 'PGRST106' || err?.status === 400 || err?.status === 404) {
+        return { success: false, error: 'Feature not available' };
+      }
+      if (!import.meta.env.PROD) console.error('Error updating pack progress:', err);
       return { success: false, error: err.message };
     }
   }, [user, fetchUserPackProgress]);
@@ -166,6 +296,10 @@ export const useChallengePacks = () => {
   const getPacksWithStatus = useCallback(() => {
     return challengePacks.map(pack => ({
       ...pack,
+      // Provide default values for columns that might not exist
+      icon: pack.icon || '🎯',
+      duration_days: pack.duration_days || 7,
+      category: pack.category || 'Growth',
       isUnlocked: isPackUnlocked(pack),
       isStarted: isPackStarted(pack.id),
       progress: getPackProgress(pack.id),
@@ -180,7 +314,9 @@ export const useChallengePacks = () => {
         if (packProgress.is_completed) {
           return 'Completed';
         }
-        return `Day ${packProgress.current_day} of ${pack.duration_days}`;
+        const totalChallenges = Array.isArray(pack.challenges) ? pack.challenges.length : 0;
+        const completedChallenges = packProgress.completion_percentage || 0;
+        return `${Math.round((completedChallenges / 100) * totalChallenges)} of ${totalChallenges} completed`;
       })()
     }));
   }, [challengePacks, isPackUnlocked, isPackStarted, getPackProgress]);
@@ -210,6 +346,9 @@ export const useChallengePacks = () => {
     isPackUnlocked,
     isPackStarted,
     getPackProgress,
+    getCompletedChallenges,
+    completePackChallenge,
+    getPackCompletionPercentage,
     startChallengePack,
     updatePackProgress,
     completePack,

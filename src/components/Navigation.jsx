@@ -20,7 +20,8 @@ const Navigation = () => {
   const location = useLocation();
   const { signOut } = useAuth();
   const { profile, hasNewNotifications } = useData();
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isMobileDropdownOpen, setIsMobileDropdownOpen] = useState(false);
+  const [isDesktopDropdownOpen, setIsDesktopDropdownOpen] = useState(false);
 
   const navItems = [
     { path: '/challenge', icon: Target, label: 'Challenge' },
@@ -32,7 +33,9 @@ const Navigation = () => {
 
   const handleLogout = async () => {
     try {
-      setIsDropdownOpen(false);
+      // Close both dropdowns
+      setIsMobileDropdownOpen(false);
+      setIsDesktopDropdownOpen(false);
       await signOut();
       navigate('/', { replace: true });
     } catch (error) {
@@ -61,7 +64,8 @@ const Navigation = () => {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      setIsDropdownOpen(false);
+      setIsMobileDropdownOpen(false);
+      setIsDesktopDropdownOpen(false);
     };
   }, []);
 
@@ -96,8 +100,8 @@ const Navigation = () => {
                 {hasNewNotifications && <div className="absolute top-2 right-2 w-2 h-2 bg-leaf-green rounded-full" />}
               </Button>
               
-              {/* Fixed Dropdown Menu */}
-              <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
+              {/* Mobile Dropdown Menu */}
+              <DropdownMenu open={isMobileDropdownOpen} onOpenChange={setIsMobileDropdownOpen}>
                 <DropdownMenuTrigger asChild>
                   <button
                     className="flex items-center gap-2 cursor-pointer rounded-full p-1 hover:bg-black/5 transition-colors"
@@ -121,7 +125,7 @@ const Navigation = () => {
                 >
                   <DropdownMenuItem 
                     onClick={() => {
-                      setIsDropdownOpen(false);
+                      setIsMobileDropdownOpen(false);
                       navigate('/profile');
                     }} 
                     className="cursor-pointer hover:bg-black/5 focus:bg-black/5"
@@ -131,7 +135,7 @@ const Navigation = () => {
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => {
-                      setIsDropdownOpen(false);
+                      setIsMobileDropdownOpen(false);
                       navigate('/settings');
                     }} 
                     className="cursor-pointer hover:bg-black/5 focus:bg-black/5"
@@ -171,13 +175,20 @@ const Navigation = () => {
               <span className="text-2xl font-bold gradient-text">Growth</span>
             </motion.div>
             <div className="flex items-center gap-4">
-              <Button onClick={() => navigate('/notifications')} variant="ghost" size="icon" className="relative">
+              <Button 
+                onClick={() => navigate('/notifications')} 
+                variant="ghost" 
+                size="icon" 
+                className="relative"
+                aria-label="View notifications"
+                title="Notifications"
+              >
                 <Heart className="w-5 h-5 text-charcoal-gray/70" />
                 {hasNewNotifications && <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-leaf-green rounded-full" />}
               </Button>
               
               {/* Desktop Dropdown */}
-              <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
+              <DropdownMenu open={isDesktopDropdownOpen} onOpenChange={setIsDesktopDropdownOpen}>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-3 cursor-pointer rounded-lg p-2 hover:bg-black/5 transition-colors">
                     <Avatar className="w-8 h-8">
@@ -191,14 +202,14 @@ const Navigation = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuItem onClick={() => {
-                    setIsDropdownOpen(false);
+                    setIsDesktopDropdownOpen(false);
                     navigate('/profile');
                   }} className="cursor-pointer">
                     <User className="mr-2 h-4 w-4" />
                     <span>View Profile</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {
-                    setIsDropdownOpen(false);
+                    setIsDesktopDropdownOpen(false);
                     navigate('/settings');
                   }} className="cursor-pointer">
                     <Settings className="mr-2 h-4 w-4" />
