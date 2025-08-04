@@ -1453,8 +1453,12 @@ const CommunityPage = () => {
       {/* Comments Modal */}
       <CommentsModal
         isOpen={showCommentsModal}
-        postId={selectedPostForModal?.id}
-        onClose={() => setShowCommentsModal(false)}
+        postId={selectedPost?.id || selectedPostForModal?.id}
+        onClose={() => {
+          setShowCommentsModal(false);
+          setSelectedPost(null);
+          setSelectedPostForModal(null);
+        }}
         onCommentAdded={onCommentAdded}
       />
     </div>
