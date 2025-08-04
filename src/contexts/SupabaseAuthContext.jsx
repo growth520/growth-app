@@ -29,6 +29,12 @@ export const AuthProvider = ({ children }) => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        // Persist session to localStorage for mobile compatibility
+        if (session) {
+          localStorage.setItem('supabase.auth.token', JSON.stringify(session));
+        } else {
+          localStorage.removeItem('supabase.auth.token');
+        }
         handleSession(session);
       }
     );
@@ -76,7 +82,7 @@ export const AuthProvider = ({ children }) => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${getBaseUrl()}/challenge`,
+          redirectTo: `${getBaseUrl()}/auth/callback`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent'

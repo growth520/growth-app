@@ -27,6 +27,9 @@ const AuthCallbackPage = () => {
         console.log('Session found:', !!session?.user);
 
         if (session?.user) {
+          // Persist session to localStorage for mobile compatibility
+          localStorage.setItem('supabase.auth.token', JSON.stringify(session));
+          
           // Check if profile already exists and preserve assessment status
           const { data: existingProfile, error: checkError } = await supabase
             .from('profiles')
@@ -63,12 +66,12 @@ const AuthCallbackPage = () => {
           }
 
           toast({
-            title: "Email Confirmed! 🎉",
-            description: "Your account has been successfully verified. Welcome to Growth!"
+            title: "Welcome! 🎉",
+            description: "You've been successfully signed in to Growth!"
           });
 
-          // Redirect to assessment page for new users
-          navigate('/assessment', { replace: true });
+          // Redirect to progress page for all users (OAuth flow)
+          navigate('/progress', { replace: true });
         } else {
           console.log('No session found, redirecting to login');
           navigate('/login');
@@ -77,7 +80,7 @@ const AuthCallbackPage = () => {
         console.error('Auth callback error:', error);
         toast({
           title: "Authentication Error",
-          description: "There was an issue with your email confirmation. Please try signing in again.",
+          description: "There was an issue with your sign-in. Please try again.",
           variant: "destructive"
         });
         navigate('/login');
@@ -107,7 +110,7 @@ const AuthCallbackPage = () => {
       <div className="min-h-screen flex items-center justify-center bg-sun-beige">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-forest-green mx-auto"></div>
-          <p className="text-charcoal-gray">Confirming your email...</p>
+          <p className="text-charcoal-gray">Completing sign-in...</p>
         </div>
       </div>
     );

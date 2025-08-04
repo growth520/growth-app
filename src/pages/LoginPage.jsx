@@ -25,7 +25,7 @@ const LoginPage = () => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${getBaseUrl()}/challenge`,
+          redirectTo: `${getBaseUrl()}/auth/callback`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent'
@@ -101,7 +101,7 @@ const LoginPage = () => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'apple',
         options: {
-          redirectTo: `${getBaseUrl()}/challenge`,
+          redirectTo: `${getBaseUrl()}/auth/callback`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent'
