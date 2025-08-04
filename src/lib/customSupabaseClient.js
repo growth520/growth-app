@@ -52,13 +52,13 @@ const createSupabaseClient = () => {
         persistSession: true,
         detectSessionInUrl: true
       },
-      // Disable realtime by default to prevent auth errors
+      // Completely disable realtime to prevent WebSocket connections
       realtime: {
         params: {
-          eventsPerSecond: 0 // Disable realtime initially
+          eventsPerSecond: 0
         }
       },
-      // Cache settings for better performance
+      // Disable realtime globally
       global: {
         headers: {
           'x-client-info': 'growth-app@1.0.0'

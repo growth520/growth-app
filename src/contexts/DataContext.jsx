@@ -456,10 +456,15 @@ export const DataProvider = ({ children }) => {
     }
   }, [appState.progress?.id, user?.id]); // More stable dependencies
 
-  // Optimized realtime subscriptions
+  // Optimized realtime subscriptions - DISABLED due to auth errors
   useEffect(() => {
     if (!user) return;
 
+    // TEMPORARILY DISABLED: Realtime subscriptions causing WebSocket auth errors
+    // Will re-enable once authentication flow is fully stable
+    console.log('Realtime subscriptions disabled to prevent auth errors');
+    
+    /*
     // Wait for a short delay to ensure session is properly established
     const timeoutId = setTimeout(async () => {
       // Verify session is still valid before setting up realtime
@@ -524,6 +529,7 @@ export const DataProvider = ({ children }) => {
     }, 1000); // 1 second delay to ensure session is established
 
     return () => clearTimeout(timeoutId);
+    */
   }, [user, refreshHasNewNotifications]);
 
   // Memoized context value to prevent unnecessary re-renders
