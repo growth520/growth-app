@@ -151,12 +151,16 @@ export const DataProvider = ({ children }) => {
   const refreshHasNewNotifications = useCallback(async () => {
     if (!user || appState.notificationCheckInProgress) return;
     
+    console.log('🔔 Checking for new notifications for user:', user.id);
+    
     // Set flag to prevent multiple simultaneous requests
     setAppState(prev => ({ ...prev, notificationCheckInProgress: true }));
     
     try {
       const { data, error } = await supabase
         .rpc('get_unread_notification_count', { p_user_id: user.id });
+      
+      console.log('🔔 Notification count result:', { data, error });
       
       if (error) {
         console.error('Error fetching notification count:', error);
@@ -166,9 +170,11 @@ export const DataProvider = ({ children }) => {
           notificationCheckInProgress: false 
         }));
       } else {
+        const hasNew = (data || 0) > 0;
+        console.log('🔔 Has new notifications:', hasNew, 'Count:', data);
         setAppState(prev => ({ 
           ...prev, 
-          hasNewNotifications: (data || 0) > 0,
+          hasNewNotifications: hasNew,
           notificationCheckInProgress: false 
         }));
       }
@@ -530,6 +536,40 @@ export const DataProvider = ({ children }) => {
 
     return () => clearTimeout(timeoutId);
     */
+  }, [user, refreshHasNewNotifications]);
+
+  // Set up real-time subscriptions for notifications
+  useEffect(() => {
+    if (!user) return;
+
+    console.log('🔔 Setting up notification real-time subscription for user:', user.id);
+
+    const notificationsChannel = supabase
+      .channel('notifications-realtime')
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'notifications',
+        filter: `user_id=eq.${user.id}`
+      }, (payload) => {
+        console.log('🔔 New notification received:', payload);
+        refreshHasNewNotifications();
+      })
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'notifications',
+        filter: `user_id=eq.${user.id}`
+      }, (payload) => {
+        console.log('🔔 Notification updated:', payload);
+        refreshHasNewNotifications();
+      })
+      .subscribe();
+
+    return () => {
+      console.log('🔔 Cleaning up notification subscription');
+      supabase.removeChannel(notificationsChannel);
+    };
   }, [user, refreshHasNewNotifications]);
 
   // Memoized context value to prevent unnecessary re-renders
