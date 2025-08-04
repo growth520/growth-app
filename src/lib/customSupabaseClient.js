@@ -52,10 +52,10 @@ const createSupabaseClient = () => {
         persistSession: true,
         detectSessionInUrl: true
       },
-      // Performance optimizations
+      // Disable realtime by default to prevent auth errors
       realtime: {
         params: {
-          eventsPerSecond: 2 // Reduce realtime frequency
+          eventsPerSecond: 0 // Disable realtime initially
         }
       },
       // Cache settings for better performance
@@ -65,8 +65,6 @@ const createSupabaseClient = () => {
         }
       }
     });
-    
-    // Auth state monitoring removed to clean up console output
   }
   
   return supabaseInstance;

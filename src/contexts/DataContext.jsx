@@ -460,48 +460,70 @@ export const DataProvider = ({ children }) => {
   useEffect(() => {
     if (!user) return;
 
-    const channels = [];
-    
-    // Single notification handler for better performance
-    const handleNotificationUpdate = () => {
-      refreshHasNewNotifications();
-    };
+    // Wait for a short delay to ensure session is properly established
+    const timeoutId = setTimeout(async () => {
+      // Verify session is still valid before setting up realtime
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        console.log('No valid session, skipping realtime subscriptions');
+        return;
+      }
 
-    // Subscribe to relevant changes only
-    const likesChannel = supabase.channel('public:likes')
-      .on('postgres_changes', { 
-        event: 'INSERT', 
-        schema: 'public', 
-        table: 'likes',
-        filter: `post_id=in.(${user.id})` // Only user's posts
-      }, handleNotificationUpdate)
-      .subscribe();
+      const channels = [];
+      
+      // Single notification handler for better performance
+      const handleNotificationUpdate = () => {
+        refreshHasNewNotifications();
+      };
 
-    const commentsChannel = supabase.channel('public:comments')
-      .on('postgres_changes', { 
-        event: 'INSERT', 
-        schema: 'public', 
-        table: 'comments',
-        filter: `post_id=in.(${user.id})` // Only user's posts
-      }, handleNotificationUpdate)
-      .subscribe();
-    
-    const progressChannel = supabase.channel('public:user_progress')
-      .on('postgres_changes', { 
-        event: 'UPDATE', 
-        schema: 'public', 
-        table: 'user_progress', 
-        filter: `user_id=eq.${user.id}` 
-      }, (payload) => {
-        setAppState(prev => ({ ...prev, progress: payload.new }));
-      })
-      .subscribe();
+      try {
+        // Subscribe to relevant changes only
+        const likesChannel = supabase.channel('public:likes')
+          .on('postgres_changes', { 
+            event: 'INSERT', 
+            schema: 'public', 
+            table: 'likes',
+            filter: `post_id=in.(${user.id})` // Only user's posts
+          }, handleNotificationUpdate)
+          .subscribe();
 
-    channels.push(likesChannel, commentsChannel, progressChannel);
+        const commentsChannel = supabase.channel('public:comments')
+          .on('postgres_changes', { 
+            event: 'INSERT', 
+            schema: 'public', 
+            table: 'comments',
+            filter: `post_id=in.(${user.id})` // Only user's posts
+          }, handleNotificationUpdate)
+          .subscribe();
+        
+        const progressChannel = supabase.channel('public:user_progress')
+          .on('postgres_changes', { 
+            event: 'UPDATE', 
+            schema: 'public', 
+            table: 'user_progress', 
+            filter: `user_id=eq.${user.id}` 
+          }, (payload) => {
+            setAppState(prev => ({ ...prev, progress: payload.new }));
+          })
+          .subscribe();
 
-    return () => {
-      channels.forEach(channel => supabase.removeChannel(channel));
-    };
+        channels.push(likesChannel, commentsChannel, progressChannel);
+      } catch (error) {
+        console.error('Error setting up realtime subscriptions:', error);
+      }
+
+      return () => {
+        channels.forEach(channel => {
+          try {
+            supabase.removeChannel(channel);
+          } catch (error) {
+            console.error('Error removing realtime channel:', error);
+          }
+        });
+      };
+    }, 1000); // 1 second delay to ensure session is established
+
+    return () => clearTimeout(timeoutId);
   }, [user, refreshHasNewNotifications]);
 
   // Memoized context value to prevent unnecessary re-renders
