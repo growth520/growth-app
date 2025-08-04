@@ -208,12 +208,7 @@ const LoginPage = () => {
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          background: `
-            linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%),
-            url('/images/welcome-bg.jpg')
-          `,
-          backgroundSize: 'cover, cover',
-          backgroundPosition: 'center, center',
+          backgroundImage: `url('/images/welcome-bg.jpg')`,
         }}
       >
         {/* Dark gradient overlay for text readability */}
