@@ -79,6 +79,9 @@ export const AuthProvider = ({ children }) => {
 
   const signInWithProvider = useCallback(async (provider) => {
     try {
+      // Check if we're on mobile
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
@@ -86,7 +89,12 @@ export const AuthProvider = ({ children }) => {
           queryParams: {
             access_type: 'offline',
             prompt: 'consent'
-          }
+          },
+          // Mobile-specific configuration
+          ...(isMobile && {
+            skipBrowserRedirect: false,
+            flowType: 'pkce'
+          })
         }
       });
 

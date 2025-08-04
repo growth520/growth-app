@@ -5,6 +5,7 @@ import { useToast } from '@/components/ui/use-toast';
 
 const AuthCallbackPage = () => {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -13,20 +14,49 @@ const AuthCallbackPage = () => {
       try {
         console.log('Auth callback started');
         
-        // Wait a moment for auth state to be properly set
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Check for URL parameters that might indicate OAuth completion
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasCode = urlParams.get('code');
+        const hasError = urlParams.get('error');
         
-        // Get the session
-        const { data: { session }, error } = await supabase.auth.getSession();
+        console.log('URL params:', { hasCode, hasError });
         
-        if (error) {
-          console.error('Get session error:', error);
-          throw error;
+        if (hasError) {
+          console.error('OAuth error in URL:', hasError);
+          throw new Error(`OAuth error: ${hasError}`);
+        }
+        
+        // For mobile, try to get session immediately, then retry after a short delay
+        let session = null;
+        let attempts = 0;
+        const maxAttempts = 3;
+        
+        while (attempts < maxAttempts) {
+          console.log(`Attempt ${attempts + 1} to get session`);
+          
+          const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+          
+          if (sessionError) {
+            console.error('Get session error:', sessionError);
+            throw sessionError;
+          }
+          
+          if (currentSession?.user) {
+            session = currentSession;
+            console.log('Session found on attempt', attempts + 1);
+            break;
+          }
+          
+          attempts++;
+          if (attempts < maxAttempts) {
+            console.log('No session yet, waiting...');
+            await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
+          }
         }
 
-        console.log('Session found:', !!session?.user);
-
         if (session?.user) {
+          console.log('Session found:', session.user.email);
+          
           // Persist session to localStorage for mobile compatibility
           localStorage.setItem('supabase.auth.token', JSON.stringify(session));
           
@@ -73,11 +103,13 @@ const AuthCallbackPage = () => {
           // Redirect to progress page for all users (OAuth flow)
           navigate('/progress', { replace: true });
         } else {
-          console.log('No session found, redirecting to login');
+          console.log('No session found after all attempts, redirecting to login');
+          setError('No session found');
           navigate('/login');
         }
       } catch (error) {
         console.error('Auth callback error:', error);
+        setError(error.message);
         toast({
           title: "Authentication Error",
           description: "There was an issue with your sign-in. Please try again.",
@@ -92,13 +124,14 @@ const AuthCallbackPage = () => {
     // Add timeout to prevent infinite loading
     const timeoutId = setTimeout(() => {
       console.log('Auth callback timeout, redirecting to login');
+      setError('Authentication timeout');
       toast({
         title: "Authentication Timeout",
         description: "Please try signing in again.",
         variant: "destructive"
       });
       navigate('/login');
-    }, 15000); // 15 second timeout
+    }, 10000); // 10 second timeout (reduced from 15)
 
     handleAuthCallback();
 
@@ -111,6 +144,9 @@ const AuthCallbackPage = () => {
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-forest-green mx-auto"></div>
           <p className="text-charcoal-gray">Completing sign-in...</p>
+          {error && (
+            <p className="text-red-500 text-sm">Error: {error}</p>
+          )}
         </div>
       </div>
     );
