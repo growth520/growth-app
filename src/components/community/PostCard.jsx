@@ -54,7 +54,7 @@ const PostCard = ({
 
   // Fetch recent comments - temporarily disabled due to timeout issues
   useEffect(() => {
-    // fetchRecentComments(); // Disabled due to database timeout issues
+    fetchRecentComments(); // Re-enabled with better error handling
   }, [post.id]);
 
   // Rotate comments every 5 seconds
@@ -77,7 +77,7 @@ const PostCard = ({
         .select('*')
         .eq('post_id', post.id)
         .order('created_at', { ascending: false })
-        .limit(2); // Reduced limit to prevent timeout
+        .limit(3); // Increased limit slightly for better user experience
 
       if (error) {
         console.warn('Comments fetch failed, continuing without comments:', error);
@@ -96,6 +96,9 @@ const PostCard = ({
 
         if (profilesError) {
           console.error('Error fetching comment profiles:', profilesError);
+          // Still show comments even if profile fetch fails
+          setRecentComments(data);
+          setCommentsCount(data.length);
         } else {
           const profilesMap = profiles.reduce((acc, profile) => {
             acc[profile.id] = profile;

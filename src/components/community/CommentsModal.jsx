@@ -35,6 +35,8 @@ const CommentsModal = ({ isOpen, postId, onClose, onCommentAdded }) => {
 
   const fetchComments = async () => {
     try {
+      console.log('Fetching comments for post:', postId);
+      
       // Fetch main comments (not replies)
       const { data, error } = await supabase
         .from('comments')
@@ -43,15 +45,23 @@ const CommentsModal = ({ isOpen, postId, onClose, onCommentAdded }) => {
         .is('parent_comment_id', null)
         .order('created_at', { ascending: false });
 
+      console.log('Comments query result:', { data, error });
+
       if (error) throw error;
 
       if (data && data.length > 0) {
+        console.log('Found comments:', data.length);
+        
         // Fetch profiles for all comments
         const userIds = [...new Set(data.map(comment => comment.user_id).filter(Boolean))];
+        console.log('User IDs for profiles:', userIds);
+        
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
           .select('id, full_name, avatar_url, username')
           .in('id', userIds);
+
+        console.log('Profiles query result:', { profiles, profilesError });
 
         if (profilesError) {
           console.error('Error fetching comment profiles:', profilesError);
@@ -90,6 +100,8 @@ const CommentsModal = ({ isOpen, postId, onClose, onCommentAdded }) => {
             })
           );
 
+          console.log('Comments with profiles and replies:', commentsWithReplies);
+
           // Fetch comment likes for current user
           if (user) {
             const { data: userLikes, error: likesError } = await supabase
@@ -106,13 +118,16 @@ const CommentsModal = ({ isOpen, postId, onClose, onCommentAdded }) => {
           }
 
           setComments(commentsWithReplies);
-          return;
         }
+      } else {
+        console.log('No comments found for post:', postId);
+        setComments([]);
       }
-
-      setComments(data || []);
     } catch (error) {
       console.error('Error fetching comments:', error);
+      setComments([]);
+    } finally {
+      setLoading(false);
     }
   };
 
