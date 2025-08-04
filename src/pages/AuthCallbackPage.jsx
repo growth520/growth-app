@@ -59,8 +59,8 @@ export default function AuthCallback() {
         // Persist session to localStorage for better mobile compatibility
         localStorage.setItem('supabase.auth.token', JSON.stringify(session));
         
-        // ✅ Redirect to progress page (main app page)
-        navigate('/progress', { replace: true });
+        // ✅ Redirect to challenge page (main app page)
+        navigate('/challenge', { replace: true });
       } catch (err) {
         console.error('Auth callback failed:', err.message);
         navigate('/login?error=auth_failed', { replace: true });
