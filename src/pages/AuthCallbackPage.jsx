@@ -61,10 +61,6 @@ const AuthCallbackPage = () => {
               console.error('Profile update error:', updateError);
             }
           }
-          
-          if (profileError) {
-            console.error('Profile creation error:', profileError);
-          }
 
           toast({
             title: "Email Confirmed! 🎉",
