@@ -19,11 +19,70 @@ const AuthCallbackPage = () => {
         const hasCode = urlParams.get('code');
         const hasError = urlParams.get('error');
         
+        // Check for hash fragment tokens (common on mobile)
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const hasAccessToken = hashParams.get('access_token');
+        const hasRefreshToken = hashParams.get('refresh_token');
+        
         console.log('URL params:', { hasCode, hasError });
+        console.log('Hash params:', { hasAccessToken: !!hasAccessToken, hasRefreshToken: !!hasRefreshToken });
         
         if (hasError) {
           console.error('OAuth error in URL:', hasError);
           throw new Error(`OAuth error: ${hasError}`);
+        }
+        
+        // If we have tokens in hash, set them manually
+        if (hasAccessToken && hasRefreshToken) {
+          console.log('Found tokens in hash, setting session manually');
+          
+          // Decode the JWT access token to get user info
+          let userInfo = {
+            id: 'unknown',
+            email: 'unknown@example.com',
+            user_metadata: {
+              full_name: 'User'
+            }
+          };
+          
+          try {
+            // Decode JWT token (base64 decode the payload part)
+            const tokenParts = hasAccessToken.split('.');
+            if (tokenParts.length === 3) {
+              const payload = JSON.parse(atob(tokenParts[1]));
+              console.log('Decoded JWT payload:', payload);
+              
+              userInfo = {
+                id: payload.sub || 'unknown',
+                email: payload.email || 'unknown@example.com',
+                user_metadata: {
+                  full_name: payload.user_metadata?.full_name || payload.name || 'User',
+                  avatar_url: payload.user_metadata?.avatar_url,
+                  picture: payload.user_metadata?.picture
+                }
+              };
+            }
+          } catch (decodeError) {
+            console.error('Error decoding JWT token:', decodeError);
+          }
+          
+          const session = {
+            access_token: hasAccessToken,
+            refresh_token: hasRefreshToken,
+            expires_at: parseInt(hashParams.get('expires_at') || '0'),
+            token_type: hashParams.get('token_type') || 'bearer',
+            user: userInfo
+          };
+          
+          // Set the session manually
+          const { error: setSessionError } = await supabase.auth.setSession(session);
+          
+          if (setSessionError) {
+            console.error('Error setting session:', setSessionError);
+            throw setSessionError;
+          }
+          
+          console.log('Session set manually from hash tokens');
         }
         
         // For mobile, try to get session immediately, then retry after a short delay
