@@ -22,11 +22,19 @@ export default function AuthCallback() {
           const refresh_token = hashParams.get('refresh_token');
 
           if (access_token && refresh_token) {
+            // Try to set session with the tokens
             const { error } = await supabase.auth.setSession({
               access_token,
               refresh_token
             });
-            if (error) throw error;
+            
+            if (error) {
+              console.error('Session setting error:', error);
+              throw error;
+            }
+            
+            // Clear the hash from URL after successful session setting
+            window.history.replaceState(null, '', window.location.pathname);
           } else {
             throw new Error('Missing tokens in callback URL');
           }
@@ -34,6 +42,20 @@ export default function AuthCallback() {
           throw new Error('Invalid callback URL format');
         }
 
+        // Verify session was set correctly
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Session verification error:', sessionError);
+          throw sessionError;
+        }
+        
+        if (!session?.user) {
+          throw new Error('No session found after authentication');
+        }
+
+        console.log('Authentication successful for user:', session.user.email);
+        
         // ✅ Redirect to home or dashboard
         navigate('/', { replace: true });
       } catch (err) {

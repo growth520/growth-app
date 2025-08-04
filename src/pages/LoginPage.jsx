@@ -22,9 +22,6 @@ const LoginPage = () => {
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
-      // Check if we're on mobile
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -32,12 +29,7 @@ const LoginPage = () => {
           queryParams: {
             access_type: 'offline',
             prompt: 'consent'
-          },
-          // Mobile-specific configuration
-          ...(isMobile && {
-            skipBrowserRedirect: false,
-            flowType: 'pkce'
-          })
+          }
         }
       });
       
@@ -106,9 +98,6 @@ const LoginPage = () => {
   const handleAppleLogin = async () => {
     setLoading(true);
     try {
-      // Check if we're on mobile
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'apple',
         options: {
@@ -116,12 +105,7 @@ const LoginPage = () => {
           queryParams: {
             access_type: 'offline',
             prompt: 'consent'
-          },
-          // Mobile-specific configuration
-          ...(isMobile && {
-            skipBrowserRedirect: false,
-            flowType: 'pkce'
-          })
+          }
         }
       });
       
