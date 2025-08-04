@@ -56,8 +56,11 @@ export default function AuthCallback() {
 
         console.log('Authentication successful for user:', session.user.email);
         
-        // ✅ Redirect to home or dashboard
-        navigate('/', { replace: true });
+        // Persist session to localStorage for better mobile compatibility
+        localStorage.setItem('supabase.auth.token', JSON.stringify(session));
+        
+        // ✅ Redirect to progress page (main app page)
+        navigate('/progress', { replace: true });
       } catch (err) {
         console.error('Auth callback failed:', err.message);
         navigate('/login?error=auth_failed', { replace: true });
