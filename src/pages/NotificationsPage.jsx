@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
-import { Heart, MessageCircle, CornerUpRight, BellOff, Bell, Users } from 'lucide-react';
+import { Heart, MessageCircle, CornerUpRight, BellOff, Bell, Users, X, ExternalLink } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useData } from '@/contexts/DataContext';
@@ -11,6 +11,9 @@ import { useData } from '@/contexts/DataContext';
 const NotificationsPage = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPost, setSelectedPost] = useState(null);
+  const [showPostModal, setShowPostModal] = useState(false);
+  const [postLoading, setPostLoading] = useState(false);
   const { user } = useAuth();
   const { updateLastViewedNotifications } = useData();
 
@@ -138,6 +141,46 @@ const NotificationsPage = () => {
     }
   };
 
+  const handleViewPost = async (postId) => {
+    if (!postId) return;
+    
+    setPostLoading(true);
+    setShowPostModal(true);
+    
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .select(`
+          *,
+          profiles!posts_user_id_fkey (
+            id,
+            full_name,
+            username,
+            avatar_url
+          )
+        `)
+        .eq('id', postId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching post:', error);
+        setSelectedPost(null);
+      } else {
+        setSelectedPost(data);
+      }
+    } catch (error) {
+      console.error('Error fetching post:', error);
+      setSelectedPost(null);
+    } finally {
+      setPostLoading(false);
+    }
+  };
+
+  const closePostModal = () => {
+    setShowPostModal(false);
+    setSelectedPost(null);
+  };
+
   return (
     <div className="min-h-screen bg-sun-beige text-charcoal-gray">
       <div className="container mx-auto px-4 pt-8 pb-24 md:pt-24">
@@ -198,15 +241,27 @@ const NotificationsPage = () => {
                         <p className="text-xs text-charcoal-gray/50 mt-1">{formatTimeAgo(notif.notification_timestamp)}</p>
                       </div>
                       {notif.post_id ? (
-                        <Link to={`/post/${notif.post_id}`}>
+                        <div 
+                          onClick={() => handleViewPost(notif.post_id)}
+                          className="cursor-pointer hover:scale-105 transition-transform"
+                        >
                           {notif.post_photo ? (
-                            <img src={notif.post_photo} alt="Post preview" className="w-16 h-16 object-cover rounded-md hover:scale-105 transition-transform" />
+                            <div className="relative">
+                              <img 
+                                src={notif.post_photo} 
+                                alt="Post preview" 
+                                className="w-16 h-16 object-cover rounded-md" 
+                              />
+                              <div className="absolute inset-0 bg-black/20 rounded-md flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                                <ExternalLink className="w-4 h-4 text-white" />
+                              </div>
+                            </div>
                           ) : (
-                            <div className="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center text-center text-xs p-1 text-gray-500">
-                              Post
+                            <div className="w-16 h-16 bg-gradient-to-br from-forest-green to-leaf-green rounded-md flex items-center justify-center text-center text-xs p-1 text-white font-medium hover:shadow-lg transition-shadow">
+                              View Post &gt;
                             </div>
                           )}
-                        </Link>
+                        </div>
                       ) : notif.type === 'follow' ? (
                         <div className="w-16 h-16 bg-purple-100 rounded-md flex items-center justify-center">
                           <Users className="w-6 h-6 text-purple-500" />
@@ -220,6 +275,96 @@ const NotificationsPage = () => {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* Post Modal */}
+      {showPostModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-forest-green">Post Details</h3>
+                <button
+                  onClick={closePostModal}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5 text-charcoal-gray" />
+                </button>
+              </div>
+
+              {postLoading ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-forest-green mx-auto"></div>
+                  <p className="mt-2 text-charcoal-gray/70">Loading post...</p>
+                </div>
+              ) : selectedPost ? (
+                <div className="space-y-4">
+                  {/* Post Header */}
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={selectedPost.profiles?.avatar_url} />
+                      <AvatarFallback className="bg-gradient-to-br from-forest-green to-leaf-green text-white">
+                        {selectedPost.profiles?.full_name?.charAt(0) || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-semibold text-charcoal-gray">
+                        {selectedPost.profiles?.full_name || 'Unknown User'}
+                      </p>
+                      <p className="text-sm text-charcoal-gray/70">
+                        {formatTimeAgo(selectedPost.created_at)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Post Content */}
+                  <div className="space-y-3">
+                    <h4 className="font-semibold text-forest-green">
+                      {selectedPost.challenge_title || 'Challenge Completion'}
+                    </h4>
+                    
+                    {selectedPost.reflection && (
+                      <p className="text-charcoal-gray/90 leading-relaxed">
+                        {selectedPost.reflection}
+                      </p>
+                    )}
+
+                    {selectedPost.photo_url && (
+                      <div className="rounded-lg overflow-hidden">
+                        <img 
+                          src={selectedPost.photo_url} 
+                          alt="Post image" 
+                          className="w-full h-auto max-h-96 object-cover"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Post Stats */}
+                  <div className="flex items-center gap-4 pt-4 border-t border-gray-200">
+                    <div className="flex items-center gap-1 text-charcoal-gray/70">
+                      <Heart className="w-4 h-4" />
+                      <span className="text-sm">{selectedPost.likes_count || 0}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-charcoal-gray/70">
+                      <MessageCircle className="w-4 h-4" />
+                      <span className="text-sm">{selectedPost.comments_count || 0}</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-charcoal-gray/70">Post not found or no longer available.</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
