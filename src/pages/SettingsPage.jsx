@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useData } from '@/contexts/DataContext';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
+import PasswordManager from '@/components/PasswordManager';
 
 const SettingsPage = () => {
   const navigate = useNavigate();
@@ -221,6 +222,9 @@ const SettingsPage = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Password Management */}
+          <PasswordManager />
 
           {/* Profile Visibility */}
           <Card>
