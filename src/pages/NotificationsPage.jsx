@@ -164,6 +164,8 @@ const NotificationsPage = () => {
         return;
       }
 
+      console.log('Fetched post data:', postData);
+
       // Then fetch the user profile data separately
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -204,26 +206,52 @@ const NotificationsPage = () => {
     setShowCommentsModal(true);
     
     try {
-      const { data, error } = await supabase
+      // First fetch the comments data
+      const { data: commentsData, error: commentsError } = await supabase
         .from('comments')
-        .select(`
-          *,
-          profiles!comments_user_id_fkey (
-            id,
-            full_name,
-            username,
-            avatar_url
-          )
-        `)
+        .select('*')
         .eq('post_id', postId)
         .is('parent_comment_id', null)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching comments:', error);
+      if (commentsError) {
+        console.error('Error fetching comments:', commentsError);
         setComments([]);
+        return;
+      }
+
+      console.log('Fetched comments data:', commentsData);
+
+      // Then fetch user profiles for all comments
+      if (commentsData && commentsData.length > 0) {
+        const userIds = [...new Set(commentsData.map(comment => comment.user_id).filter(Boolean))];
+        
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name, username, avatar_url')
+          .in('id', userIds);
+
+        if (profilesError) {
+          console.error('Error fetching profiles for comments:', profilesError);
+          // Still show comments even if profile fetch fails
+          setComments(commentsData.map(comment => ({
+            ...comment,
+            profiles: null
+          })));
+        } else {
+          // Match profiles to comments
+          const profilesMap = {};
+          profilesData.forEach(profile => {
+            profilesMap[profile.id] = profile;
+          });
+
+          setComments(commentsData.map(comment => ({
+            ...comment,
+            profiles: profilesMap[comment.user_id] || null
+          })));
+        }
       } else {
-        setComments(data || []);
+        setComments([]);
       }
     } catch (error) {
       console.error('Error fetching comments:', error);
