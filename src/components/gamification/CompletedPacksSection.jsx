@@ -254,7 +254,6 @@ const CompletedPacksSection = ({ userId, isOwnProfile = false }) => {
           .select('*')
           .eq('user_id', userId)
           .eq('is_completed', true)
-          .not('reflection', 'is', null)
           .order('completed_at', { ascending: false });
 
         if (error) throw error;
@@ -281,13 +280,33 @@ const CompletedPacksSection = ({ userId, isOwnProfile = false }) => {
               setCompletedPacks(transformedPacks);
               return;
             } else {
-              // Step 3: Combine the data in JavaScript
+              // Step 3: Fetch reflection data from posts table for completed packs
+              const { data: postsData, error: postsError } = await supabase
+                .from('posts')
+                .select('reflection, challenge_id, created_at')
+                .eq('user_id', userId)
+                .eq('post_type', 'challenge_completion')
+                .not('reflection', 'is', null);
+
+              if (postsError) {
+                console.error('Error fetching posts for reflection:', postsError);
+              }
+
+              // Step 4: Combine the data in JavaScript
               const transformedPacks = packProgressData.map(pack => {
                 const challengePack = challengePacksData?.find(p => p.id === parseInt(pack.pack_id));
+                
+                // Find reflection from posts (this is a simplified approach)
+                const packReflection = postsData?.find(post => 
+                  post.challenge_id && 
+                  challengePack?.challenges?.some(challenge => challenge.id === post.challenge_id)
+                )?.reflection;
+
                 return {
                   ...pack,
                   pack_title: challengePack?.title || 'Unknown Pack',
                   challenge_packs: challengePack,
+                  reflection: packReflection, // Add reflection from posts
                   metadata: {
                     total_challenges: Array.isArray(challengePack?.challenges) 
                       ? challengePack.challenges.length 
