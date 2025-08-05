@@ -14,6 +14,9 @@ const NotificationsPage = () => {
   const [selectedPost, setSelectedPost] = useState(null);
   const [showPostModal, setShowPostModal] = useState(false);
   const [postLoading, setPostLoading] = useState(false);
+  const [showCommentsModal, setShowCommentsModal] = useState(false);
+  const [comments, setComments] = useState([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
   const { user } = useAuth();
   const { updateLastViewedNotifications } = useData();
 
@@ -194,6 +197,47 @@ const NotificationsPage = () => {
     setSelectedPost(null);
   };
 
+  const handleViewComments = async (postId) => {
+    if (!postId) return;
+    
+    setCommentsLoading(true);
+    setShowCommentsModal(true);
+    
+    try {
+      const { data, error } = await supabase
+        .from('comments')
+        .select(`
+          *,
+          profiles!comments_user_id_fkey (
+            id,
+            full_name,
+            username,
+            avatar_url
+          )
+        `)
+        .eq('post_id', postId)
+        .is('parent_comment_id', null)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching comments:', error);
+        setComments([]);
+      } else {
+        setComments(data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+      setComments([]);
+    } finally {
+      setCommentsLoading(false);
+    }
+  };
+
+  const closeCommentsModal = () => {
+    setShowCommentsModal(false);
+    setComments([]);
+  };
+
   return (
     <div className="min-h-screen bg-sun-beige text-charcoal-gray">
       <div className="container mx-auto px-4 pt-8 pb-24 md:pt-24">
@@ -359,19 +403,112 @@ const NotificationsPage = () => {
 
                   {/* Post Stats */}
                   <div className="flex items-center gap-4 pt-4 border-t border-gray-200">
-                    <div className="flex items-center gap-1 text-charcoal-gray/70">
-                      <Heart className="w-4 h-4" />
+                    <button 
+                      className="flex items-center gap-1 text-charcoal-gray/70 hover:text-red-500 transition-colors"
+                      onClick={() => {
+                        // TODO: Implement like functionality
+                        console.log('Like post:', selectedPost.id);
+                      }}
+                    >
+                      <Heart className={`w-4 h-4 ${selectedPost.likes_count > 0 ? 'text-red-500 fill-current' : ''}`} />
                       <span className="text-sm">{selectedPost.likes_count || 0}</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-charcoal-gray/70">
+                    </button>
+                    <button 
+                      className="flex items-center gap-1 text-charcoal-gray/70 hover:text-blue-500 transition-colors"
+                      onClick={() => handleViewComments(selectedPost.id)}
+                    >
                       <MessageCircle className="w-4 h-4" />
                       <span className="text-sm">{selectedPost.comments_count || 0}</span>
-                    </div>
+                    </button>
                   </div>
                 </div>
               ) : (
                 <div className="text-center py-12">
                   <p className="text-charcoal-gray/70">Post not found or no longer available.</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Comments Modal */}
+      {showCommentsModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-forest-green">Comments</h3>
+                <button
+                  onClick={closeCommentsModal}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5 text-charcoal-gray" />
+                </button>
+              </div>
+
+              {commentsLoading ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-forest-green mx-auto"></div>
+                  <p className="mt-2 text-charcoal-gray/70">Loading comments...</p>
+                </div>
+              ) : comments.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-charcoal-gray/70">No comments yet. Be the first to leave one!</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {comments.map((comment) => (
+                    <div key={comment.id} className="bg-gray-50 p-4 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Avatar className="w-8 h-8">
+                          <AvatarImage src={comment.profiles?.avatar_url} />
+                          <AvatarFallback className="bg-gradient-to-br from-forest-green to-leaf-green text-white">
+                            {comment.profiles?.full_name?.charAt(0) || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-semibold text-charcoal-gray">
+                            {comment.profiles?.full_name || 'Unknown User'}
+                          </p>
+                          <p className="text-sm text-charcoal-gray/70">
+                            {formatTimeAgo(comment.created_at)}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="text-charcoal-gray/90">{comment.content}</p>
+                      {comment.replies && comment.replies.length > 0 && (
+                        <div className="ml-6 mt-2">
+                          {comment.replies.map((reply) => (
+                            <div key={reply.id} className="bg-gray-100 p-3 rounded-lg">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Avatar className="w-6 h-6">
+                                  <AvatarImage src={reply.profiles?.avatar_url} />
+                                  <AvatarFallback className="bg-gradient-to-br from-forest-green to-leaf-green text-white">
+                                    {reply.profiles?.full_name?.charAt(0) || 'U'}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <p className="font-semibold text-charcoal-gray">
+                                    {reply.profiles?.full_name || 'Unknown User'}
+                                  </p>
+                                  <p className="text-sm text-charcoal-gray/70">
+                                    {formatTimeAgo(reply.created_at)}
+                                  </p>
+                                </div>
+                              </div>
+                              <p className="text-charcoal-gray/90">{reply.content}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

@@ -151,16 +151,12 @@ export const DataProvider = ({ children }) => {
   const refreshHasNewNotifications = useCallback(async () => {
     if (!user || appState.notificationCheckInProgress) return;
     
-    console.log('🔔 Checking for new notifications for user:', user.id);
-    
     // Set flag to prevent multiple simultaneous requests
     setAppState(prev => ({ ...prev, notificationCheckInProgress: true }));
     
     try {
       const { data, error } = await supabase
         .rpc('get_unread_notification_count', { p_user_id: user.id });
-      
-      console.log('🔔 Notification count result:', { data, error });
       
       if (error) {
         console.error('Error fetching notification count:', error);
@@ -171,7 +167,6 @@ export const DataProvider = ({ children }) => {
         }));
       } else {
         const hasNew = (data || 0) > 0;
-        console.log('🔔 Has new notifications:', hasNew, 'Count:', data);
         setAppState(prev => ({ 
           ...prev, 
           hasNewNotifications: hasNew,
@@ -542,61 +537,18 @@ export const DataProvider = ({ children }) => {
   useEffect(() => {
     if (!user) return;
 
-    console.log('🔔 Setting up notification real-time subscription for user:', user.id);
-
-    try {
-      const notificationsChannel = supabase
-        .channel('notifications-realtime')
-        .on('postgres_changes', { 
-          event: 'INSERT', 
-          schema: 'public', 
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`
-        }, (payload) => {
-          console.log('🔔 New notification received:', payload);
-          refreshHasNewNotifications();
-        })
-        .on('postgres_changes', { 
-          event: 'UPDATE', 
-          schema: 'public', 
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`
-        }, (payload) => {
-          console.log('🔔 Notification updated:', payload);
-          refreshHasNewNotifications();
-        })
-        .subscribe((status) => {
-          console.log('🔔 Notification subscription status:', status);
-          if (status === 'SUBSCRIBED') {
-            console.log('🔔 Successfully subscribed to notifications');
-          } else if (status === 'CHANNEL_ERROR') {
-            console.warn('🔔 Notification subscription failed, falling back to polling');
-            // Fall back to periodic polling if real-time fails
-            const pollInterval = setInterval(() => {
-              refreshHasNewNotifications();
-            }, 30000); // Poll every 30 seconds
-            
-            return () => clearInterval(pollInterval);
-          }
-        });
-
-      return () => {
-        console.log('🔔 Cleaning up notification subscription');
-        try {
-          supabase.removeChannel(notificationsChannel);
-        } catch (error) {
-          console.warn('🔔 Error removing notification channel:', error);
-        }
-      };
-    } catch (error) {
-      console.warn('🔔 Failed to set up notification subscription:', error);
-      // Fall back to periodic polling
-      const pollInterval = setInterval(() => {
-        refreshHasNewNotifications();
-      }, 30000); // Poll every 30 seconds
-      
-      return () => clearInterval(pollInterval);
-    }
+    // Skip real-time setup since it's disabled in the client config
+    console.log('🔔 Real-time disabled, using polling for notifications');
+    
+    // Set up polling instead of real-time
+    const pollInterval = setInterval(() => {
+      refreshHasNewNotifications();
+    }, 30000); // Poll every 30 seconds
+    
+    return () => {
+      console.log('🔔 Cleaning up notification polling');
+      clearInterval(pollInterval);
+    };
   }, [user, refreshHasNewNotifications]);
 
   // Memoized context value to prevent unnecessary re-renders
