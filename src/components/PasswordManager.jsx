@@ -38,21 +38,24 @@ const PasswordManager = () => {
         console.log('🔍 User app_metadata:', user.app_metadata);
         console.log('🔍 User provider:', user.app_metadata?.provider);
         
-        // Check if user is from OAuth by looking at app_metadata
+        // For now, let's show for all users and detect OAuth based on available fields
+        // Check if user is from OAuth by looking at available metadata
         const isOAuth = user.app_metadata?.provider && 
                        (user.app_metadata.provider === 'google' || 
                         user.app_metadata.provider === 'apple');
         
         console.log('🔍 Is OAuth user:', isOAuth);
         
-        setIsOAuthUser(isOAuth);
-        
-        // For OAuth users, we assume they don't have a password initially
-        // In a real implementation, you might want to check this differently
-        setHasPassword(!isOAuth);
+        // If we can't detect OAuth, assume they might want to set a password
+        // This will show the component for all users for now
+        setIsOAuthUser(true); // Show for all users temporarily
+        setHasPassword(false); // Assume they don't have a password initially
         setLoading(false);
       } catch (error) {
         console.error('Error checking user auth method:', error);
+        // Show for all users if there's an error
+        setIsOAuthUser(true);
+        setHasPassword(false);
         setLoading(false);
       }
     };
@@ -239,15 +242,7 @@ const PasswordManager = () => {
     );
   }
 
-  // Only show for OAuth users
-  // Temporarily show for all users for debugging
-  if (!isOAuthUser) {
-    console.log('🔍 PasswordManager: Not showing - user is not OAuth');
-    console.log('🔍 isOAuthUser:', isOAuthUser);
-    console.log('🔍 user:', user);
-    // return null; // Commented out for debugging
-  }
-
+  // Show for all users for now
   return (
     <Card>
       <CardHeader>

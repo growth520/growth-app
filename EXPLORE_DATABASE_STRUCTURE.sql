@@ -60,9 +60,6 @@ ORDER BY routine_name;
 SELECT 
   id,
   email,
-  app_metadata,
-  raw_app_meta_data,
-  raw_user_meta_data,
   encrypted_password,
   email_confirmed_at,
   created_at,
@@ -92,13 +89,13 @@ AND table_name = 'users';
 -- 10. Check if we can access auth.users at all
 SELECT COUNT(*) as user_count FROM auth.users;
 
--- 11. Check what authentication providers are configured
-SELECT DISTINCT 
-  app_metadata->>'provider' as provider,
-  COUNT(*) as user_count
-FROM auth.users 
-WHERE app_metadata->>'provider' IS NOT NULL
-GROUP BY app_metadata->>'provider';
+-- 11. Check what authentication providers are configured (if any metadata columns exist)
+-- First, let's see what columns actually exist
+SELECT column_name 
+FROM information_schema.columns 
+WHERE table_schema = 'auth' 
+AND table_name = 'users'
+AND column_name LIKE '%meta%';
 
 -- 12. Check password status of users
 SELECT 
@@ -107,7 +104,6 @@ SELECT
     THEN 'has_password'
     ELSE 'no_password'
   END as password_status,
-  app_metadata->>'provider' as auth_provider,
   COUNT(*) as user_count
 FROM auth.users 
 GROUP BY 
@@ -115,8 +111,7 @@ GROUP BY
     WHEN encrypted_password IS NOT NULL AND encrypted_password != '' 
     THEN 'has_password'
     ELSE 'no_password'
-  END,
-  app_metadata->>'provider';
+  END;
 
 -- 13. Check if we can create functions
 SELECT has_function_privilege(current_user, 'public', 'CREATE') as can_create_functions;
@@ -125,4 +120,30 @@ SELECT has_function_privilege(current_user, 'public', 'CREATE') as can_create_fu
 SELECT current_user, session_user;
 
 -- 15. Check if we're in the right schema
-SELECT current_schema(); 
+SELECT current_schema();
+
+-- 16. Check if there are any JSON columns in auth.users
+SELECT 
+  column_name,
+  data_type
+FROM information_schema.columns 
+WHERE table_schema = 'auth' 
+AND table_name = 'users'
+AND data_type LIKE '%json%';
+
+-- 17. Check if there are any text columns that might contain provider info
+SELECT 
+  column_name,
+  data_type
+FROM information_schema.columns 
+WHERE table_schema = 'auth' 
+AND table_name = 'users'
+AND data_type = 'text';
+
+-- 18. Check if we can see any user data at all (for debugging)
+SELECT 
+  id,
+  email,
+  created_at
+FROM auth.users 
+LIMIT 3; 
