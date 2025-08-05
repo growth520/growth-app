@@ -33,10 +33,17 @@ const PasswordManager = () => {
       if (!user) return;
       
       try {
+        console.log('🔍 PasswordManager: Checking user auth method');
+        console.log('🔍 User object:', user);
+        console.log('🔍 User app_metadata:', user.app_metadata);
+        console.log('🔍 User provider:', user.app_metadata?.provider);
+        
         // Check if user is from OAuth by looking at app_metadata
         const isOAuth = user.app_metadata?.provider && 
                        (user.app_metadata.provider === 'google' || 
                         user.app_metadata.provider === 'apple');
+        
+        console.log('🔍 Is OAuth user:', isOAuth);
         
         setIsOAuthUser(isOAuth);
         
@@ -233,8 +240,12 @@ const PasswordManager = () => {
   }
 
   // Only show for OAuth users
+  // Temporarily show for all users for debugging
   if (!isOAuthUser) {
-    return null;
+    console.log('🔍 PasswordManager: Not showing - user is not OAuth');
+    console.log('🔍 isOAuthUser:', isOAuthUser);
+    console.log('🔍 user:', user);
+    // return null; // Commented out for debugging
   }
 
   return (
