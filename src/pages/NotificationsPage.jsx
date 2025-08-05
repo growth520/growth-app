@@ -17,6 +17,9 @@ const NotificationsPage = () => {
   const [showCommentsModal, setShowCommentsModal] = useState(false);
   const [comments, setComments] = useState([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
+  const [userLikedPost, setUserLikedPost] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [commentCount, setCommentCount] = useState(0);
   const { user } = useAuth();
   const { updateLastViewedNotifications } = useData();
 
@@ -186,6 +189,47 @@ const NotificationsPage = () => {
           profiles: profileData
         });
       }
+
+      // Fetch like status for current user
+      if (user) {
+        const { data: likeData, error: likeError } = await supabase
+          .from('likes')
+          .select('id')
+          .eq('post_id', postId)
+          .eq('user_id', user.id)
+          .single();
+
+        if (!likeError && likeData) {
+          setUserLikedPost(true);
+        } else {
+          setUserLikedPost(false);
+        }
+      }
+
+      // Fetch accurate like count
+      const { count: likeCountResult, error: likeCountError } = await supabase
+        .from('likes')
+        .select('*', { count: 'exact', head: true })
+        .eq('post_id', postId);
+
+      if (!likeCountError) {
+        setLikeCount(likeCountResult || 0);
+      } else {
+        setLikeCount(postData.likes_count || 0);
+      }
+
+      // Fetch accurate comment count
+      const { count: commentCountResult, error: commentCountError } = await supabase
+        .from('comments')
+        .select('*', { count: 'exact', head: true })
+        .eq('post_id', postId)
+        .is('parent_comment_id', null);
+
+      if (!commentCountError) {
+        setCommentCount(commentCountResult || 0);
+      } else {
+        setCommentCount(postData.comments_count || 0);
+      }
     } catch (error) {
       console.error('Error fetching post:', error);
       setSelectedPost(null);
@@ -197,6 +241,9 @@ const NotificationsPage = () => {
   const closePostModal = () => {
     setShowPostModal(false);
     setSelectedPost(null);
+    setUserLikedPost(false);
+    setLikeCount(0);
+    setCommentCount(0);
   };
 
   const handleViewComments = async (postId) => {
@@ -264,6 +311,41 @@ const NotificationsPage = () => {
   const closeCommentsModal = () => {
     setShowCommentsModal(false);
     setComments([]);
+  };
+
+  const handleLikePost = async () => {
+    if (!user || !selectedPost) return;
+
+    try {
+      if (userLikedPost) {
+        // Unlike the post
+        const { error } = await supabase
+          .from('likes')
+          .delete()
+          .eq('post_id', selectedPost.id)
+          .eq('user_id', user.id);
+
+        if (!error) {
+          setUserLikedPost(false);
+          setLikeCount(prev => Math.max(0, prev - 1));
+        }
+      } else {
+        // Like the post
+        const { error } = await supabase
+          .from('likes')
+          .insert({
+            post_id: selectedPost.id,
+            user_id: user.id
+          });
+
+        if (!error) {
+          setUserLikedPost(true);
+          setLikeCount(prev => prev + 1);
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    }
   };
 
   return (
@@ -433,20 +515,17 @@ const NotificationsPage = () => {
                   <div className="flex items-center gap-4 pt-4 border-t border-gray-200">
                     <button 
                       className="flex items-center gap-1 text-charcoal-gray/70 hover:text-red-500 transition-colors"
-                      onClick={() => {
-                        // TODO: Implement like functionality
-                        console.log('Like post:', selectedPost.id);
-                      }}
+                      onClick={handleLikePost}
                     >
-                      <Heart className={`w-4 h-4 ${selectedPost.likes_count > 0 ? 'text-red-500 fill-current' : ''}`} />
-                      <span className="text-sm">{selectedPost.likes_count || 0}</span>
+                      <Heart className={`w-4 h-4 ${userLikedPost || likeCount > 0 ? 'text-red-500 fill-current' : ''}`} />
+                      <span className="text-sm">{likeCount}</span>
                     </button>
                     <button 
                       className="flex items-center gap-1 text-charcoal-gray/70 hover:text-blue-500 transition-colors"
                       onClick={() => handleViewComments(selectedPost.id)}
                     >
                       <MessageCircle className="w-4 h-4" />
-                      <span className="text-sm">{selectedPost.comments_count || 0}</span>
+                      <span className="text-sm">{commentCount}</span>
                     </button>
                   </div>
                 </div>
