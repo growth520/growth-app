@@ -30,6 +30,10 @@ const PasswordManager = () => {
   const [errors, setErrors] = useState({});
   const [isValid, setIsValid] = useState(false);
 
+  console.log('🔍 PasswordManager: User object:', user);
+  console.log('🔍 PasswordManager: User email:', user?.email);
+  console.log('🔍 PasswordManager: User ID:', user?.id);
+
   useEffect(() => {
     const checkUserAuthMethod = async () => {
       if (!user) return;
@@ -250,16 +254,21 @@ const PasswordManager = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Lock className="w-5 h-5" />
-          {hasPassword ? 'Change Password' : 'Add a Password'}
+          Password Management (Debug Mode)
         </CardTitle>
         <CardDescription>
-          {hasPassword 
-            ? 'Update your password to keep your account secure.'
-            : 'Set a password so you can log in with your email and password.'
-          }
+          Debug: Component is loading. User: {user?.email || 'No user'}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="text-sm text-gray-500">
+          <p>🔍 Debug Info:</p>
+          <p>User ID: {user?.id || 'No ID'}</p>
+          <p>User Email: {user?.email || 'No email'}</p>
+          <p>Loading: {loading ? 'Yes' : 'No'}</p>
+          <p>Is OAuth: {isOAuthUser ? 'Yes' : 'No'}</p>
+          <p>Has Password: {hasPassword ? 'Yes' : 'No'}</p>
+        </div>
         {hasPassword && (
           <div className="space-y-2">
             <label className="text-sm font-medium">Current Password</label>
