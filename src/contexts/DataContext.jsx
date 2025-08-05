@@ -538,7 +538,7 @@ export const DataProvider = ({ children }) => {
     if (!user) return;
 
     // Skip real-time setup since it's disabled in the client config
-    console.log('🔔 Real-time disabled, using polling for notifications');
+    // console.log('🔔 Real-time disabled, using polling for notifications');
     
     // Set up polling instead of real-time
     const pollInterval = setInterval(() => {
@@ -546,7 +546,7 @@ export const DataProvider = ({ children }) => {
     }, 30000); // Poll every 30 seconds
     
     return () => {
-      console.log('🔔 Cleaning up notification polling');
+      // console.log('🔔 Cleaning up notification polling');
       clearInterval(pollInterval);
     };
   }, [user, refreshHasNewNotifications]);

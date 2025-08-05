@@ -199,6 +199,8 @@ const NotificationsPage = () => {
           .eq('user_id', user.id)
           .single();
 
+        console.log('Like status check:', { likeData, likeError, userLiked: !likeError && likeData });
+
         if (!likeError && likeData) {
           setUserLikedPost(true);
         } else {
@@ -212,10 +214,14 @@ const NotificationsPage = () => {
         .select('*', { count: 'exact', head: true })
         .eq('post_id', postId);
 
+      console.log('Like count fetch:', { likeCountResult, likeCountError });
+
       if (!likeCountError) {
         setLikeCount(likeCountResult || 0);
+        console.log('Setting like count to:', likeCountResult || 0);
       } else {
         setLikeCount(postData.likes_count || 0);
+        console.log('Setting like count to fallback:', postData.likes_count || 0);
       }
 
       // Fetch accurate comment count
@@ -225,10 +231,14 @@ const NotificationsPage = () => {
         .eq('post_id', postId)
         .is('parent_comment_id', null);
 
+      console.log('Comment count fetch:', { commentCountResult, commentCountError });
+
       if (!commentCountError) {
         setCommentCount(commentCountResult || 0);
+        console.log('Setting comment count to:', commentCountResult || 0);
       } else {
         setCommentCount(postData.comments_count || 0);
+        console.log('Setting comment count to fallback:', postData.comments_count || 0);
       }
     } catch (error) {
       console.error('Error fetching post:', error);
