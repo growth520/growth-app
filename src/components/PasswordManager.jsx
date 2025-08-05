@@ -268,6 +268,12 @@ const PasswordManager = () => {
           <p>Loading: {loading ? 'Yes' : 'No'}</p>
           <p>Is OAuth: {isOAuthUser ? 'Yes' : 'No'}</p>
           <p>Has Password: {hasPassword ? 'Yes' : 'No'}</p>
+          <p>Component Loaded: ✅ Yes</p>
+        </div>
+        
+        <div className="p-4 bg-blue-50 rounded-lg">
+          <p className="text-sm font-medium text-blue-800">Test Section</p>
+          <p className="text-xs text-blue-600">If you can see this, the component is working!</p>
         </div>
         {hasPassword && (
           <div className="space-y-2">
