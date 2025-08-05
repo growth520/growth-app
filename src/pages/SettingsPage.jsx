@@ -13,6 +13,8 @@ import { useToast } from '@/components/ui/use-toast';
 import PasswordManager from '@/components/PasswordManager';
 
 const SettingsPage = () => {
+  console.log('🔍 SettingsPage: Component loaded');
+  
   const navigate = useNavigate();
   const { user } = useAuth();
   const { profile, refreshAllData } = useData();
@@ -224,7 +226,9 @@ const SettingsPage = () => {
           </Card>
 
           {/* Password Management */}
+          {console.log('🔍 SettingsPage: About to render PasswordManager')}
           <PasswordManager />
+          {console.log('🔍 SettingsPage: PasswordManager rendered')}
 
           {/* Profile Visibility */}
           <Card>
