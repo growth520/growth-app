@@ -148,25 +148,38 @@ const NotificationsPage = () => {
     setShowPostModal(true);
     
     try {
-      const { data, error } = await supabase
+      // First fetch the post data
+      const { data: postData, error: postError } = await supabase
         .from('posts')
-        .select(`
-          *,
-          profiles!posts_user_id_fkey (
-            id,
-            full_name,
-            username,
-            avatar_url
-          )
-        `)
+        .select('*')
         .eq('id', postId)
         .single();
 
-      if (error) {
-        console.error('Error fetching post:', error);
+      if (postError) {
+        console.error('Error fetching post:', postError);
         setSelectedPost(null);
+        return;
+      }
+
+      // Then fetch the user profile data separately
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, full_name, username, avatar_url')
+        .eq('id', postData.user_id)
+        .single();
+
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        // Still show the post even if profile fetch fails
+        setSelectedPost({
+          ...postData,
+          profiles: null
+        });
       } else {
-        setSelectedPost(data);
+        setSelectedPost({
+          ...postData,
+          profiles: profileData
+        });
       }
     } catch (error) {
       console.error('Error fetching post:', error);
