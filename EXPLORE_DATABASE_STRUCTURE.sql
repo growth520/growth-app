@@ -1,7 +1,7 @@
 -- Explore Database Structure for Password Management
--- Run this in your Supabase SQL Editor to understand the current structure
+-- Run these queries ONE AT A TIME in your Supabase SQL Editor
 
--- 1. Check if auth.users table exists and its structure
+-- Query 1: Check auth.users table structure
 SELECT 
   table_name,
   column_name,
@@ -12,7 +12,7 @@ WHERE table_schema = 'auth'
 AND table_name = 'users'
 ORDER BY ordinal_position;
 
--- 2. Check if public.users table exists (some setups use this)
+-- Query 2: Check if public.users table exists
 SELECT 
   table_name,
   column_name,
@@ -23,19 +23,19 @@ WHERE table_schema = 'public'
 AND table_name = 'users'
 ORDER BY ordinal_position;
 
--- 3. Check what tables exist in auth schema
+-- Query 3: Check what tables exist in auth schema
 SELECT table_name 
 FROM information_schema.tables 
 WHERE table_schema = 'auth'
 ORDER BY table_name;
 
--- 4. Check what tables exist in public schema
+-- Query 4: Check what tables exist in public schema
 SELECT table_name 
 FROM information_schema.tables 
 WHERE table_schema = 'public'
 ORDER BY table_name;
 
--- 5. Check if there are any existing functions
+-- Query 5: Check for existing password functions
 SELECT 
   routine_name,
   routine_type,
@@ -45,7 +45,7 @@ WHERE routine_schema = 'public'
 AND routine_name LIKE '%password%'
 ORDER BY routine_name;
 
--- 6. Check if there are any existing functions with 'user' in the name
+-- Query 6: Check for existing user functions
 SELECT 
   routine_name,
   routine_type,
@@ -55,8 +55,7 @@ WHERE routine_schema = 'public'
 AND routine_name LIKE '%user%'
 ORDER BY routine_name;
 
--- 7. Check the current user's auth metadata (if you're logged in)
--- This will show you what fields are available in the user object
+-- Query 7: Check auth.users data structure
 SELECT 
   id,
   email,
@@ -67,7 +66,7 @@ SELECT
 FROM auth.users 
 LIMIT 5;
 
--- 8. Check if RLS is enabled on auth.users
+-- Query 8: Check RLS on auth.users
 SELECT 
   schemaname,
   tablename,
@@ -76,7 +75,7 @@ FROM pg_tables
 WHERE schemaname = 'auth' 
 AND tablename = 'users';
 
--- 9. Check current user's permissions
+-- Query 9: Check permissions on auth.users
 SELECT 
   grantee,
   table_schema,
@@ -86,18 +85,17 @@ FROM information_schema.table_privileges
 WHERE table_schema = 'auth' 
 AND table_name = 'users';
 
--- 10. Check if we can access auth.users at all
+-- Query 10: Check user count
 SELECT COUNT(*) as user_count FROM auth.users;
 
--- 11. Check what authentication providers are configured (if any metadata columns exist)
--- First, let's see what columns actually exist
+-- Query 11: Check for metadata columns
 SELECT column_name 
 FROM information_schema.columns 
 WHERE table_schema = 'auth' 
 AND table_name = 'users'
 AND column_name LIKE '%meta%';
 
--- 12. Check password status of users
+-- Query 12: Check password status
 SELECT 
   CASE 
     WHEN encrypted_password IS NOT NULL AND encrypted_password != '' 
@@ -113,16 +111,16 @@ GROUP BY
     ELSE 'no_password'
   END;
 
--- 13. Check if we can create functions
+-- Query 13: Check function creation privileges
 SELECT has_function_privilege(current_user, 'public', 'CREATE') as can_create_functions;
 
--- 14. Check current user's role
+-- Query 14: Check current user
 SELECT current_user, session_user;
 
--- 15. Check if we're in the right schema
+-- Query 15: Check current schema
 SELECT current_schema();
 
--- 16. Check if there are any JSON columns in auth.users
+-- Query 16: Check for JSON columns
 SELECT 
   column_name,
   data_type
@@ -131,7 +129,7 @@ WHERE table_schema = 'auth'
 AND table_name = 'users'
 AND data_type LIKE '%json%';
 
--- 17. Check if there are any text columns that might contain provider info
+-- Query 17: Check for text columns
 SELECT 
   column_name,
   data_type
@@ -140,7 +138,7 @@ WHERE table_schema = 'auth'
 AND table_name = 'users'
 AND data_type = 'text';
 
--- 18. Check if we can see any user data at all (for debugging)
+-- Query 18: Check basic user data
 SELECT 
   id,
   email,
