@@ -9,6 +9,8 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 
 const PasswordManager = () => {
+  console.log('🔍 PasswordManager: Component loaded');
+  
   const { user } = useAuth();
   const { toast } = useToast();
   const [isOAuthUser, setIsOAuthUser] = useState(false);
