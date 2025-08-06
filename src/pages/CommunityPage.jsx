@@ -775,13 +775,23 @@ const CommunityPage = () => {
     try {
       const isFollowing = following.includes(userId);
       
+      console.log('Follow toggle attempt:', {
+        userId,
+        currentUserId: user.id,
+        isFollowing,
+        following: following
+      });
+      
       if (isFollowing) {
         // Unfollow
-        const { error } = await supabase
+        console.log('Attempting to unfollow user:', userId);
+        const { data, error } = await supabase
           .from('follows')
           .delete()
           .eq('follower_id', user.id)
           .eq('followed_id', userId);
+
+        console.log('Unfollow result:', { data, error });
 
         if (error) throw error;
         
@@ -792,14 +802,30 @@ const CommunityPage = () => {
         });
       } else {
         // Follow
-        const { error } = await supabase
+        console.log('Attempting to follow user:', userId);
+        const followData = {
+          follower_id: user.id,
+          followed_id: userId
+        };
+        
+        console.log('Follow data being sent:', followData);
+        
+        const { data, error } = await supabase
           .from('follows')
-          .insert({
-            follower_id: user.id,
-            followed_id: userId
-          });
+          .insert(followData)
+          .select();
 
-        if (error) throw error;
+        console.log('Follow result:', { data, error });
+
+        if (error) {
+          console.error('Follow error details:', {
+            code: error.code,
+            message: error.message,
+            details: error.details,
+            hint: error.hint
+          });
+          throw error;
+        }
         
         setFollowing(prev => [...prev, userId]);
         toast({
@@ -829,7 +855,7 @@ const CommunityPage = () => {
       console.error('Error toggling follow:', error);
       toast({
         title: "Error",
-        description: "Failed to follow/unfollow user. Please try again.",
+        description: `Failed to follow/unfollow user: ${error.message}`,
         variant: "destructive"
       });
     }
