@@ -1,0 +1,5 @@
+[33m0573b66[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Fix user_pack_progress reflection column error by removing non-existent column filter and fetching reflection from posts table
+[33m0240298[m Add debugging to SettingsPage and simplify PasswordManager for testing
+[33m6bf11f1[m Add database column checker and enhanced password component debugging
+[33m82a3677[m Add basic database test and enhanced debugging for password component
+[33m2303f7f[m Add comprehensive database explorer and debug logging

@@ -24,6 +24,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useData } from '@/contexts/DataContext'; // Add useData import
 import CompletedPacksSection from '@/components/gamification/CompletedPacksSection';
 import { getLevelInfo } from '@/lib/levelSystem';
+import PasswordManager from '@/components/PasswordManager';
 
 const DEFAULT_USER_SETTINGS = {
   show_streak: true,
@@ -1752,6 +1753,11 @@ const ProfilePage = () => {
                   rows={3}
                   className="border-gray-300 focus:border-forest-green focus:ring-forest-green"
                 />
+              </div>
+
+              {/* Password Management Section */}
+              <div className="border-t pt-6 mt-6">
+                <PasswordManager />
               </div>
 
               {/* Error Message */}

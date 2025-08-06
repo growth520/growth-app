@@ -9,8 +9,6 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 
 const PasswordManager = () => {
-  console.log('🔍 PasswordManager: Component loaded');
-  
   const { user } = useAuth();
   const { toast } = useToast();
   const [isOAuthUser, setIsOAuthUser] = useState(false);
@@ -30,38 +28,31 @@ const PasswordManager = () => {
   const [errors, setErrors] = useState({});
   const [isValid, setIsValid] = useState(false);
 
-  console.log('🔍 PasswordManager: User object:', user);
-  console.log('🔍 PasswordManager: User email:', user?.email);
-  console.log('🔍 PasswordManager: User ID:', user?.id);
-
   useEffect(() => {
     const checkUserAuthMethod = async () => {
       if (!user) return;
       
       try {
-        console.log('🔍 PasswordManager: Checking user auth method');
-        console.log('🔍 User object:', user);
-        console.log('🔍 User app_metadata:', user.app_metadata);
-        console.log('🔍 User provider:', user.app_metadata?.provider);
-        
-        // For now, let's show for all users and detect OAuth based on available fields
-        // Check if user is from OAuth by looking at available metadata
+        // Check if user is from OAuth by looking at app_metadata
         const isOAuth = user.app_metadata?.provider && 
                        (user.app_metadata.provider === 'google' || 
                         user.app_metadata.provider === 'apple');
         
-        console.log('🔍 Is OAuth user:', isOAuth);
+        setIsOAuthUser(isOAuth);
         
-        // If we can't detect OAuth, assume they might want to set a password
-        // This will show the component for all users for now
-        setIsOAuthUser(true); // Show for all users temporarily
-        setHasPassword(false); // Assume they don't have a password initially
+        // For OAuth users, we'll show the "Add Password" option
+        // For email users, we'll assume they have a password (they can still change it)
+        if (isOAuth) {
+          setHasPassword(false); // OAuth users need to add a password
+        } else {
+          setHasPassword(true); // Email users can change their password
+        }
+        
         setLoading(false);
       } catch (error) {
         console.error('Error checking user auth method:', error);
-        // Show for all users if there's an error
-        setIsOAuthUser(true);
-        setHasPassword(false);
+        setIsOAuthUser(false);
+        setHasPassword(true); // Default to showing change password
         setLoading(false);
       }
     };
@@ -72,18 +63,7 @@ const PasswordManager = () => {
   // Validate password requirements
   const validatePassword = (password) => {
     const minLength = 8;
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasLowerCase = /[a-z]/.test(password);
-    const hasNumbers = /\d/.test(password);
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-    
-    return {
-      length: password.length >= minLength,
-      uppercase: hasUpperCase,
-      lowercase: hasLowerCase,
-      number: hasNumbers,
-      special: hasSpecialChar
-    };
+    return password.length >= minLength;
   };
 
   // Check if passwords match
@@ -96,11 +76,8 @@ const PasswordManager = () => {
     
     if (!newPassword) {
       newErrors.newPassword = 'New password is required';
-    } else {
-      const passwordValidation = validatePassword(newPassword);
-      if (!passwordValidation.length) {
-        newErrors.newPassword = 'Password must be at least 8 characters';
-      }
+    } else if (!validatePassword(newPassword)) {
+      newErrors.newPassword = 'Password must be at least 8 characters';
     }
     
     if (newPassword && confirmPassword && newPassword !== confirmPassword) {
@@ -118,6 +95,7 @@ const PasswordManager = () => {
                        newPassword && 
                        confirmPassword && 
                        newPassword === confirmPassword &&
+                       validatePassword(newPassword) &&
                        (!hasPassword || currentPassword);
     
     setIsValid(isValidForm);
@@ -248,38 +226,117 @@ const PasswordManager = () => {
     );
   }
 
-  // Show for all users for now
+  // Show for all users - OAuth users can add password, email users can change password
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Lock className="w-5 h-5" />
-          Password Management (Debug Mode)
+          {hasPassword ? 'Change Password' : 'Add a Password'}
         </CardTitle>
         <CardDescription>
-          Debug: Component is loading. User: {user?.email || 'No user'}
+          {hasPassword 
+            ? 'Update your password to keep your account secure'
+            : 'Set a password so you can log in with email and password'
+          }
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="text-sm text-gray-500">
-          <p>🔍 Debug Info:</p>
-          <p>User ID: {user?.id || 'No ID'}</p>
-          <p>User Email: {user?.email || 'No email'}</p>
-          <p>Loading: {loading ? 'Yes' : 'No'}</p>
-          <p>Is OAuth: {isOAuthUser ? 'Yes' : 'No'}</p>
-          <p>Has Password: {hasPassword ? 'Yes' : 'No'}</p>
-          <p>Component Loaded: ✅ Yes</p>
+        {hasPassword && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Current Password</label>
+            <div className="relative">
+              <Input
+                type={showCurrentPassword ? 'text' : 'password'}
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="Enter your current password"
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {errors.currentPassword && (
+              <p className="text-sm text-red-500">{errors.currentPassword}</p>
+            )}
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700">
+            {hasPassword ? 'New Password' : 'Password'}
+          </label>
+          <div className="relative">
+            <Input
+              type={showNewPassword ? 'text' : 'password'}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder={hasPassword ? 'Enter new password' : 'Enter your password'}
+              className="pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowNewPassword(!showNewPassword)}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+          {errors.newPassword && (
+            <p className="text-sm text-red-500">{errors.newPassword}</p>
+          )}
+          <p className="text-xs text-gray-500">Password must be at least 8 characters long</p>
         </div>
-        
-        <div className="p-4 bg-blue-50 rounded-lg">
-          <p className="text-sm font-medium text-blue-800">Test Section</p>
-          <p className="text-xs text-blue-600">If you can see this, the component is working!</p>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700">Confirm Password</label>
+          <div className="relative">
+            <Input
+              type={showConfirmPassword ? 'text' : 'password'}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Confirm your password"
+              className="pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+          {errors.confirmPassword && (
+            <p className="text-sm text-red-500">{errors.confirmPassword}</p>
+          )}
         </div>
-        
-        <div className="p-4 bg-green-50 rounded-lg">
-          <p className="text-sm font-medium text-green-800">Simple Test</p>
-          <p className="text-xs text-green-600">This is a simple test to see if the component renders</p>
-        </div>
+
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            You'll receive an email to confirm your password change.
+          </AlertDescription>
+        </Alert>
+
+        <Button
+          onClick={hasPassword ? handleChangePassword : handleSetPassword}
+          disabled={!isValid || updating}
+          className="w-full bg-forest-green hover:bg-forest-green/90 text-white"
+        >
+          {updating ? (
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              {hasPassword ? 'Updating Password...' : 'Setting Password...'}
+            </div>
+          ) : (
+            hasPassword ? 'Update Password' : 'Save Password'
+          )}
+        </Button>
       </CardContent>
     </Card>
   );
