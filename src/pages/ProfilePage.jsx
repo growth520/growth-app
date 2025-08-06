@@ -174,7 +174,7 @@ const ProfilePage = () => {
         setProfile(profileData);
 
         // Load other data in parallel (less critical)
-        const [postsData, followersCount, followingData, settingsData, progressDataResult] = await Promise.all([
+        const [postsData, followersCount, followingCount, followingData, settingsData, progressDataResult] = await Promise.all([
           // Initial posts (simplified query)
           supabase
             .from('posts')
@@ -203,6 +203,13 @@ const ProfilePage = () => {
             .from('follows')
             .select('follower_id', { count: 'exact', head: true })
             .eq('followed_id', userId)
+            .then(({ count }) => count || 0),
+
+          // Following count
+          supabase
+            .from('follows')
+            .select('followed_id', { count: 'exact', head: true })
+            .eq('follower_id', userId)
             .then(({ count }) => count || 0),
 
           // Following status (only if not own profile)
@@ -246,6 +253,7 @@ const ProfilePage = () => {
         setPostState(postsData);
         setPostsHasMore(postsData.length === ITEMS_PER_PAGE);
         setFollowers(followersCount);
+        setFollowing(followingCount);
         setIsFollowing(!!(followingData && followingData.length > 0));
         setUserSettings(settingsData);
 
@@ -284,7 +292,7 @@ const ProfilePage = () => {
     }
   }, [userBadges, isOwnProfile]);
 
-  // Refresh follower/following counts periodically
+  // Refresh follower/following counts periodically and listen for follow changes
   useEffect(() => {
     if (!user || !userId) return;
     
@@ -309,10 +317,21 @@ const ProfilePage = () => {
       }
     };
     
+    // Listen for follow status changes
+    const handleFollowStatusChange = () => {
+      refreshCounts();
+    };
+    
+    // Add event listener for follow status changes
+    window.addEventListener('followStatusChanged', handleFollowStatusChange);
+    
     // Refresh counts every 30 seconds
     const interval = setInterval(refreshCounts, 30000);
     
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('followStatusChanged', handleFollowStatusChange);
+    };
   }, [user, userId]);
 
   useEffect(() => {
