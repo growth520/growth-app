@@ -159,6 +159,13 @@ const ChallengeCompletionPage = () => {
     setChallengeCompleted(true);
     // Show completion modals and handle rewards
     handleRewards();
+    
+    // Fallback: If no modals are shown, navigate back to challenge page after a delay
+    setTimeout(() => {
+      if (!levelUpModal.open && !streakModal.open && !bonusModal.open && !packCompletionModal.open) {
+        navigate('/challenge');
+      }
+    }, 3000); // Wait 3 seconds to see if any modals appear
   };
 
   // Handle rewards and modals
@@ -576,10 +583,18 @@ const ChallengeCompletionPage = () => {
 
   const handleStreakClose = () => {
     setStreakModal({ open: false, streakCount: 0 });
+    // Navigate back to challenge page after a short delay
+    navigateTimeoutRef.current = setTimeout(() => {
+      navigate('/challenge');
+    }, 1000);
   };
 
   const handleBonusClose = () => {
     setBonusModal({ open: false, bonusType: '', bonusAmount: 0 });
+    // Navigate back to challenge page after a short delay
+    navigateTimeoutRef.current = setTimeout(() => {
+      navigate('/challenge');
+    }, 1000);
   };
 
   const handlePackCompletionClose = () => {
