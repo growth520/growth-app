@@ -252,12 +252,30 @@ const AssessmentPage = () => {
 
   const handlePrevious = () => {
     if (currentQuestion > 0) {
-      setCurrentQuestion(prev => prev - 1);
-      const prevAnswer = answers[currentQuestion - 1];
+      const newCurrentQuestion = currentQuestion - 1;
+      setCurrentQuestion(newCurrentQuestion);
+      
+      // Get the answer for the question we're going back to
+      const prevAnswer = answers[newCurrentQuestion];
       if (prevAnswer) {
         setSelectedOption(prevAnswer.option);
         setOtherText(prevAnswer.otherText || '');
+      } else {
+        // If no previous answer, clear the selection
+        setSelectedOption(null);
+        setOtherText('');
       }
+      
+      // Clear all answers that come after the question we're going back to
+      // This ensures that if they change their answer, all subsequent answers are invalidated
+      const newAnswers = { ...answers };
+      Object.keys(newAnswers).forEach(key => {
+        const questionIndex = parseInt(key);
+        if (questionIndex > newCurrentQuestion) {
+          delete newAnswers[key];
+        }
+      });
+      setAnswers(newAnswers);
     }
   };
 
@@ -428,9 +446,13 @@ const AssessmentPage = () => {
     <div className="min-h-screen bg-sun-beige text-charcoal-gray font-lato">
       <div className="container mx-auto px-4 pt-8 pb-24">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
-          <Button onClick={() => navigate('/challenge')} variant="ghost" className="mb-6 text-charcoal-gray">
+          <Button 
+            onClick={currentQuestion > 0 ? handlePrevious : () => navigate('/challenge')} 
+            variant="ghost" 
+            className="mb-6 text-charcoal-gray"
+          >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
+            {currentQuestion > 0 ? 'Previous Question' : 'Back'}
           </Button>
         </motion.div>
 

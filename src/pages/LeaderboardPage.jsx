@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +28,7 @@ import { useData } from '@/contexts/DataContext';
 const LeaderboardPage = () => {
   const { user } = useAuth();
   const { progress } = useData();
+  const navigate = useNavigate();
   
   // State management
   const [selectedFilter, setSelectedFilter] = useState('xp');
@@ -652,6 +654,10 @@ const LeaderboardPage = () => {
     }
   };
 
+  const handleProfileClick = (userId) => {
+    navigate(`/profile/${userId}`);
+  };
+
   // Render user row - Instagram-like styling
   const renderUserRow = (userData, isCurrentUser = false, showRank = true) => {
     const userProfile = userData.profiles;
@@ -685,28 +691,33 @@ const LeaderboardPage = () => {
             </div>
           )}
           
-          <Avatar className="w-12 h-12 border-2 border-gray-200">
-            <AvatarImage 
-              src={userProfile?.avatar_url} 
-              alt={displayName}
-            />
-            <AvatarFallback className="bg-gradient-to-br from-forest-green to-leaf-green text-white font-semibold">
-              {displayName.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          
-          <div>
-            <p className={`font-semibold text-lg ${isCurrentUser ? 'text-green-900' : 'text-gray-900'}`}>
-              {displayName}
-              {isCurrentUser && (
-                <Badge variant="secondary" className="ml-2 text-xs bg-green-100 text-green-800 border-green-300">
-                  You
-                </Badge>
+          <div 
+            className="flex items-center space-x-4 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => handleProfileClick(userData.user_id)}
+          >
+            <Avatar className="w-12 h-12 border-2 border-gray-200">
+              <AvatarImage 
+                src={userProfile?.avatar_url} 
+                alt={displayName}
+              />
+              <AvatarFallback className="bg-gradient-to-br from-forest-green to-leaf-green text-white font-semibold">
+                {displayName.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            
+            <div>
+              <p className={`font-semibold text-lg ${isCurrentUser ? 'text-green-900' : 'text-gray-900'}`}>
+                {displayName}
+                {isCurrentUser && (
+                  <Badge variant="secondary" className="ml-2 text-xs bg-green-100 text-green-800 border-green-300">
+                    You
+                  </Badge>
+                )}
+              </p>
+              {userProfile?.username && userProfile?.full_name && (
+                <p className="text-sm text-gray-500">@{userProfile.username}</p>
               )}
-            </p>
-            {userProfile?.username && userProfile?.full_name && (
-              <p className="text-sm text-gray-500">@{userProfile.username}</p>
-            )}
+            </div>
           </div>
         </div>
         
