@@ -36,15 +36,32 @@ const PasswordManager = () => {
     if (!user) return;
     
     try {
+      // Try to use the Supabase function first
       const { data: hasPasswordData, error: hasPasswordError } = await supabase.rpc('user_has_password', {
         user_id: user.id
       });
       
       if (!hasPasswordError) {
         setHasPassword(hasPasswordData);
+        return;
       }
+      
+      // Fallback: Check if user is OAuth (OAuth users typically don't have passwords initially)
+      const isOAuth = user.app_metadata?.provider && 
+                     (user.app_metadata.provider === 'google' || 
+                      user.app_metadata.provider === 'apple');
+      
+      // For OAuth users, assume they don't have a password unless we know otherwise
+      // For email users, assume they have a password
+      setHasPassword(!isOAuth);
+      
     } catch (error) {
       console.error('Error refreshing password status:', error);
+      // Final fallback
+      const isOAuth = user.app_metadata?.provider && 
+                     (user.app_metadata.provider === 'google' || 
+                      user.app_metadata.provider === 'apple');
+      setHasPassword(!isOAuth);
     }
   };
 
@@ -53,20 +70,12 @@ const PasswordManager = () => {
       if (!user) return;
       
       try {
-        // Use the Supabase function to check if user has a password
+        // Try to use the Supabase function first
         const { data: hasPasswordData, error: hasPasswordError } = await supabase.rpc('user_has_password', {
           user_id: user.id
         });
         
-        if (hasPasswordError) {
-          console.error('Error checking password status:', hasPasswordError);
-          // Fallback to checking app_metadata
-          const isOAuth = user.app_metadata?.provider && 
-                         (user.app_metadata.provider === 'google' || 
-                          user.app_metadata.provider === 'apple');
-          setIsOAuthUser(isOAuth);
-          setHasPassword(!isOAuth); // Assume OAuth users don't have passwords
-        } else {
+        if (!hasPasswordError) {
           // hasPasswordData will be a boolean indicating if user has password
           setHasPassword(hasPasswordData);
           
@@ -75,6 +84,14 @@ const PasswordManager = () => {
                          (user.app_metadata.provider === 'google' || 
                           user.app_metadata.provider === 'apple');
           setIsOAuthUser(isOAuth);
+        } else {
+          console.log('Supabase function not available, using fallback detection');
+          // Fallback to checking app_metadata
+          const isOAuth = user.app_metadata?.provider && 
+                         (user.app_metadata.provider === 'google' || 
+                          user.app_metadata.provider === 'apple');
+          setIsOAuthUser(isOAuth);
+          setHasPassword(!isOAuth); // Assume OAuth users don't have passwords
         }
         
         setLoading(false);
