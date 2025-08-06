@@ -378,6 +378,18 @@ const ChallengeCompletionPage = () => {
       const newLevel = calculateLevelFromXP(newXp);
       const xpToNextLevel = calculateXPForNextLevel(currentProgress.level);
 
+      // Get current challenge count and increment it
+      const { data: challengeCountData, error: countError } = await supabase
+        .from('completed_challenges')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+      if (countError) {
+        console.error('Error getting challenge count:', countError);
+      }
+
+      const newChallengeCount = (challengeCountData?.length || 0) + 1;
+
       // Check for level up
       if (newXp >= xpToNextLevel) {
         const { error: levelUpError } = await supabase
@@ -386,7 +398,8 @@ const ChallengeCompletionPage = () => {
             xp: newXp,
             level: newLevel,
             streak: currentProgress.streak + 1,
-            current_challenge_id: null
+            current_challenge_id: null,
+            total_challenges_completed: newChallengeCount
           })
           .eq('user_id', user.id);
 
@@ -397,7 +410,8 @@ const ChallengeCompletionPage = () => {
           .update({
             xp: newXp,
             streak: currentProgress.streak + 1,
-            current_challenge_id: null
+            current_challenge_id: null,
+            total_challenges_completed: newChallengeCount
           })
           .eq('user_id', user.id);
 

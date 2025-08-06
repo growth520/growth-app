@@ -370,13 +370,33 @@ const LeaderboardPage = () => {
     }
   };
 
-  // Fetch community stats with exact SQL as requested
+  // Fetch community stats with correct challenge counting
   const fetchCommunityStats = async () => {
     try {
-      // Get community statistics with better error handling
+      // Try to use the new community stats function first
+      try {
+        const { data: statsData, error: statsError } = await supabase.rpc('get_community_challenge_stats');
+        
+        if (!statsError && statsData && statsData.length > 0) {
+          const stats = statsData[0];
+          console.log('Community stats from function:', stats);
+          setCommunityStats({
+            totalActiveMembers: stats.total_active_members || 0,
+            totalXP: stats.total_xp || 0,
+            totalCompletedChallenges: stats.total_completed_challenges || 0,
+            totalActiveStreaks: stats.total_active_streaks || 0
+          });
+          return;
+        }
+      } catch (functionError) {
+        console.log('Community stats function not available, falling back to manual calculation');
+      }
+
+      // Fallback: Manual calculation with better challenge counting
       const [
         { count: totalActiveMembers, error: profilesError },
-        { data: progressData, error: progressError }
+        { data: progressData, error: progressError },
+        { data: completedChallengesData, error: completedChallengesError }
       ] = await Promise.all([
         // Total active members from profiles
         supabase
@@ -386,7 +406,12 @@ const LeaderboardPage = () => {
         // All user progress data for calculations
         supabase
           .from('user_progress')
-          .select('xp, total_challenges_completed, streak')
+          .select('xp, streak'),
+        
+        // Count completed challenges from completed_challenges table
+        supabase
+          .from('completed_challenges')
+          .select('user_id')
       ]);
 
       if (profilesError) {
@@ -397,17 +422,28 @@ const LeaderboardPage = () => {
         console.error('Error fetching progress data:', progressError);
       }
 
+      if (completedChallengesError) {
+        console.error('Error fetching completed challenges:', completedChallengesError);
+      }
+
       // Ensure we have valid data
       const validProgressData = progressData || [];
+      const validCompletedChallenges = completedChallengesData || [];
+      
+      // Count challenges per user
+      const challengeCounts = validCompletedChallenges.reduce((acc, challenge) => {
+        acc[challenge.user_id] = (acc[challenge.user_id] || 0) + 1;
+        return acc;
+      }, {});
       
       const stats = {
         totalActiveMembers: totalActiveMembers || 0,
         totalXP: validProgressData.reduce((sum, user) => sum + (user.xp || 0), 0),
-        totalCompletedChallenges: validProgressData.reduce((sum, user) => sum + (user.total_challenges_completed || 0), 0),
+        totalCompletedChallenges: validCompletedChallenges.length,
         totalActiveStreaks: validProgressData.filter(user => (user.streak || 0) > 0).length
       };
 
-      console.log('Community stats calculated:', stats);
+      console.log('Community stats calculated manually:', stats);
       setCommunityStats(stats);
     } catch (error) {
       console.error('Error fetching community stats:', error);
