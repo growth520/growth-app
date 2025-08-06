@@ -17,6 +17,7 @@ import { getLevelInfo, calculateXPForNextLevel, calculateLevelFromXP } from '@/l
 import LevelUpModal from '@/components/gamification/LevelUpModal';
 import PackCompletionModal from '@/components/gamification/PackCompletionModal';
 import { updateStreakOnChallengeCompletion } from '@/lib/streakSystem';
+import { triggerBadgeCheck } from '@/lib/badgeSystem';
 
 // Gamification Modal Components
 const StreakModal = ({ open, onOpenChange, streakCount }) => (
@@ -454,6 +455,9 @@ const ChallengeCompletionPage = () => {
         if (packError) throw packError;
       }
 
+      // Check for new badges
+      const badgeResult = await triggerBadgeCheck(user.id);
+      
       // Refresh data
       await refreshAllData();
       await triggerChallengeCompletionRefresh({
@@ -462,7 +466,8 @@ const ChallengeCompletionPage = () => {
         new_streak: newStreak,
         tokens_earned: 0,
         level_up: newXp >= xpToNextLevel,
-        streak_increased: streakResult.success && streakResult.data?.new_streak > currentProgress.streak
+        streak_increased: streakResult.success && streakResult.data?.new_streak > currentProgress.streak,
+        badges_awarded: badgeResult.success ? badgeResult.newlyAwarded : 0
       });
 
       // Show success message
@@ -571,13 +576,16 @@ const ChallengeCompletionPage = () => {
 
       if (progressError) throw progressError;
 
+      // Check for new badges (extra challenges can also trigger badges)
+      const badgeResult = await triggerBadgeCheck(user.id);
+      
       // Refresh data
       await refreshAllData();
 
       // Show success message
       toast({
         title: "Bonus Challenge Completed! 🎁",
-        description: `You earned ${bonusXp} bonus XP!`,
+        description: `You earned ${bonusXp} bonus XP!${badgeResult.success && badgeResult.newlyAwarded > 0 ? ` + ${badgeResult.newlyAwarded} new badge(s)!` : ''}`,
       });
 
       setShowExtraChallenge(false);
