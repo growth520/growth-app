@@ -152,7 +152,15 @@ export const getBadgeProgress = async (userId) => {
       level: await getUserLevel(userId),
       streak: await getUserStreak(userId),
       reflection: await getReflectionCount(userId),
-      share: await getShareCount(userId)
+      share: await getShareCount(userId),
+      likes_given: await getLikesGivenCount(userId),
+      likes_received: await getLikesReceivedCount(userId),
+      comments: await getCommentsCount(userId),
+      pack_completion: await getPackCompletionCount(userId),
+      ai_usage: await getAIUsageCount(userId),
+      time_based: await getTimeBasedCount(userId),
+      weekly_challenges: await getWeeklyChallengesCount(userId),
+      monthly_challenges: await getMonthlyChallengesCount(userId)
     };
 
     // Map badges to progress
@@ -172,7 +180,8 @@ export const getBadgeProgress = async (userId) => {
         current,
         percentage,
         isEarned,
-        icon_url: badge.icon_url
+        icon_url: badge.icon_url,
+        emoji: badge.icon_url // Use icon_url as emoji
       };
     });
 
@@ -254,6 +263,123 @@ const getShareCount = async (userId) => {
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
       .or('privacy.eq.public,visibility.eq.public');
+
+    return error ? 0 : count;
+  } catch (error) {
+    return 0;
+  }
+};
+
+const getLikesGivenCount = async (userId) => {
+  try {
+    const { count, error } = await supabase
+      .from('likes')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
+    return error ? 0 : count;
+  } catch (error) {
+    return 0;
+  }
+};
+
+const getLikesReceivedCount = async (userId) => {
+  try {
+    const { data, error } = await supabase
+      .from('posts')
+      .select('likes_count')
+      .eq('user_id', userId);
+
+    if (error) return 0;
+    
+    return data.reduce((sum, post) => sum + (post.likes_count || 0), 0);
+  } catch (error) {
+    return 0;
+  }
+};
+
+const getCommentsCount = async (userId) => {
+  try {
+    const { count, error } = await supabase
+      .from('comments')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
+    return error ? 0 : count;
+  } catch (error) {
+    return 0;
+  }
+};
+
+const getPackCompletionCount = async (userId) => {
+  try {
+    const { count, error } = await supabase
+      .from('user_pack_progress')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .gte('completed_challenges', 'total_challenges');
+
+    return error ? 0 : count;
+  } catch (error) {
+    return 0;
+  }
+};
+
+const getAIUsageCount = async (userId) => {
+  try {
+    // This would need to be implemented based on your AI usage tracking
+    // For now, return 0 as placeholder
+    return 0;
+  } catch (error) {
+    return 0;
+  }
+};
+
+const getTimeBasedCount = async (userId) => {
+  try {
+    // Check for early bird and night owl completions
+    const { data, error } = await supabase
+      .from('completed_challenges')
+      .select('completed_at')
+      .eq('user_id', userId);
+
+    if (error) return 0;
+
+    let timeBasedCount = 0;
+    data.forEach(challenge => {
+      const hour = new Date(challenge.completed_at).getHours();
+      if (hour < 8 || hour >= 22) {
+        timeBasedCount++;
+      }
+    });
+
+    return timeBasedCount;
+  } catch (error) {
+    return 0;
+  }
+};
+
+const getWeeklyChallengesCount = async (userId) => {
+  try {
+    const { count, error } = await supabase
+      .from('completed_challenges')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .gte('completed_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+
+    return error ? 0 : count;
+  } catch (error) {
+    return 0;
+  }
+};
+
+const getMonthlyChallengesCount = async (userId) => {
+  try {
+    const { count, error } = await supabase
+      .from('completed_challenges')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .gte('completed_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
 
     return error ? 0 : count;
   } catch (error) {
