@@ -7,6 +7,7 @@ import { Lock, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
+import { getAuthCallbackUrl } from '@/lib/config';
 
 const PasswordManager = () => {
   const { user } = useAuth();
@@ -111,12 +112,38 @@ const PasswordManager = () => {
     setUpdating(true);
     
     try {
-      const { data, error } = await supabase.auth.updateUser({
+      // For OAuth users setting a password for the first time
+      // We need to use a different approach to trigger email confirmation
+      
+      // Method 1: Try updateUser first
+      let { data, error } = await supabase.auth.updateUser({
         password: newPassword
       });
 
       if (error) {
-        throw error;
+        // If updateUser fails, try using resetPasswordForEmail
+        console.log('updateUser failed, trying resetPasswordForEmail:', error.message);
+        
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(user.email, {
+          redirectTo: getAuthCallbackUrl()
+        });
+        
+        if (resetError) {
+          throw resetError;
+        }
+        
+        // Clear form
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setHasPassword(true);
+        
+        toast({
+          title: "Password Reset Email Sent",
+          description: "Please check your email to complete setting your password.",
+        });
+        
+        return;
       }
 
       // Clear form
@@ -169,9 +196,9 @@ const PasswordManager = () => {
         throw new Error('Current password is incorrect');
       }
 
-      // Update password
-      const { data, error } = await supabase.auth.updateUser({
-        password: newPassword
+      // For password changes, use resetPasswordForEmail to ensure email confirmation
+      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+        redirectTo: getAuthCallbackUrl()
       });
 
       if (error) {
@@ -184,8 +211,8 @@ const PasswordManager = () => {
       setConfirmPassword('');
       
       toast({
-        title: "Password Updated Successfully",
-        description: "Your password has been changed.",
+        title: "Password Reset Email Sent",
+        description: "Please check your email to complete changing your password.",
       });
       
     } catch (error) {
@@ -319,7 +346,7 @@ const PasswordManager = () => {
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            You'll receive an email to confirm your password change.
+            You'll receive an email to confirm your password change. Please check your inbox and spam folder.
           </AlertDescription>
         </Alert>
 
@@ -331,10 +358,10 @@ const PasswordManager = () => {
           {updating ? (
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              {hasPassword ? 'Updating Password...' : 'Setting Password...'}
+              {hasPassword ? 'Sending Reset Email...' : 'Sending Reset Email...'}
             </div>
           ) : (
-            hasPassword ? 'Update Password' : 'Save Password'
+            hasPassword ? 'Send Password Reset Email' : 'Send Password Reset Email'
           )}
         </Button>
       </CardContent>

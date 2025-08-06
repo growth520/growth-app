@@ -26,6 +26,7 @@ import {
   PageLoader,
   LazyChallengeCompletionPage
 } from '@/components/LazyComponents';
+import TestEmailPage from '@/pages/TestEmailPage';
 
 // Performance optimization - clear old timeouts
 function clearExistingTimeouts() {
@@ -138,6 +139,7 @@ function AppContent() {
               <LazyBadgesPage />
             </Suspense>
           } />
+          <Route path="/test-email" element={<TestEmailPage />} />
         </Routes>
       </div>
       {shouldShowNavigation && <Navigation />}
