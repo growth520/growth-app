@@ -16,6 +16,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { getLevelInfo, calculateXPForNextLevel, calculateLevelFromXP } from '@/lib/levelSystem';
 import LevelUpModal from '@/components/gamification/LevelUpModal';
 import PackCompletionModal from '@/components/gamification/PackCompletionModal';
+import { updateStreakOnChallengeCompletion } from '@/lib/streakSystem';
 
 // Gamification Modal Components
 const StreakModal = ({ open, onOpenChange, streakCount }) => (
@@ -155,11 +156,11 @@ const ChallengeCompletionPage = () => {
   };
 
   // Handle completion
-  const handleComplete = () => {
+    const handleComplete = () => {
     setChallengeCompleted(true);
     // Show completion modals and handle rewards
     handleRewards();
-    
+   
     // Fallback: If no modals are shown, navigate back to challenge page after a delay
     setTimeout(() => {
       if (!levelUpModal.open && !streakModal.open && !bonusModal.open && !packCompletionModal.open) {
@@ -181,7 +182,8 @@ const ChallengeCompletionPage = () => {
       setLevelUpModal({ open: true, newLevel: currentLevel + 1 });
     }
 
-    // Check for streak milestone
+    // Check for streak milestone (updated to use new streak data)
+    // Note: This will be updated after the streak system processes the completion
     if (progress.streak > 0 && progress.streak % 7 === 0) {
       setStreakModal({ open: true, streakCount: progress.streak });
     }
@@ -378,6 +380,19 @@ const ChallengeCompletionPage = () => {
         // Don't throw error here as challenge completion is more important
       }
 
+      // Update streak using the new streak system
+      const todayDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      const isExtraChallenge = false; // This is the main daily challenge
+      
+      const streakResult = await updateStreakOnChallengeCompletion(user.id, todayDate, isExtraChallenge);
+      
+      if (!streakResult.success) {
+        console.error('Streak update failed:', streakResult.error);
+        // Continue with challenge completion even if streak update fails
+      } else {
+        console.log('Streak updated successfully:', streakResult.message);
+      }
+
       // Update user progress
       const currentProgress = getProgress();
       const xpGained = challenge.xp_reward || 10;
@@ -397,6 +412,9 @@ const ChallengeCompletionPage = () => {
 
       const newChallengeCount = (challengeCountData?.length || 0) + 1;
 
+      // Get the new streak from the streak system result
+      const newStreak = streakResult.success ? streakResult.data?.new_streak : (currentProgress.streak + 1);
+
       // Check for level up
       if (newXp >= xpToNextLevel) {
         const { error: levelUpError } = await supabase
@@ -404,7 +422,6 @@ const ChallengeCompletionPage = () => {
           .update({
             xp: newXp,
             level: newLevel,
-            streak: currentProgress.streak + 1,
             current_challenge_id: null,
             total_challenges_completed: newChallengeCount
           })
@@ -416,7 +433,6 @@ const ChallengeCompletionPage = () => {
           .from('user_progress')
           .update({
             xp: newXp,
-            streak: currentProgress.streak + 1,
             current_challenge_id: null,
             total_challenges_completed: newChallengeCount
           })
@@ -443,10 +459,10 @@ const ChallengeCompletionPage = () => {
       await triggerChallengeCompletionRefresh({
         xp_gained: xpGained,
         new_level: newLevel,
-        new_streak: currentProgress.streak + 1,
+        new_streak: newStreak,
         tokens_earned: 0,
         level_up: newXp >= xpToNextLevel,
-        streak_increased: true
+        streak_increased: streakResult.success && streakResult.data?.new_streak > currentProgress.streak
       });
 
       // Show success message
@@ -528,6 +544,19 @@ const ChallengeCompletionPage = () => {
 
       if (postError) {
         console.error('Error saving extra challenge to posts table:', postError);
+      }
+
+      // Update streak for extra challenge (should not affect streak)
+      const todayDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      const isExtraChallenge = true; // This is an extra challenge
+      
+      const streakResult = await updateStreakOnChallengeCompletion(user.id, todayDate, isExtraChallenge);
+      
+      if (!streakResult.success) {
+        console.error('Extra challenge streak update failed:', streakResult.error);
+        // Continue with extra challenge completion even if streak update fails
+      } else {
+        console.log('Extra challenge streak update:', streakResult.message);
       }
 
       // Update user progress with bonus XP
