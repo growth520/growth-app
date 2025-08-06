@@ -39,6 +39,7 @@ const LeaderboardPage = () => {
   const [communityStats, setCommunityStats] = useState({});
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [lastCommunityStatsUpdate, setLastCommunityStatsUpdate] = useState(0);
 
   // Filter configuration - Using correct database column names
   const filters = [
@@ -373,30 +374,10 @@ const LeaderboardPage = () => {
   // Fetch community stats with correct challenge counting
   const fetchCommunityStats = async () => {
     try {
-      // Try to use the new community stats function first
-      try {
-        const { data: statsData, error: statsError } = await supabase.rpc('get_community_challenge_stats');
-        
-        if (!statsError && statsData && statsData.length > 0) {
-          const stats = statsData[0];
-          console.log('Community stats from function:', stats);
-          setCommunityStats({
-            totalActiveMembers: stats.total_active_members || 0,
-            totalXP: stats.total_xp || 0,
-            totalCompletedChallenges: stats.total_completed_challenges || 0,
-            totalActiveStreaks: stats.total_active_streaks || 0
-          });
-          return;
-        }
-      } catch (functionError) {
-        console.log('Community stats function not available, falling back to manual calculation');
-      }
-
-      // Fallback: Manual calculation with better challenge counting
+      // Get community stats by summing total_challenges_completed from user_progress
       const [
         { count: totalActiveMembers, error: profilesError },
-        { data: progressData, error: progressError },
-        { data: completedChallengesData, error: completedChallengesError }
+        { data: progressData, error: progressError }
       ] = await Promise.all([
         // Total active members from profiles
         supabase
@@ -406,12 +387,7 @@ const LeaderboardPage = () => {
         // All user progress data for calculations
         supabase
           .from('user_progress')
-          .select('xp, streak'),
-        
-        // Count completed challenges from completed_challenges table
-        supabase
-          .from('completed_challenges')
-          .select('user_id')
+          .select('xp, streak, total_challenges_completed')
       ]);
 
       if (profilesError) {
@@ -422,28 +398,17 @@ const LeaderboardPage = () => {
         console.error('Error fetching progress data:', progressError);
       }
 
-      if (completedChallengesError) {
-        console.error('Error fetching completed challenges:', completedChallengesError);
-      }
-
       // Ensure we have valid data
       const validProgressData = progressData || [];
-      const validCompletedChallenges = completedChallengesData || [];
-      
-      // Count challenges per user
-      const challengeCounts = validCompletedChallenges.reduce((acc, challenge) => {
-        acc[challenge.user_id] = (acc[challenge.user_id] || 0) + 1;
-        return acc;
-      }, {});
       
       const stats = {
         totalActiveMembers: totalActiveMembers || 0,
         totalXP: validProgressData.reduce((sum, user) => sum + (user.xp || 0), 0),
-        totalCompletedChallenges: validCompletedChallenges.length,
+        totalCompletedChallenges: validProgressData.reduce((sum, user) => sum + (user.total_challenges_completed || 0), 0),
         totalActiveStreaks: validProgressData.filter(user => (user.streak || 0) > 0).length
       };
 
-      console.log('Community stats calculated manually:', stats);
+      console.log('Community stats calculated:', stats);
       setCommunityStats(stats);
     } catch (error) {
       console.error('Error fetching community stats:', error);
@@ -474,28 +439,41 @@ const LeaderboardPage = () => {
     loadData();
   }, [selectedFilter, user]);
 
-  // Load community stats on mount and listen for updates
+  // Load community stats on mount and set up smooth live refresh
   useEffect(() => {
     fetchCommunityStats();
     
-    // Listen for challenge completion events to update stats
+    // Set up smooth live refresh for community stats (every 30 seconds)
+    const communityStatsInterval = setInterval(() => {
+      const now = Date.now();
+      // Only refresh if it's been at least 30 seconds since last update
+      if (now - lastCommunityStatsUpdate > 30000) {
+        fetchCommunityStats();
+        setLastCommunityStatsUpdate(now);
+      }
+    }, 30000);
+    
+    // Listen for challenge completion events to update stats immediately
     const handleChallengeCompleted = () => {
       fetchCommunityStats();
+      setLastCommunityStatsUpdate(Date.now());
     };
     
     // Listen for user progress updates
     const handleUserProgressUpdate = () => {
       fetchCommunityStats();
+      setLastCommunityStatsUpdate(Date.now());
     };
     
     window.addEventListener('challengeCompleted', handleChallengeCompleted);
     window.addEventListener('userProgressUpdated', handleUserProgressUpdate);
     
     return () => {
+      clearInterval(communityStatsInterval);
       window.removeEventListener('challengeCompleted', handleChallengeCompleted);
       window.removeEventListener('userProgressUpdated', handleUserProgressUpdate);
     };
-  }, []);
+  }, [lastCommunityStatsUpdate]);
 
   // Call get_user_ranks when user logs in
   useEffect(() => {
@@ -779,19 +757,9 @@ const LeaderboardPage = () => {
         {/* Community Stats Section */}
         <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-blue-600" />
-                Growth Community Stats
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={fetchCommunityStats}
-                className="text-xs"
-              >
-                Refresh
-              </Button>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-blue-600" />
+              Growth Community Stats
             </CardTitle>
           </CardHeader>
           <CardContent>
