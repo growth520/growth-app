@@ -582,7 +582,12 @@ const ProfilePage = () => {
     const { error } = await supabase.from('profiles').update(updates).eq('id', user.id);
     if (!error) {
       setProfile({ ...profile, ...updates });
+      await refreshAllData(); // Refresh all data to update navigation
       setShowEditModal(false);
+      toast({
+        title: "Profile Updated",
+        description: "Your profile has been updated successfully.",
+      });
     } else {
       setEditError('Error updating profile: ' + error.message);
     }
@@ -653,6 +658,13 @@ const ProfilePage = () => {
     } else if (option === 'library') {
       if (fileInputRef.current) fileInputRef.current.removeAttribute('capture');
       fileInputRef.current.click();
+    } else if (option === 'delete') {
+      setEditAvatar('');
+      // Show toast confirmation
+      toast({
+        title: "Photo Removed",
+        description: "Your profile photo has been removed. Your initials will be displayed instead.",
+      });
     }
   };
 
@@ -1202,7 +1214,9 @@ const ProfilePage = () => {
         <div className="flex flex-col items-center mb-8">
           <Avatar className="w-24 h-24 mb-3">
             <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
-            <AvatarFallback>{profile.full_name?.charAt(0)}</AvatarFallback>
+            <AvatarFallback className="bg-gradient-to-r from-forest-green to-leaf-green text-white text-3xl font-semibold">
+              {profile.full_name?.charAt(0)?.toUpperCase() || 'U'}
+            </AvatarFallback>
           </Avatar>
           <div className="text-2xl font-bold text-forest-green">{profile.full_name}</div>
           {profile.username && <div className="text-charcoal-gray/70 text-sm">@{profile.username}</div>}
@@ -1630,6 +1644,15 @@ const ProfilePage = () => {
               <div className="flex flex-col gap-4 p-4">
                 <Button onClick={() => handlePhotoOption('library')}>Upload from Library</Button>
                 <Button onClick={() => handlePhotoOption('camera')}>Take a New Photo</Button>
+                {editAvatar && (
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => handlePhotoOption('delete')}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    Remove Current Photo
+                  </Button>
+                )}
                 <Button variant="outline" onClick={() => setShowPhotoOptions(false)}>Cancel</Button>
               </div>
             </DialogContent>
@@ -1680,7 +1703,9 @@ const ProfilePage = () => {
                 <div className="relative">
                   <Avatar className="w-20 h-20 cursor-pointer" onClick={handleAvatarEdit}>
                     <AvatarImage src={editAvatar} alt="Profile" />
-                    <AvatarFallback>{editName?.charAt(0)}</AvatarFallback>
+                    <AvatarFallback className="bg-gradient-to-r from-forest-green to-leaf-green text-white text-2xl font-semibold">
+                      {editName?.charAt(0)?.toUpperCase() || 'U'}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="absolute -bottom-1 -right-1 bg-forest-green text-white rounded-full p-1 cursor-pointer" onClick={handleAvatarEdit}>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
