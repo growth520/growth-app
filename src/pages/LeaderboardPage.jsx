@@ -101,8 +101,11 @@ const LeaderboardPage = () => {
             level: user.level,
             streak: user.streak,
             total_challenges_completed: user.challenge_count,
+            challenge_count: user.challenge_count, // Keep both for compatibility
             profiles: user.profiles
           }));
+          
+          console.log('Challenge leaderboard data:', progressData);
         } catch (challengeError) {
           console.warn('Challenge leaderboard function not available, falling back to regular query');
           // Fallback to regular query - fetch user_progress first, then profiles separately
@@ -654,6 +657,13 @@ const LeaderboardPage = () => {
     const userProfile = userData.profiles;
     const displayName = userProfile?.username || userProfile?.full_name || 'Anonymous';
     const stat = userData[currentFilter.sortField] || 0;
+    
+    // Debug logging for challenges filter
+    if (selectedFilter === 'challenges') {
+      console.log('User data for challenges:', userData);
+      console.log('Current filter sort field:', currentFilter.sortField);
+      console.log('Stat value:', stat);
+    }
 
     return (
       <motion.div
