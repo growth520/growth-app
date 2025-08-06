@@ -31,31 +31,61 @@ const PasswordManager = () => {
   const [errors, setErrors] = useState({});
   const [isValid, setIsValid] = useState(false);
 
+  // Function to refresh password status
+  const refreshPasswordStatus = async () => {
+    if (!user) return;
+    
+    try {
+      const { data: hasPasswordData, error: hasPasswordError } = await supabase.rpc('user_has_password', {
+        user_id: user.id
+      });
+      
+      if (!hasPasswordError) {
+        setHasPassword(hasPasswordData);
+      }
+    } catch (error) {
+      console.error('Error refreshing password status:', error);
+    }
+  };
+
   useEffect(() => {
     const checkUserAuthMethod = async () => {
       if (!user) return;
       
       try {
-        // Check if user is from OAuth by looking at app_metadata
-        const isOAuth = user.app_metadata?.provider && 
-                       (user.app_metadata.provider === 'google' || 
-                        user.app_metadata.provider === 'apple');
+        // Use the Supabase function to check if user has a password
+        const { data: hasPasswordData, error: hasPasswordError } = await supabase.rpc('user_has_password', {
+          user_id: user.id
+        });
         
-        setIsOAuthUser(isOAuth);
-        
-        // Check if user has a password by trying to get user info
-        // We'll assume OAuth users don't have passwords initially
-        if (isOAuth) {
-          setHasPassword(false); // OAuth users need to add a password
+        if (hasPasswordError) {
+          console.error('Error checking password status:', hasPasswordError);
+          // Fallback to checking app_metadata
+          const isOAuth = user.app_metadata?.provider && 
+                         (user.app_metadata.provider === 'google' || 
+                          user.app_metadata.provider === 'apple');
+          setIsOAuthUser(isOAuth);
+          setHasPassword(!isOAuth); // Assume OAuth users don't have passwords
         } else {
-          setHasPassword(true); // Email users can change their password
+          // hasPasswordData will be a boolean indicating if user has password
+          setHasPassword(hasPasswordData);
+          
+          // Check if user is OAuth by looking at app_metadata
+          const isOAuth = user.app_metadata?.provider && 
+                         (user.app_metadata.provider === 'google' || 
+                          user.app_metadata.provider === 'apple');
+          setIsOAuthUser(isOAuth);
         }
         
         setLoading(false);
       } catch (error) {
         console.error('Error checking user auth method:', error);
-        setIsOAuthUser(false);
-        setHasPassword(true); // Default to showing change password
+        // Fallback to app_metadata check
+        const isOAuth = user.app_metadata?.provider && 
+                       (user.app_metadata.provider === 'google' || 
+                        user.app_metadata.provider === 'apple');
+        setIsOAuthUser(isOAuth);
+        setHasPassword(!isOAuth); // Assume OAuth users don't have passwords
         setLoading(false);
       }
     };
@@ -134,12 +164,16 @@ const PasswordManager = () => {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      setHasPassword(true);
       
       toast({
         title: "Password Reset Email Sent",
         description: "Please check your email to complete setting your password.",
       });
+      
+      // Refresh password status after email is sent
+      setTimeout(() => {
+        refreshPasswordStatus();
+      }, 1000);
       
     } catch (error) {
       console.error('Error setting password:', error);
@@ -185,7 +219,6 @@ const PasswordManager = () => {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      setHasPassword(true);
       setEmailError(false);
       setShowDirectPassword(false);
       
@@ -193,6 +226,9 @@ const PasswordManager = () => {
         title: "Password Set Successfully",
         description: "Your password has been set. You can now log in with email and password.",
       });
+      
+      // Refresh password status immediately
+      refreshPasswordStatus();
       
     } catch (error) {
       console.error('Error setting password directly:', error);
@@ -237,6 +273,11 @@ const PasswordManager = () => {
         title: "Password Reset Email Sent",
         description: "Please check your email to complete changing your password.",
       });
+      
+      // Refresh password status after email is sent
+      setTimeout(() => {
+        refreshPasswordStatus();
+      }, 1000);
       
     } catch (error) {
       console.error('Error changing password:', error);
