@@ -41,8 +41,8 @@ const PasswordManager = () => {
         
         setIsOAuthUser(isOAuth);
         
-        // For OAuth users, we'll show the "Add Password" option
-        // For email users, we'll assume they have a password (they can still change it)
+        // Check if user has a password by trying to get user info
+        // We'll assume OAuth users don't have passwords initially
         if (isOAuth) {
           setHasPassword(false); // OAuth users need to add a password
         } else {
@@ -112,38 +112,14 @@ const PasswordManager = () => {
     setUpdating(true);
     
     try {
-      // For OAuth users setting a password for the first time
-      // We need to use a different approach to trigger email confirmation
-      
-      // Method 1: Try updateUser first
-      let { data, error } = await supabase.auth.updateUser({
-        password: newPassword
+      // For OAuth users, we'll use resetPasswordForEmail to set a password
+      // This is the recommended approach for OAuth users adding a password
+      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+        redirectTo: getAuthCallbackUrl()
       });
 
       if (error) {
-        // If updateUser fails, try using resetPasswordForEmail
-        console.log('updateUser failed, trying resetPasswordForEmail:', error.message);
-        
-        const { error: resetError } = await supabase.auth.resetPasswordForEmail(user.email, {
-          redirectTo: getAuthCallbackUrl()
-        });
-        
-        if (resetError) {
-          throw resetError;
-        }
-        
-        // Clear form
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
-        setHasPassword(true);
-        
-        toast({
-          title: "Password Reset Email Sent",
-          description: "Please check your email to complete setting your password.",
-        });
-        
-        return;
+        throw error;
       }
 
       // Clear form
@@ -153,8 +129,8 @@ const PasswordManager = () => {
       setHasPassword(true);
       
       toast({
-        title: "Password Set Successfully",
-        description: "You can now log in with your email and password.",
+        title: "Password Reset Email Sent",
+        description: "Please check your email to complete setting your password.",
       });
       
     } catch (error) {
@@ -163,7 +139,9 @@ const PasswordManager = () => {
       let errorMessage = 'Failed to set password. Please try again.';
       
       if (error.message) {
-        if (error.message.includes('password')) {
+        if (error.message.includes('recovery email')) {
+          errorMessage = 'Email service is not configured. Please contact support.';
+        } else if (error.message.includes('password')) {
           errorMessage = 'Password does not meet requirements.';
         } else if (error.message.includes('email')) {
           errorMessage = 'You may need to confirm your email first.';
@@ -186,16 +164,6 @@ const PasswordManager = () => {
     setUpdating(true);
     
     try {
-      // First verify current password by signing in
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user.email,
-        password: currentPassword
-      });
-
-      if (signInError) {
-        throw new Error('Current password is incorrect');
-      }
-
       // For password changes, use resetPasswordForEmail to ensure email confirmation
       const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
         redirectTo: getAuthCallbackUrl()
@@ -221,8 +189,8 @@ const PasswordManager = () => {
       let errorMessage = 'Failed to change password. Please try again.';
       
       if (error.message) {
-        if (error.message.includes('Current password is incorrect')) {
-          errorMessage = 'Current password is incorrect.';
+        if (error.message.includes('recovery email')) {
+          errorMessage = 'Email service is not configured. Please contact support.';
         } else if (error.message.includes('password')) {
           errorMessage = 'Password does not meet requirements.';
         }

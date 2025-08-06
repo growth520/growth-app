@@ -128,6 +128,35 @@ const TestEmailPage = () => {
             <p><strong>Has Anon Key:</strong> {import.meta.env.VITE_SUPABASE_ANON_KEY ? 'Yes' : 'No'}</p>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Email Configuration Issues</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="text-sm text-red-600 bg-red-50 p-4 rounded-lg">
+              <p><strong>If you're getting "Error sending recovery email":</strong></p>
+              <ul className="list-disc pl-4 mt-2 space-y-1">
+                <li>Go to your Supabase Dashboard</li>
+                <li>Navigate to Authentication → Email Templates</li>
+                <li>Make sure email provider is configured (SendGrid, etc.)</li>
+                <li>Check if Site URL is set correctly</li>
+                <li>Verify email templates are not empty</li>
+              </ul>
+            </div>
+            
+            <div className="text-sm text-blue-600 bg-blue-50 p-4 rounded-lg">
+              <p><strong>Quick Fix Steps:</strong></p>
+              <ol className="list-decimal pl-4 mt-2 space-y-1">
+                <li>Go to Supabase Dashboard → Authentication → Settings</li>
+                <li>Set Site URL to: <code>{getAuthCallbackUrl()}</code></li>
+                <li>Go to Email Templates and verify they're configured</li>
+                <li>Check if you have an email provider set up</li>
+                <li>Test the email functionality in Supabase dashboard</li>
+              </ol>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
