@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Heart, MessageCircle, CornerUpRight, BellOff, Bell, Users, X, ExternalLink } from 'lucide-react';
@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useData } from '@/contexts/DataContext';
 
 const NotificationsPage = () => {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPost, setSelectedPost] = useState(null);
@@ -22,6 +23,11 @@ const NotificationsPage = () => {
   const [commentCount, setCommentCount] = useState(0);
   const { user } = useAuth();
   const { updateLastViewedNotifications } = useData();
+
+  // Handle profile click
+  const handleProfileClick = (userId) => {
+    navigate(`/profile/${userId}`);
+  };
 
   const formatTimeAgo = (timestamp) => {
     if (!timestamp) return '';
@@ -102,28 +108,48 @@ const NotificationsPage = () => {
       case 'like':
         return (
           <>
-            <span className="font-bold text-forest-green">{notif.actor_name}</span>
+            <button
+              onClick={() => handleProfileClick(notif.actor_id)}
+              className="font-bold text-forest-green hover:text-forest-green/80 transition-colors cursor-pointer"
+            >
+              {notif.actor_name}
+            </button>
             <span> liked your post.</span>
           </>
         );
       case 'comment':
         return (
           <>
-            <span className="font-bold text-forest-green">{notif.actor_name}</span>
+            <button
+              onClick={() => handleProfileClick(notif.actor_id)}
+              className="font-bold text-forest-green hover:text-forest-green/80 transition-colors cursor-pointer"
+            >
+              {notif.actor_name}
+            </button>
             <span> commented on your post:</span>
           </>
         );
       case 'reply':
         return (
           <>
-            <span className="font-bold text-forest-green">{notif.actor_name}</span>
+            <button
+              onClick={() => handleProfileClick(notif.actor_id)}
+              className="font-bold text-forest-green hover:text-forest-green/80 transition-colors cursor-pointer"
+            >
+              {notif.actor_name}
+            </button>
             <span> replied to your comment:</span>
           </>
         );
       case 'follow':
         return (
           <>
-            <span className="font-bold text-forest-green">{notif.actor_name}</span>
+            <button
+              onClick={() => handleProfileClick(notif.actor_id)}
+              className="font-bold text-forest-green hover:text-forest-green/80 transition-colors cursor-pointer"
+            >
+              {notif.actor_name}
+            </button>
             <span> started following you.</span>
           </>
         );
@@ -396,7 +422,10 @@ const NotificationsPage = () => {
                   <Card className="glass-effect hover:shadow-lg transition-shadow">
                     <CardContent className="p-4 flex items-center gap-4">
                       <div className="relative">
-                        <Avatar className="w-12 h-12 border-2 border-white">
+                        <Avatar 
+                          className="w-12 h-12 border-2 border-white cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => handleProfileClick(notif.actor_id)}
+                        >
                           <AvatarImage src={notif.actor_avatar} />
                           <AvatarFallback className="bg-gradient-to-br from-warm-orange to-red-400 text-white">
                             {notif.actor_name?.charAt(0)}
