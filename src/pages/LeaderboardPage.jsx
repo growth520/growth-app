@@ -373,9 +373,9 @@ const LeaderboardPage = () => {
   // Fetch community stats with exact SQL as requested
   const fetchCommunityStats = async () => {
     try {
-      // Get community statistics
+      // Get community statistics with better error handling
       const [
-        { count: totalActiveMembers },
+        { count: totalActiveMembers, error: profilesError },
         { data: progressData, error: progressError }
       ] = await Promise.all([
         // Total active members from profiles
@@ -389,15 +389,25 @@ const LeaderboardPage = () => {
           .select('xp, total_challenges_completed, streak')
       ]);
 
-      if (progressError) throw progressError;
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+      }
+      
+      if (progressError) {
+        console.error('Error fetching progress data:', progressError);
+      }
 
+      // Ensure we have valid data
+      const validProgressData = progressData || [];
+      
       const stats = {
         totalActiveMembers: totalActiveMembers || 0,
-        totalXP: progressData.reduce((sum, user) => sum + (user.xp || 0), 0),
-        totalCompletedChallenges: progressData.reduce((sum, user) => sum + (user.total_challenges_completed || 0), 0),
-        totalActiveStreaks: progressData.filter(user => (user.streak || 0) > 0).length
+        totalXP: validProgressData.reduce((sum, user) => sum + (user.xp || 0), 0),
+        totalCompletedChallenges: validProgressData.reduce((sum, user) => sum + (user.total_challenges_completed || 0), 0),
+        totalActiveStreaks: validProgressData.filter(user => (user.streak || 0) > 0).length
       };
 
+      console.log('Community stats calculated:', stats);
       setCommunityStats(stats);
     } catch (error) {
       console.error('Error fetching community stats:', error);
@@ -428,9 +438,27 @@ const LeaderboardPage = () => {
     loadData();
   }, [selectedFilter, user]);
 
-  // Load community stats on mount
+  // Load community stats on mount and listen for updates
   useEffect(() => {
     fetchCommunityStats();
+    
+    // Listen for challenge completion events to update stats
+    const handleChallengeCompleted = () => {
+      fetchCommunityStats();
+    };
+    
+    // Listen for user progress updates
+    const handleUserProgressUpdate = () => {
+      fetchCommunityStats();
+    };
+    
+    window.addEventListener('challengeCompleted', handleChallengeCompleted);
+    window.addEventListener('userProgressUpdated', handleUserProgressUpdate);
+    
+    return () => {
+      window.removeEventListener('challengeCompleted', handleChallengeCompleted);
+      window.removeEventListener('userProgressUpdated', handleUserProgressUpdate);
+    };
   }, []);
 
   // Call get_user_ranks when user logs in
@@ -589,9 +617,22 @@ const LeaderboardPage = () => {
     }
   };
 
-  // Format numbers as requested (1,200 instead of 1200)
+  // Format numbers with short form for large numbers (1.2K, 1.5M, etc.)
   const formatNumber = (num) => {
-    return num?.toLocaleString() || '0';
+    if (!num || num === 0) return '0';
+    
+    // Round to nearest whole number first
+    const roundedNum = Math.round(num);
+    
+    if (roundedNum < 1000) {
+      return roundedNum.toLocaleString();
+    } else if (roundedNum < 1000000) {
+      return (roundedNum / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+    } else if (roundedNum < 1000000000) {
+      return (roundedNum / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+    } else {
+      return (roundedNum / 1000000000).toFixed(1).replace(/\.0$/, '') + 'B';
+    }
   };
 
   // Render user row - Instagram-like styling
@@ -702,36 +743,46 @@ const LeaderboardPage = () => {
         {/* Community Stats Section */}
         <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-blue-600" />
-              Growth Community Stats
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-blue-600" />
+                Growth Community Stats
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchCommunityStats}
+                className="text-xs"
+              >
+                Refresh
+              </Button>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600">
+                <div className="text-2xl md:text-3xl font-bold text-blue-600 truncate">
                   {formatNumber(communityStats.totalActiveMembers)}
                 </div>
                 <div className="text-sm font-medium">Active Members</div>
                 <div className="text-xs text-gray-600">Total profiles</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-green-600">
+                <div className="text-2xl md:text-3xl font-bold text-green-600 truncate">
                   {formatNumber(communityStats.totalXP)}
                 </div>
                 <div className="text-sm font-medium">Total XP</div>
                 <div className="text-xs text-gray-600">Community earned</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-purple-600">
+                <div className="text-2xl md:text-3xl font-bold text-purple-600 truncate">
                   {formatNumber(communityStats.totalCompletedChallenges)}
                 </div>
                 <div className="text-sm font-medium">Challenges</div>
                 <div className="text-xs text-gray-600">Completed</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-orange-600">
+                <div className="text-2xl md:text-3xl font-bold text-orange-600 truncate">
                   {formatNumber(communityStats.totalActiveStreaks)}
                 </div>
                 <div className="text-sm font-medium">Active Streaks</div>
