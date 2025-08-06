@@ -212,11 +212,16 @@ const BadgesPage = () => {
                 {/* Badge Icon */}
                 <div className="w-20 h-20 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-full flex items-center justify-center border-4 border-yellow-200 mx-auto mb-3">
                   {badge.icon_url ? (
-                    <img 
-                      src={badge.icon_url} 
-                      alt={badge.name}
-                      className="w-10 h-10"
-                    />
+                    // Check if icon_url is an emoji (simple check for common emoji characters)
+                    /[✅✋🔟2️⃣5️⃣5️⃣0️⃣7️⃣5️⃣💯🔥🚀🏅🥈🥉4️⃣🏅6️⃣7️⃣8️⃣9️⃣🔟🔰🌐💫🎯🏆🌟🌞🔥💭🤝🫂❤️💖💗💞💝📣🌍💬🗣️🗨️📝🏷️📦📚🎒🏰🏛️🏯🤖🧩⚡🔮🧠✨🌅🌙📆🗓️🦋]/.test(badge.icon_url) ? (
+                      <span className="text-3xl">{badge.icon_url}</span>
+                    ) : (
+                      <img 
+                        src={badge.icon_url} 
+                        alt={badge.name}
+                        className="w-10 h-10"
+                      />
+                    )
                   ) : (
                     <Trophy className="w-10 h-10 text-yellow-600" />
                   )}

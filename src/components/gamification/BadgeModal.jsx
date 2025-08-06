@@ -35,11 +35,16 @@ const BadgeModal = ({ isOpen, onClose, badge, isUnlocked, earnedAt, progress }) 
                 <div className={`relative ${!isUnlocked ? 'grayscale opacity-50' : ''}`}>
                   <div className="w-24 h-24 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-full flex items-center justify-center border-4 border-yellow-200">
                     {badge.icon_url ? (
-                      <img 
-                        src={badge.icon_url} 
-                        alt={badge.name}
-                        className="w-12 h-12"
-                      />
+                      // Check if icon_url is an emoji (simple check for common emoji characters)
+                      /[✅✋🔟2️⃣5️⃣5️⃣0️⃣7️⃣5️⃣💯🔥🚀🏅🥈🥉4️⃣🏅6️⃣7️⃣8️⃣9️⃣🔟🔰🌐💫🎯🏆🌟🌞🔥💭🤝🫂❤️💖💗💞💝📣🌍💬🗣️🗨️📝🏷️📦📚🎒🏰🏛️🏯🤖🧩⚡🔮🧠✨🌅🌙📆🗓️🦋]/.test(badge.icon_url) ? (
+                        <span className="text-4xl">{badge.icon_url}</span>
+                      ) : (
+                        <img 
+                          src={badge.icon_url} 
+                          alt={badge.name}
+                          className="w-12 h-12"
+                        />
+                      )
                     ) : (
                       <Trophy className="w-12 h-12 text-yellow-600" />
                     )}
