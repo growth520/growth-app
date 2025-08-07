@@ -103,6 +103,8 @@ const ProfilePage = () => {
   const [editGender, setEditGender] = useState('');
   const [editAvatar, setEditAvatar] = useState('');
   const [editError, setEditError] = useState('');
+  const [showBlockConfirmDialog, setShowBlockConfirmDialog] = useState(false);
+  const [userToBlock, setUserToBlock] = useState(null);
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [filteredCountries, setFilteredCountries] = useState([]);
   const [showAvatarOptions, setShowAvatarOptions] = useState(false);
