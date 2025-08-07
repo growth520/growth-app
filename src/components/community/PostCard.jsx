@@ -130,8 +130,10 @@ const PostCard = ({
     setIsLoading(true);
     try {
       await onLike();
+      // The parent component should handle the state updates
+      // We just need to update our local state to reflect the change
       setIsLikedState(!isLikedState);
-      setLikesCount(prev => isLikedState ? prev - 1 : prev + 1);
+      setLikesCount(prev => isLikedState ? Math.max(0, prev - 1) : prev + 1);
     } catch (error) {
       console.error('Error toggling like:', error);
       toast({

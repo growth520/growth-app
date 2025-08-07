@@ -135,12 +135,10 @@ const ProfilePage = () => {
     try {
       console.log('Fetching user interactions for user:', user.id);
       
+      // Use the function to get liked posts
       const [likesResult, commentsResult] = await Promise.all([
         supabase
-          .from('likes')
-          .select('post_id')
-          .eq('user_id', user.id)
-          .limit(100),
+          .rpc('get_user_liked_posts', { p_user_id: user.id }),
         supabase
           .from('comments')
           .select('post_id')
@@ -148,7 +146,7 @@ const ProfilePage = () => {
           .limit(100)
       ]);
       
-      const likedPosts = likesResult.data?.map(l => l.post_id) || [];
+      const likedPosts = likesResult.data || [];
       const commentedPosts = commentsResult.data?.map(c => c.post_id) || [];
       
       setUserInteractions({
@@ -159,7 +157,21 @@ const ProfilePage = () => {
       console.log('User interactions loaded:', { likedPosts, commentedPosts });
     } catch (error) {
       console.error('Error fetching user interactions:', error);
-      setUserInteractions({ likes: [], comments: [] });
+      // Fallback to direct query if function fails
+      try {
+        const { data: likesData } = await supabase
+          .from('likes')
+          .select('post_id')
+          .eq('user_id', user.id);
+        
+        setUserInteractions({
+          likes: likesData?.map(l => l.post_id) || [],
+          comments: commentedPosts || []
+        });
+      } catch (fallbackError) {
+        console.error('Fallback query also failed:', fallbackError);
+        setUserInteractions({ likes: [], comments: [] });
+      }
     }
   }, [user]);
 
@@ -544,40 +556,45 @@ const ProfilePage = () => {
 
     try {
       // Check if user already liked this post
-      const { data: existingLike } = await supabase
+      const { data: existingLike, error: checkError } = await supabase
         .from('likes')
         .select('post_id')
         .eq('user_id', user.id)
         .eq('post_id', postId)
-        .single();
+        .maybeSingle();
+
+      if (checkError) {
+        console.error('Error checking existing like:', checkError);
+        throw checkError;
+      }
 
       if (existingLike) {
         // User already liked, so unlike
-        await supabase
+        const { error: deleteError } = await supabase
           .from('likes')
           .delete()
           .eq('user_id', user.id)
           .eq('post_id', postId);
         
-        // Update likes count in posts table
-        const { data: currentPost } = await supabase
-          .from('posts')
-          .select('likes_count')
-          .eq('id', postId)
-          .single();
-        
-        if (currentPost) {
-          await supabase
-            .from('posts')
-            .update({ likes_count: Math.max(0, (currentPost.likes_count || 0) - 1) })
-            .eq('id', postId);
+        if (deleteError) {
+          console.error('Error deleting like:', deleteError);
+          throw deleteError;
         }
         
-        // Update local state
+        // Update local state immediately for better UX
         setUserInteractions(prev => ({
           ...prev,
           likes: prev.likes.filter(id => id !== postId)
         }));
+        
+        // Update posts state to reflect the change
+        setPosts(prevPosts => 
+          prevPosts.map(post => 
+            post.id === postId 
+              ? { ...post, likes_count: Math.max(0, (post.likes_count || 0) - 1) }
+              : post
+          )
+        );
         
         toast({
           title: "Unliked!",
@@ -585,29 +602,29 @@ const ProfilePage = () => {
         });
       } else {
         // User hasn't liked, so like
-        await supabase
+        const { error: insertError } = await supabase
           .from('likes')
           .insert({ user_id: user.id, post_id: postId });
         
-        // Update likes count in posts table
-        const { data: currentPost } = await supabase
-          .from('posts')
-          .select('likes_count')
-          .eq('id', postId)
-          .single();
-        
-        if (currentPost) {
-          await supabase
-            .from('posts')
-            .update({ likes_count: (currentPost.likes_count || 0) + 1 })
-            .eq('id', postId);
+        if (insertError) {
+          console.error('Error inserting like:', insertError);
+          throw insertError;
         }
         
-        // Update local state
+        // Update local state immediately for better UX
         setUserInteractions(prev => ({
           ...prev,
           likes: [...prev.likes, postId]
         }));
+        
+        // Update posts state to reflect the change
+        setPosts(prevPosts => 
+          prevPosts.map(post => 
+            post.id === postId 
+              ? { ...post, likes_count: (post.likes_count || 0) + 1 }
+              : post
+          )
+        );
         
         toast({
           title: "Liked!",
@@ -615,7 +632,7 @@ const ProfilePage = () => {
         });
       }
       
-      // Refresh user interactions and posts
+      // Refresh user interactions to ensure consistency
       await fetchUserInteractions();
       
     } catch (error) {

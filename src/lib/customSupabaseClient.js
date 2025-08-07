@@ -58,11 +58,16 @@ const createSupabaseClient = () => {
           eventsPerSecond: 0
         }
       },
-      // Disable realtime globally
+      // Disable realtime globally and add proper headers
       global: {
         headers: {
-          'x-client-info': 'growth-app@1.0.0'
+          'x-client-info': 'growth-app@1.0.0',
+          'apikey': supabaseAnonKey
         }
+      },
+      // Disable realtime subscriptions
+      db: {
+        schema: 'public'
       }
     });
   }
