@@ -357,6 +357,20 @@ const ChallengeCompletionPage = () => {
       console.log('User ID:', user.id);
       console.log('Challenge ID:', challenge.id);
       console.log('Challenge object:', challenge);
+      console.log('Supabase client config:', {
+        url: supabase.supabaseUrl,
+        hasAuth: !!supabase.auth,
+        hasFrom: !!supabase.from
+      });
+      
+      // Test the table access first
+      console.log('Testing table access...');
+      const { data: testData, error: testError } = await supabase
+        .from('completed_challenges')
+        .select('id')
+        .limit(1);
+      
+      console.log('Test query result:', { testData, testError });
       
       const { error: completionError } = await supabase
         .from('completed_challenges')
