@@ -3,8 +3,11 @@
 -- =====================================================
 -- This migration creates a post_views table for detailed view tracking
 
--- 1. Create post_views table for detailed analytics
-CREATE TABLE IF NOT EXISTS public.post_views (
+-- 1. Drop the table if it exists to ensure clean creation
+DROP TABLE IF EXISTS public.post_views CASCADE;
+
+-- 2. Create post_views table for detailed analytics
+CREATE TABLE public.post_views (
     id UUID DEFAULT extensions.uuid_generate_v4() PRIMARY KEY,
     post_id UUID REFERENCES public.posts(id) ON DELETE CASCADE NOT NULL,
     viewer_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
@@ -14,10 +17,14 @@ CREATE TABLE IF NOT EXISTS public.post_views (
     UNIQUE(post_id, viewer_id, session_id)
 );
 
--- 2. Enable RLS
+-- 3. Enable RLS
 ALTER TABLE public.post_views ENABLE ROW LEVEL SECURITY;
 
--- 3. Create RLS policies
+-- 4. Drop existing policies if they exist
+DROP POLICY IF EXISTS "Enable read access for all users" ON public.post_views;
+DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON public.post_views;
+
+-- 5. Create RLS policies
 CREATE POLICY "Enable read access for all users" 
 ON public.post_views FOR SELECT 
 USING (true);
@@ -26,13 +33,13 @@ CREATE POLICY "Enable insert for authenticated users only"
 ON public.post_views FOR INSERT 
 WITH CHECK (auth.uid() = viewer_id);
 
--- 4. Create indexes for performance
+-- 6. Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_post_views_post_id ON public.post_views(post_id);
 CREATE INDEX IF NOT EXISTS idx_post_views_viewer_id ON public.post_views(viewer_id);
 CREATE INDEX IF NOT EXISTS idx_post_views_viewed_at ON public.post_views(viewed_at);
 CREATE INDEX IF NOT EXISTS idx_post_views_post_viewer ON public.post_views(post_id, viewer_id);
 
--- 5. Update the RPC function to also insert into post_views table
+-- 7. Update the RPC function to also insert into post_views table
 CREATE OR REPLACE FUNCTION increment_post_view(post_id uuid, viewer_id uuid, view_type text DEFAULT 'scroll')
 RETURNS void AS $$
 BEGIN
@@ -51,11 +58,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 6. Grant permissions
+-- 8. Grant permissions
 GRANT SELECT, INSERT ON public.post_views TO authenticated;
 GRANT SELECT ON public.post_views TO anon;
 
--- 7. Verify the setup
+-- 9. Verify the setup
 SELECT 
     'Post views table created successfully' as status,
     COUNT(*) as total_views
