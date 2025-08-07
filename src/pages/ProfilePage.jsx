@@ -102,6 +102,7 @@ const ProfilePage = () => {
   const [editBio, setEditBio] = useState('');
   const [editGender, setEditGender] = useState('');
   const [editAvatar, setEditAvatar] = useState('');
+  const [editError, setEditError] = useState('');
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [filteredCountries, setFilteredCountries] = useState([]);
   const [showAvatarOptions, setShowAvatarOptions] = useState(false);
