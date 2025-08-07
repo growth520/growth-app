@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,7 +17,19 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+  
+  // Get returnTo from location state
+  const returnTo = location.state?.returnTo || '/challenge';
+  const isSignUp = location.state?.signUp || false;
+  
+  // Set initial state based on signUp flag
+  React.useEffect(() => {
+    if (isSignUp) {
+      setIsLogin(false);
+    }
+  }, [isSignUp]);
 
   const handleGoogleLogin = async () => {
     setLoading(true);
@@ -25,7 +37,7 @@ const LoginPage = () => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${getBaseUrl()}/auth/callback`,
+          redirectTo: `${getBaseUrl()}/auth/callback?returnTo=${encodeURIComponent(returnTo)}`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent'
@@ -101,7 +113,7 @@ const LoginPage = () => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'apple',
         options: {
-          redirectTo: `${getBaseUrl()}/auth/callback`,
+          redirectTo: `${getBaseUrl()}/auth/callback?returnTo=${encodeURIComponent(returnTo)}`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent'
@@ -141,7 +153,7 @@ const LoginPage = () => {
         });
         if (!error) {
           toast({ title: "Welcome back! 🎉" });
-          navigate('/challenge');
+          navigate(returnTo);
         } else {
           toast({
             title: "Sign in Failed",

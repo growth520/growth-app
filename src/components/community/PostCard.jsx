@@ -27,7 +27,8 @@ const PostCard = ({
   onProfileClick,
   onViewComments,
   isLiked = false,
-  isCommented = false
+  isCommented = false,
+  showInteractions = true
 }) => {
   const { toast } = useToast();
   const [likesCount, setLikesCount] = useState(0);
@@ -324,57 +325,60 @@ const PostCard = ({
       </div>
 
       {/* Interaction Bar */}
-      <div className="px-4 pb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-6">
-            {/* Like Button */}
-            <button
-              onClick={handleLike}
-              disabled={isLoading}
-              className={`flex items-center space-x-2 text-sm transition-colors ${
-                isLikedState 
-                  ? 'text-red-500 hover:text-red-600' 
-                  : 'text-gray-500 hover:text-red-500'
-              }`}
-            >
-              <Heart 
-                className={`h-5 w-5 ${isLikedState ? 'fill-current' : ''}`} 
-              />
-              <span>{likesCount}</span>
-            </button>
+      {showInteractions && (
+        <div className="px-4 pb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-6">
+              {/* Like Button */}
+              <button
+                onClick={handleLike}
+                disabled={isLoading}
+                className={`flex items-center space-x-2 text-sm transition-colors ${
+                  isLikedState 
+                    ? 'text-red-500 hover:text-red-600' 
+                    : 'text-gray-500 hover:text-red-500'
+                }`}
+              >
+                <Heart 
+                  className={`h-5 w-5 ${isLikedState ? 'fill-current' : ''}`} 
+                />
+                <span>{likesCount}</span>
+              </button>
+              
+              {/* Comment Button */}
+              <button
+                onClick={handleComment}
+                className={`flex items-center space-x-2 text-sm transition-colors ${
+                  isCommented 
+                    ? 'text-blue-500 hover:text-blue-600' 
+                    : 'text-gray-500 hover:text-blue-500'
+                }`}
+              >
+                <MessageSquare className={`h-5 w-5 ${isCommented ? 'fill-current' : ''}`} />
+                <span>{commentsCount}</span>
+              </button>
+              
+              {/* Share Button */}
+              <button
+                onClick={handleShare}
+                className="flex items-center space-x-2 text-sm text-gray-500 hover:text-green-500 transition-colors"
+              >
+                <Share2 className="h-5 w-5" />
+                <span>{sharesCount}</span>
+              </button>
+            </div>
             
-            {/* Comment Button */}
-            <button
-              onClick={handleComment}
-              className={`flex items-center space-x-2 text-sm transition-colors ${
-                isCommented 
-                  ? 'text-blue-500 hover:text-blue-600' 
-                  : 'text-gray-500 hover:text-blue-500'
-              }`}
-            >
-              <MessageSquare className={`h-5 w-5 ${isCommented ? 'fill-current' : ''}`} />
-              <span>{commentsCount}</span>
-            </button>
-            
-            {/* Share Button */}
-            <button
-              onClick={handleShare}
-              className="flex items-center space-x-2 text-sm text-gray-500 hover:text-green-500 transition-colors"
-            >
-              <Share2 className="h-5 w-5" />
-              <span>{sharesCount}</span>
-            </button>
-          </div>
-          
-          {/* Views Count */}
-          <div className="flex items-center space-x-1 text-xs text-gray-400">
-            <Eye className="h-4 w-4" />
-            <span>{viewsCount}</span>
+            {/* Views Count */}
+            <div className="flex items-center space-x-1 text-xs text-gray-400">
+              <Eye className="h-4 w-4" />
+              <span>{viewsCount}</span>
+            </div>
           </div>
         </div>
+      )}
         
         {/* Comments Preview */}
-        {recentComments.length > 0 && (
+        {showInteractions && recentComments.length > 0 && (
           <div className="mt-3 pt-3 border-t border-gray-100">
             <div className="flex items-start space-x-2">
               <Avatar className="h-6 w-6">
@@ -425,7 +429,7 @@ const PostCard = ({
         )}
         
         {/* View Comments Link */}
-        {commentsCount > 0 && recentComments.length === 0 && (
+        {showInteractions && commentsCount > 0 && recentComments.length === 0 && (
           <div className="mt-3 pt-3 border-t border-gray-100">
             <button
               onClick={onViewComments}

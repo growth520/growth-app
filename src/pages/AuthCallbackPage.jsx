@@ -1,9 +1,13 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 
 export default function AuthCallback() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  // Get returnTo from URL parameters
+  const returnTo = searchParams.get('returnTo') || '/challenge';
 
   useEffect(() => {
     const handleAuthCallback = async () => {
@@ -59,8 +63,8 @@ export default function AuthCallback() {
         // Persist session to localStorage for better mobile compatibility
         localStorage.setItem('supabase.auth.token', JSON.stringify(session));
         
-        // ✅ Redirect to challenge page (main app page)
-        navigate('/challenge', { replace: true });
+        // ✅ Redirect to the returnTo page or challenge page as fallback
+        navigate(returnTo, { replace: true });
       } catch (err) {
         console.error('Auth callback failed:', err.message);
         navigate('/login?error=auth_failed', { replace: true });
