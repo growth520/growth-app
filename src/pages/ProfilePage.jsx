@@ -100,6 +100,8 @@ const ProfilePage = () => {
   const [editLocation, setEditLocation] = useState('');
   const [editUsername, setEditUsername] = useState('');
   const [editBio, setEditBio] = useState('');
+  const [editGender, setEditGender] = useState('');
+  const [editAvatar, setEditAvatar] = useState('');
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [filteredCountries, setFilteredCountries] = useState([]);
   const [showAvatarOptions, setShowAvatarOptions] = useState(false);
@@ -403,6 +405,8 @@ const ProfilePage = () => {
       setEditLocation(profile.location || '');
       setEditUsername(profile.username || '');
       setEditBio(profile.bio || '');
+      setEditGender(profile.gender || '');
+      setEditAvatar(profile.avatar_url || '');
       setShowLocationDropdown(true);
       setFilteredCountries(countries.filter(c => c.label.toLowerCase().startsWith(profile.location.toLowerCase())));
     }
