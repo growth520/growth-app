@@ -118,13 +118,13 @@ export const useViewTracking = () => {
           });
 
           if (isIntersecting && intersectionRatio >= 0.5) {
-            console.log('⏱️ Starting 2-second timer for post:', postId);
-            // Post is 50% visible, start 2-second timer
+            console.log('⏱️ Starting 500ms timer for post:', postId);
+            // Post is 50% visible, start 1-second timer
             const timeout = setTimeout(() => {
               console.log('⏰ Timer completed, calling onView for post:', postId);
               onView(postId, postUserId);
               timeoutRefs.current.delete(timeoutKey);
-            }, 2000);
+            }, 500); // Reduced to 500ms for better testing
 
             timeoutRefs.current.set(timeoutKey, timeout);
           } else {

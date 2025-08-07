@@ -10,11 +10,31 @@ async function testViewTracking() {
   console.log('🧪 Testing view tracking RPC function...');
   
   try {
+    // First, let's check if the function exists by looking at the posts table
+    const { data: posts, error: postsError } = await supabase
+      .from('posts')
+      .select('id, views_count')
+      .limit(1);
+    
+    if (postsError) {
+      console.error('❌ Error fetching posts:', postsError);
+      return;
+    }
+    
+    if (!posts || posts.length === 0) {
+      console.log('❌ No posts found in database');
+      return;
+    }
+    
+    const testPostId = posts[0].id;
+    console.log('📝 Testing with post ID:', testPostId);
+    console.log('📊 Current views count:', posts[0].views_count);
+    
     // Test if the function exists
     const { data, error } = await supabase
       .rpc('increment_post_view', {
-        post_id: 'test-post-id',
-        viewer_id: 'test-viewer-id'
+        post_id: testPostId,
+        viewer_id: '00000000-0000-0000-0000-000000000000' // Test viewer ID
       });
     
     if (error) {
@@ -22,6 +42,24 @@ async function testViewTracking() {
       console.log('💡 This might mean the database migration needs to be applied');
     } else {
       console.log('✅ RPC function exists and executed successfully');
+      
+      // Check if the view count was updated
+      const { data: updatedPost, error: checkError } = await supabase
+        .from('posts')
+        .select('views_count')
+        .eq('id', testPostId)
+        .single();
+      
+      if (checkError) {
+        console.error('❌ Error checking updated post:', checkError);
+      } else {
+        console.log('📊 Updated views count:', updatedPost.views_count);
+        if (updatedPost.views_count > posts[0].views_count) {
+          console.log('✅ View count was successfully incremented!');
+        } else {
+          console.log('⚠️ View count was not incremented (might be due to same user check)');
+        }
+      }
     }
   } catch (error) {
     console.error('❌ Exception testing RPC function:', error);

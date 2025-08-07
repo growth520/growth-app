@@ -897,6 +897,7 @@ const CommunityPage = () => {
     setShowPostModal(true);
     
     // Track view immediately when modal opens
+    console.log('🎯 Modal opened, tracking view immediately for post:', post.id);
     trackViewImmediate(post.id, post.user_id);
   };
 
