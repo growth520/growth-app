@@ -98,26 +98,18 @@ const ProfilePage = () => {
   const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [editLocation, setEditLocation] = useState('');
-  const [editAvatar, setEditAvatar] = useState('');
-  const [editBio, setEditBio] = useState('');
   const [editUsername, setEditUsername] = useState('');
-  const [editError, setEditError] = useState('');
-  const fileInputRef = React.useRef(null);
-  const [showCropModal, setShowCropModal] = useState(false);
+  const [editBio, setEditBio] = useState('');
+  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+  const [filteredCountries, setFilteredCountries] = useState([]);
+  const [showAvatarOptions, setShowAvatarOptions] = useState(false);
+  const [showImageCropper, setShowImageCropper] = useState(false);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
-  const [tempImage, setTempImage] = useState('');
-  const [editGender, setEditGender] = useState(profile?.gender || '');
-  const [showPhotoOptions, setShowPhotoOptions] = useState(false);
-  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
-  const [showBlockConfirmDialog, setShowBlockConfirmDialog] = useState(false);
-  const [userToBlock, setUserToBlock] = useState(null);
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState(null);
   const [postsHasMore, setPostsHasMore] = useState(true);
-  const ITEMS_PER_PAGE = 20;
+  const [postsPage, setPostsPage] = useState(0);
   const [userSettings, setUserSettings] = useState(DEFAULT_USER_SETTINGS);
   const [progressData, setProgressData] = useState({
     level: 1,
@@ -125,6 +117,42 @@ const ProfilePage = () => {
     streak: 0,
     badges: []
   });
+  const [userInteractions, setUserInteractions] = useState({ likes: [], comments: [] });
+
+  // Fetch user interactions
+  const fetchUserInteractions = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      console.log('Fetching user interactions for user:', user.id);
+      
+      const [likesResult, commentsResult] = await Promise.all([
+        supabase
+          .from('likes')
+          .select('post_id')
+          .eq('user_id', user.id)
+          .limit(100),
+        supabase
+          .from('comments')
+          .select('post_id')
+          .eq('user_id', user.id)
+          .limit(100)
+      ]);
+      
+      const likedPosts = likesResult.data?.map(l => l.post_id) || [];
+      const commentedPosts = commentsResult.data?.map(c => c.post_id) || [];
+      
+      setUserInteractions({
+        likes: likedPosts,
+        comments: commentedPosts
+      });
+      
+      console.log('User interactions loaded:', { likedPosts, commentedPosts });
+    } catch (error) {
+      console.error('Error fetching user interactions:', error);
+      setUserInteractions({ likes: [], comments: [] });
+    }
+  }, [user]);
 
   // Prefetch next page of posts (simplified)
   const prefetchNextPage = useCallback(async () => {
@@ -159,6 +187,8 @@ const ProfilePage = () => {
     if (!userId || !user?.id) return;
     
     const loadInitialData = async () => {
+      // Fetch user interactions first
+      await fetchUserInteractions();
       setLoading(true);
       try {
         // Load profile first (most important)
@@ -303,8 +333,7 @@ const ProfilePage = () => {
         setPostState(prevPosts => 
           prevPosts.map(post => 
             post.id === payload.new.id 
-              ? { ...post, ...payload.new }
-              : post
+              ? { ...post, ...payload.new } : post
           )
         );
       })
@@ -372,17 +401,10 @@ const ProfilePage = () => {
       setEditName(profile.full_name || '');
       setEditEmail(profile.email || '');
       setEditLocation(profile.location || '');
-      setEditAvatar(profile.avatar_url || '');
+      setEditUsername(profile.username || '');
       setEditBio(profile.bio || '');
-      // Suggest a username if missing
-      if (!profile.username) {
-        let base = (profile.full_name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-        if (!base) base = 'user';
-        setEditUsername(base);
-      } else {
-        setEditUsername(profile.username);
-      }
-      setEditGender(profile.gender || '');
+      setShowLocationDropdown(true);
+      setFilteredCountries(countries.filter(c => c.label.toLowerCase().startsWith(profile.location.toLowerCase())));
     }
   }, [profile]);
 
@@ -507,36 +529,90 @@ const ProfilePage = () => {
 
   // Like logic
   const handleLikeToggle = async (postId) => {
-    const post = postState.find(p => p.id === postId);
-    if (!post || !user?.id) return;
-    
-    const isLiked = post.likes.some(l => l.user_id === user.id);
+    if (!user) return;
 
     try {
-      if (isLiked) {
-        const { error } = await supabase.from('likes').delete().match({ post_id: postId, user_id: user.id });
-        if (error) throw error;
+      // Check if user already liked this post
+      const { data: existingLike } = await supabase
+        .from('likes')
+        .select('post_id')
+        .eq('user_id', user.id)
+        .eq('post_id', postId)
+        .single();
+
+      if (existingLike) {
+        // User already liked, so unlike
+        await supabase
+          .from('likes')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('post_id', postId);
+        
+        // Update likes count in posts table
+        const { data: currentPost } = await supabase
+          .from('posts')
+          .select('likes_count')
+          .eq('id', postId)
+          .single();
+        
+        if (currentPost) {
+          await supabase
+            .from('posts')
+            .update({ likes_count: Math.max(0, (currentPost.likes_count || 0) - 1) })
+            .eq('id', postId);
+        }
+        
+        // Update local state
+        setUserInteractions(prev => ({
+          ...prev,
+          likes: prev.likes.filter(id => id !== postId)
+        }));
+        
+        toast({
+          title: "Unliked!",
+          description: "Post unliked successfully.",
+        });
       } else {
-        const { error } = await supabase.from('likes').insert({ post_id: postId, user_id: user.id });
-        if (error) throw error;
+        // User hasn't liked, so like
+        await supabase
+          .from('likes')
+          .insert({ user_id: user.id, post_id: postId });
+        
+        // Update likes count in posts table
+        const { data: currentPost } = await supabase
+          .from('posts')
+          .select('likes_count')
+          .eq('id', postId)
+          .single();
+        
+        if (currentPost) {
+          await supabase
+            .from('posts')
+            .update({ likes_count: (currentPost.likes_count || 0) + 1 })
+            .eq('id', postId);
+        }
+        
+        // Update local state
+        setUserInteractions(prev => ({
+          ...prev,
+          likes: [...prev.likes, postId]
+        }));
+        
+        toast({
+          title: "Liked!",
+          description: "Post liked successfully.",
+        });
       }
       
-      // Optimistic update only after successful database operation
-      setPostState(currentPosts => currentPosts.map(p => {
-        if (p.id === postId) {
-          const newLikes = isLiked
-            ? p.likes.filter(l => l.user_id !== user.id)
-            : [...p.likes, { user_id: user.id }];
-          return { ...p, likes: newLikes };
-        }
-        return p;
-      }));
+      // Refresh user interactions and posts
+      await fetchUserInteractions();
+      
     } catch (error) {
       console.error('Error toggling like:', error);
       toast({
         title: "Error",
         description: "Failed to update like. Please try again.",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
@@ -602,9 +678,21 @@ const ProfilePage = () => {
 
   // Enhanced PostCard component with management options
   const EnhancedPostCard = ({ post, ...props }) => {
+    const isLiked = userInteractions.likes.includes(post.id);
+    const isCommented = userInteractions.comments.includes(post.id);
+    
     return (
       <div className="relative">
-        <PostCard post={post} {...props} />
+        <PostCard 
+          post={post} 
+          onLike={() => handleLikeToggle(post.id)}
+          onComment={() => handleOpenComments(post)}
+          onShare={() => handleShare(post)}
+          onViewComments={() => handleOpenComments(post)}
+          isLiked={isLiked}
+          isCommented={isCommented}
+          {...props} 
+        />
         
         {/* Privacy indicator for private posts */}
         {post.privacy === 'private' && (
@@ -756,8 +844,8 @@ const ProfilePage = () => {
   }, []);
 
   const showImageCropper = (imgUrl) => {
-    setTempImage(imgUrl);
-    setShowCropModal(true);
+    setImageToCrop(imgUrl);
+    setShowImageCropper(true);
   };
 
   const getCroppedImg = async (imageSrc, crop) => {
@@ -793,19 +881,19 @@ const ProfilePage = () => {
   };
 
   const handleCropSave = async () => {
-    if (tempImage && croppedAreaPixels) {
-      const croppedImg = await getCroppedImg(tempImage, croppedAreaPixels);
+    if (imageToCrop && croppedAreaPixels) {
+      const croppedImg = await getCroppedImg(imageToCrop, croppedAreaPixels);
       setEditAvatar(croppedImg);
-      setShowCropModal(false);
-      setTempImage('');
+      setShowImageCropper(false);
+      setImageToCrop('');
     }
   };
 
   const handleAvatarEdit = () => {
-    setShowPhotoOptions(true);
+    setShowAvatarOptions(true);
   };
   const handlePhotoOption = (option) => {
-    setShowPhotoOptions(false);
+    setShowAvatarOptions(false);
     if (option === 'camera') {
       if (fileInputRef.current) fileInputRef.current.setAttribute('capture', 'environment');
       fileInputRef.current.click();
@@ -1845,8 +1933,8 @@ const ProfilePage = () => {
         )}
 
         {/* Photo Options Modal */}
-        {showPhotoOptions && (
-          <Dialog open={showPhotoOptions} onOpenChange={setShowPhotoOptions}>
+        {showAvatarOptions && (
+          <Dialog open={showAvatarOptions} onOpenChange={setShowAvatarOptions}>
             <DialogContent className="bg-white max-w-xs w-full">
               <DialogHeader>
                 <DialogTitle>Change Profile Photo</DialogTitle>
@@ -1866,15 +1954,15 @@ const ProfilePage = () => {
                     Remove Current Photo
                   </Button>
                 )}
-                <Button variant="outline" onClick={() => setShowPhotoOptions(false)}>Cancel</Button>
+                <Button variant="outline" onClick={() => setShowAvatarOptions(false)}>Cancel</Button>
               </div>
             </DialogContent>
           </Dialog>
         )}
 
         {/* Cropper Modal */}
-        {showCropModal && tempImage && (
-          <Dialog open={showCropModal} onOpenChange={setShowCropModal}>
+        {showImageCropper && imageToCrop && (
+          <Dialog open={showImageCropper} onOpenChange={setShowImageCropper}>
             <DialogContent className="bg-white max-w-lg w-full">
               <DialogHeader>
                 <DialogTitle>Adjust Photo</DialogTitle>
@@ -1884,7 +1972,7 @@ const ProfilePage = () => {
               </DialogHeader>
               <div className="relative w-full h-64">
                 <Cropper
-                  image={tempImage}
+                  image={imageToCrop}
                   crop={crop}
                   zoom={zoom}
                   aspect={1}
@@ -1895,7 +1983,7 @@ const ProfilePage = () => {
               </div>
               <div className="flex gap-2 mt-4">
                 <Button onClick={handleCropSave} className="bg-leaf-green text-white flex-1">Save Crop</Button>
-                <Button variant="outline" onClick={() => setShowCropModal(false)} className="flex-1">Cancel</Button>
+                <Button variant="outline" onClick={() => setShowImageCropper(false)} className="flex-1">Cancel</Button>
               </div>
             </DialogContent>
           </Dialog>
