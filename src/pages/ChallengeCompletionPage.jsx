@@ -339,20 +339,28 @@ const ChallengeCompletionPage = () => {
       }
 
       // Insert completion record
+      const insertData = {
+        user_id: user.id,
+        challenge_id: challenge.id,
+        challenge_title: challenge.title,
+        challenge_description: challenge.description,
+        reflection: reflection.trim(),
+        photo_url: photoUrl,
+        category: challenge.category,
+        completed_at: new Date().toISOString(),
+        xp_earned: challenge.xp_reward || 10,
+        is_extra_challenge: false
+      };
+      
+      console.log('=== DEBUGGING COMPLETED_CHALLENGES INSERT ===');
+      console.log('Insert data:', insertData);
+      console.log('User ID:', user.id);
+      console.log('Challenge ID:', challenge.id);
+      console.log('Challenge object:', challenge);
+      
       const { error: completionError } = await supabase
         .from('completed_challenges')
-        .insert({
-          user_id: user.id,
-          challenge_id: challenge.id,
-          challenge_title: challenge.title,
-          challenge_description: challenge.description,
-          reflection: reflection.trim(),
-          photo_url: photoUrl,
-          category: challenge.category,
-          completed_at: new Date().toISOString(),
-          xp_earned: challenge.xp_reward || 10,
-          is_extra_challenge: false
-        });
+        .insert(insertData);
 
       if (completionError) throw completionError;
 
@@ -485,7 +493,12 @@ const ChallengeCompletionPage = () => {
       handleComplete();
 
     } catch (error) {
+      console.error('=== ERROR DETAILS ===');
       console.error('Error completing challenge:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+      console.error('Error details:', error.details);
+      console.error('Error hint:', error.hint);
       toast({
         title: "Error",
         description: "Failed to complete challenge. Please try again.",
@@ -515,20 +528,25 @@ const ChallengeCompletionPage = () => {
       }
 
       // Insert extra completion record
+      const extraInsertData = {
+        user_id: user.id,
+        challenge_id: challenge.id,
+        challenge_title: challenge.title,
+        challenge_description: challenge.description,
+        reflection: extraReflection.trim(),
+        photo_url: photoUrl,
+        category: challenge.category,
+        completed_at: new Date().toISOString(),
+        xp_earned: 5,
+        is_extra_challenge: true
+      };
+      
+      console.log('=== DEBUGGING EXTRA CHALLENGE INSERT ===');
+      console.log('Extra insert data:', extraInsertData);
+      
       const { error } = await supabase
         .from('completed_challenges')
-        .insert({
-          user_id: user.id,
-          challenge_id: challenge.id,
-          challenge_title: challenge.title,
-          challenge_description: challenge.description,
-          reflection: extraReflection.trim(),
-          photo_url: photoUrl,
-          category: challenge.category,
-          completed_at: new Date().toISOString(),
-          xp_earned: 5,
-          is_extra_challenge: true
-        });
+        .insert(extraInsertData);
 
       if (error) throw error;
 

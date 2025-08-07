@@ -714,7 +714,7 @@ const ChallengePage = () => {
         }
       }
       // Insert into completed_challenges (always)
-      await supabase.from('completed_challenges').insert({
+      const challengeInsertData = {
         user_id: user.id,
         challenge_id: extraChallengeState.challenge.id,
         challenge_title: extraChallengeState.challenge.title,
@@ -725,7 +725,12 @@ const ChallengePage = () => {
         category: extraChallengeState.challenge.category,
         xp_earned: 5,
         is_extra_challenge: true
-      });
+      };
+      
+      console.log('=== DEBUGGING CHALLENGE PAGE INSERT ===');
+      console.log('Challenge insert data:', challengeInsertData);
+      
+      await supabase.from('completed_challenges').insert(challengeInsertData);
       // Insert into posts if public
       if (mediaState.privacy === 'public' || mediaState.privacy === 'friends') {
         const postData = {
