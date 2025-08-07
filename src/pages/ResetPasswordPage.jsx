@@ -16,6 +16,8 @@ const ResetPasswordPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordReset, setPasswordReset] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
     // Handle password reset flow
@@ -106,6 +108,9 @@ const ResetPasswordPage = () => {
             variant: "destructive"
           });
           navigate('/forgot-password');
+                } else {
+          console.log('User authenticated successfully:', user.email);
+          setIsAuthenticated(true);
         }
       } catch (error) {
         console.error('Error in password reset flow:', error);
@@ -115,6 +120,8 @@ const ResetPasswordPage = () => {
           variant: "destructive"
         });
         navigate('/forgot-password');
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -154,13 +161,32 @@ const ResetPasswordPage = () => {
     setLoading(true);
     
     try {
-      const { error } = await supabase.auth.updateUser({
+      // First, check if user is authenticated
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        console.error('Error getting user:', userError);
+        throw new Error('Authentication error. Please try the reset link again.');
+      }
+
+      if (!user) {
+        console.error('No user found when trying to update password');
+        throw new Error('You are not authenticated. Please use the reset link from your email.');
+      }
+
+      console.log('User authenticated, updating password for:', user.email);
+
+      // Update the password
+      const { data, error } = await supabase.auth.updateUser({
         password: password
       });
 
       if (error) {
+        console.error('Error updating password:', error);
         throw error;
       }
+
+      console.log('Password updated successfully');
 
       setPasswordReset(true);
       toast({
@@ -184,6 +210,23 @@ const ResetPasswordPage = () => {
     navigate('/login');
   };
 
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="text-center py-8">
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            <p className="text-gray-600">Verifying your reset link...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show success state after password reset
   if (passwordReset) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -212,6 +255,34 @@ const ResetPasswordPage = () => {
     );
   }
 
+  // Show form only if authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="text-center py-8">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+              <Lock className="h-6 w-6 text-red-600" />
+            </div>
+            <CardTitle className="text-xl font-bold text-gray-900 mb-2">
+              Invalid Reset Link
+            </CardTitle>
+            <CardDescription className="text-gray-600 mb-4">
+              This reset link is invalid or has expired. Please request a new one.
+            </CardDescription>
+            <Button 
+              onClick={() => navigate('/forgot-password')}
+              className="w-full"
+            >
+              Request New Reset Link
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show the password reset form
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <Card className="w-full max-w-md">
