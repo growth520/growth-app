@@ -903,30 +903,51 @@ const CommunityPage = () => {
     }
   }, [selectedTab, selectedFilter, selectedGrowthArea, searchQuery, fetchPosts, user]);
 
-  // Listen for real-time updates to posts (for share/views count updates)
+  // Poll for post updates (fallback for real-time)
   useEffect(() => {
-    const channel = supabase
-      .channel('posts-updates')
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'posts'
-      }, (payload) => {
-        // Update the specific post in the posts array
-        setPosts(prevPosts => 
-          prevPosts.map(post => 
-            post.id === payload.new.id 
-              ? { ...post, ...payload.new }
-              : post
-          )
-        );
-      })
-      .subscribe();
+    console.log('Setting up polling for post updates');
+    
+    const pollInterval = setInterval(async () => {
+      if (posts.length > 0) {
+        try {
+          // Get current post IDs
+          const postIds = posts.map(post => post.id);
+          
+          // Fetch updated post data
+          const { data: updatedPosts, error } = await supabase
+            .from('posts')
+            .select('id, shares_count, views_count, likes_count, comments_count')
+            .in('id', postIds);
+          
+          if (!error && updatedPosts) {
+            // Update posts with new counts
+            setPosts(prevPosts => 
+              prevPosts.map(post => {
+                const updatedPost = updatedPosts.find(p => p.id === post.id);
+                if (updatedPost) {
+                  return {
+                    ...post,
+                    shares_count: updatedPost.shares_count,
+                    views_count: updatedPost.views_count,
+                    likes_count: updatedPost.likes_count,
+                    comments_count: updatedPost.comments_count
+                  };
+                }
+                return post;
+              })
+            );
+          }
+        } catch (error) {
+          console.error('Error polling for post updates:', error);
+        }
+      }
+    }, 3000); // Poll every 3 seconds
 
     return () => {
-      supabase.removeChannel(channel);
+      console.log('Cleaning up polling');
+      clearInterval(pollInterval);
     };
-  }, []);
+  }, [posts.length]);
 
   // Filter configurations
   const filters = [
