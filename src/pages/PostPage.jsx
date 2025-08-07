@@ -193,12 +193,22 @@ const PostPage = () => {
           });
 
         // Update post views count
-        await supabase
+        const { data: updatedPost } = await supabase
           .from('posts')
           .update({ 
             views_count: supabase.sql`views_count + 1` 
           })
-          .eq('id', postId);
+          .eq('id', postId)
+          .select('views_count')
+          .single();
+
+        // Update local state to reflect the new view count
+        if (updatedPost) {
+          setPost(prev => ({
+            ...prev,
+            views_count: updatedPost.views_count
+          }));
+        }
       }
     } catch (error) {
       console.error('Error tracking post view:', error);
@@ -226,12 +236,22 @@ const PostPage = () => {
       // Only increment share count if this is a new click
       if (!existingClick) {
         // Update post shares count
-        await supabase
+        const { data: updatedPost } = await supabase
           .from('posts')
           .update({ 
             shares_count: supabase.sql`shares_count + 1` 
           })
-          .eq('id', postId);
+          .eq('id', postId)
+          .select('shares_count')
+          .single();
+
+        // Update local state to reflect the new share count
+        if (updatedPost) {
+          setPost(prev => ({
+            ...prev,
+            shares_count: updatedPost.shares_count
+          }));
+        }
       }
     } catch (error) {
       console.error('Error tracking share click:', error);

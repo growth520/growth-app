@@ -903,6 +903,31 @@ const CommunityPage = () => {
     }
   }, [selectedTab, selectedFilter, selectedGrowthArea, searchQuery, fetchPosts, user]);
 
+  // Listen for real-time updates to posts (for share/views count updates)
+  useEffect(() => {
+    const channel = supabase
+      .channel('posts-updates')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'posts'
+      }, (payload) => {
+        // Update the specific post in the posts array
+        setPosts(prevPosts => 
+          prevPosts.map(post => 
+            post.id === payload.new.id 
+              ? { ...post, ...payload.new }
+              : post
+          )
+        );
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   // Filter configurations
   const filters = [
     { id: 'trending', label: 'Trending', icon: TrendingUp },
