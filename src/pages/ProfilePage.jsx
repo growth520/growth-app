@@ -23,6 +23,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from "@/components/ui/skeleton";
 import { useData } from '@/contexts/DataContext'; // Add useData import
 import CompletedPacksSection from '@/components/gamification/CompletedPacksSection';
+import { useViewTracking } from '@/hooks/useViewTracking';
 import { getLevelInfo } from '@/lib/levelSystem';
 import PasswordManager from '@/components/PasswordManager';
 import {
@@ -97,6 +98,9 @@ const ProfilePage = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
+  
+  // View tracking
+  const { createViewObserver, trackViewImmediate, cleanup } = useViewTracking();
   const [editLocation, setEditLocation] = useState('');
   const [editUsername, setEditUsername] = useState('');
   const [editBio, setEditBio] = useState('');
@@ -202,6 +206,22 @@ const ProfilePage = () => {
     }
     return data;
   }, [userId, posts.length, profile]);
+
+  // Setup view tracking observer
+  useEffect(() => {
+    const observer = createViewObserver((postId, postUserId) => {
+      console.log('Post viewed on profile:', postId, 'by user:', postUserId);
+      // The view tracking is handled automatically by the hook
+    });
+
+    // Observe all post elements
+    const postElements = document.querySelectorAll('[data-post-id]');
+    postElements.forEach(element => observer.observe(element));
+
+    return () => {
+      cleanup();
+    };
+  }, [posts, createViewObserver, cleanup]);
 
   // Load initial data
   useEffect(() => {
@@ -717,7 +737,11 @@ const ProfilePage = () => {
     const updatedPost = posts.find(p => p.id === post.id) || post;
     
     return (
-      <div className="relative">
+      <div 
+        className="relative"
+        data-post-id={post.id}
+        data-post-user-id={post.user_id}
+      >
         <PostCard 
           post={updatedPost} 
           onLike={() => handleLikeToggle(post.id)}

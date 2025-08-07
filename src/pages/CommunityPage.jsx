@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useData } from '@/contexts/DataContext';
 import { useNavigate } from 'react-router-dom';
+import { useViewTracking } from '@/hooks/useViewTracking';
 
 const CommunityPage = () => {
   const navigate = useNavigate();
@@ -64,6 +65,9 @@ const CommunityPage = () => {
   // Post popup modal
   const [showPostModal, setShowPostModal] = useState(false);
   const [selectedPostForModal, setSelectedPostForModal] = useState(null);
+  
+  // View tracking
+  const { createViewObserver, trackViewImmediate, cleanup } = useViewTracking();
   
   // Refs
   const observerRef = useRef();
@@ -179,6 +183,22 @@ const CommunityPage = () => {
       }
     }
   }, [user]);
+
+  // Setup view tracking observer
+  useEffect(() => {
+    const observer = createViewObserver((postId, postUserId) => {
+      console.log('Post viewed:', postId, 'by user:', postUserId);
+      // The view tracking is handled automatically by the hook
+    });
+
+    // Observe all post elements
+    const postElements = document.querySelectorAll('[data-post-id]');
+    postElements.forEach(element => observer.observe(element));
+
+    return () => {
+      cleanup();
+    };
+  }, [posts, createViewObserver, cleanup]);
 
   // Fetch posts directly from posts table with proper joins
   const fetchPosts = useCallback(async (pageNum = 0, refresh = false) => {
@@ -867,6 +887,9 @@ const CommunityPage = () => {
   const handlePostModalOpen = (post) => {
     setSelectedPostForModal(post);
     setShowPostModal(true);
+    
+    // Track view immediately when modal opens
+    trackViewImmediate(post.id, post.user_id);
   };
 
   const handlePostModalClose = () => {
@@ -1342,16 +1365,21 @@ const CommunityPage = () => {
                 transition={{ duration: 0.3 }}
                 ref={index === posts.length - 1 ? lastPostElementRef : null}
               >
-                <PostCard
-                  post={post}
-                  isLiked={userInteractions.likes.includes(post.id)}
-                  isCommented={userInteractions.comments.includes(post.id)}
-                  onLike={() => handleLikeToggle(post.id)}
-                  onComment={() => handleComment(post)}
-                  onShare={() => handleShare(post)}
-                  onProfileClick={() => handleProfileClick(post.user_id)}
-                  onViewComments={() => handleViewComments(post.id)}
-                />
+                <div 
+                  data-post-id={post.id}
+                  data-post-user-id={post.user_id}
+                >
+                  <PostCard
+                    post={post}
+                    isLiked={userInteractions.likes.includes(post.id)}
+                    isCommented={userInteractions.comments.includes(post.id)}
+                    onLike={() => handleLikeToggle(post.id)}
+                    onComment={() => handleComment(post)}
+                    onShare={() => handleShare(post)}
+                    onProfileClick={() => handleProfileClick(post.user_id)}
+                    onViewComments={() => handleViewComments(post.id)}
+                  />
+                </div>
               </motion.div>
             ))}
           </AnimatePresence>
