@@ -249,21 +249,55 @@ const ResetPasswordPage = () => {
   // Show loading state while checking authentication
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="text-center py-8">
-            <div className="flex items-center justify-center mb-4">
-              <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen relative overflow-hidden">
+        {/* Full-screen background with gradient overlay */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: `url('/images/welcome-bg.jpg')`,
+          }}
+        >
+          {/* Dark gradient overlay for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/60"></div>
+        </div>
+
+        {/* Content */}
+        <div className="relative z-10 min-h-screen flex flex-col">
+          {/* Header & Tagline */}
+          <div className="text-center pt-8 pb-6 px-4">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <img 
+                src="https://storage.googleapis.com/hostinger-horizons-assets-prod/3576ad99-fbe5-4d76-95b8-b9445d3273c9/f248d90957aab1199c7db78e9c6d6c49.png" 
+                alt="Growth App Logo" 
+                className="h-10 w-10"
+              />
+              <h1 className="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
+                Growth
+              </h1>
             </div>
-            <p className="text-gray-600 mb-4">Verifying your reset link...</p>
-            {debugInfo && (
-              <div className="mt-4 p-3 bg-gray-100 rounded text-xs text-gray-600 text-left">
-                <p className="font-semibold mb-1">Debug Info:</p>
-                <p className="break-all">{debugInfo}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            <p className="text-lg md:text-xl font-bold text-white drop-shadow-lg max-w-3xl mx-auto leading-relaxed">
+              This is more than an app. It's a journey towards the best version of you!
+            </p>
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1 flex items-center justify-center px-4 pb-8">
+            <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm border-0 shadow-2xl">
+              <CardContent className="text-center py-8">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+                <p className="text-gray-600 mb-4">Verifying your reset link...</p>
+                {debugInfo && (
+                  <div className="mt-4 p-3 bg-gray-100 rounded text-xs text-gray-600 text-left">
+                    <p className="font-semibold mb-1">Debug Info:</p>
+                    <p className="break-all">{debugInfo}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     );
   }
@@ -271,28 +305,62 @@ const ResetPasswordPage = () => {
   // Show success state after password reset
   if (passwordReset) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-              <CheckCircle className="h-6 w-6 text-green-600" />
+      <div className="min-h-screen relative overflow-hidden">
+        {/* Full-screen background with gradient overlay */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: `url('/images/welcome-bg.jpg')`,
+          }}
+        >
+          {/* Dark gradient overlay for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/60"></div>
+        </div>
+
+        {/* Content */}
+        <div className="relative z-10 min-h-screen flex flex-col">
+          {/* Header & Tagline */}
+          <div className="text-center pt-8 pb-6 px-4">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <img 
+                src="https://storage.googleapis.com/hostinger-horizons-assets-prod/3576ad99-fbe5-4d76-95b8-b9445d3273c9/f248d90957aab1199c7db78e9c6d6c49.png" 
+                alt="Growth App Logo" 
+                className="h-10 w-10"
+              />
+              <h1 className="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
+                Growth
+              </h1>
             </div>
-            <CardTitle className="text-2xl font-bold text-gray-900">
-              Password Reset Successfully
-            </CardTitle>
-            <CardDescription className="text-gray-600">
-              Your password has been updated. You can now sign in with your new password.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button 
-              onClick={handleBackToLogin}
-              className="w-full"
-            >
-              Sign In with New Password
-            </Button>
-          </CardContent>
-        </Card>
+            <p className="text-lg md:text-xl font-bold text-white drop-shadow-lg max-w-3xl mx-auto leading-relaxed">
+              This is more than an app. It's a journey towards the best version of you!
+            </p>
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1 flex items-center justify-center px-4 pb-8">
+            <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm border-0 shadow-2xl">
+              <CardHeader className="text-center">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+                  <CheckCircle className="h-6 w-6 text-green-600" />
+                </div>
+                <CardTitle className="text-2xl font-bold text-gray-900">
+                  Password Reset Successfully
+                </CardTitle>
+                <CardDescription className="text-gray-600">
+                  Your password has been updated. You can now sign in with your new password.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button 
+                  onClick={handleBackToLogin}
+                  className="w-full h-12 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded-lg hover:from-orange-600 hover:to-red-600 transition-all duration-300"
+                >
+                  Sign In with New Password
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     );
   }
@@ -300,130 +368,198 @@ const ResetPasswordPage = () => {
   // Show form only if authenticated
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="text-center py-8">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-              <Lock className="h-6 w-6 text-red-600" />
+      <div className="min-h-screen relative overflow-hidden">
+        {/* Full-screen background with gradient overlay */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: `url('/images/welcome-bg.jpg')`,
+          }}
+        >
+          {/* Dark gradient overlay for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/60"></div>
+        </div>
+
+        {/* Content */}
+        <div className="relative z-10 min-h-screen flex flex-col">
+          {/* Header & Tagline */}
+          <div className="text-center pt-8 pb-6 px-4">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <img 
+                src="https://storage.googleapis.com/hostinger-horizons-assets-prod/3576ad99-fbe5-4d76-95b8-b9445d3273c9/f248d90957aab1199c7db78e9c6d6c49.png" 
+                alt="Growth App Logo" 
+                className="h-10 w-10"
+              />
+              <h1 className="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
+                Growth
+              </h1>
             </div>
-            <CardTitle className="text-xl font-bold text-gray-900 mb-2">
-              Invalid Reset Link
-            </CardTitle>
-            <CardDescription className="text-gray-600 mb-4">
-              This reset link is invalid or has expired. Please request a new one.
-            </CardDescription>
-            <Button 
-              onClick={() => navigate('/forgot-password')}
-              className="w-full"
-            >
-              Request New Reset Link
-            </Button>
-          </CardContent>
-        </Card>
+            <p className="text-lg md:text-xl font-bold text-white drop-shadow-lg max-w-3xl mx-auto leading-relaxed">
+              This is more than an app. It's a journey towards the best version of you!
+            </p>
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1 flex items-center justify-center px-4 pb-8">
+            <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm border-0 shadow-2xl">
+              <CardContent className="text-center py-8">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                  <Lock className="h-6 w-6 text-red-600" />
+                </div>
+                <CardTitle className="text-xl font-bold text-gray-900 mb-2">
+                  Invalid Reset Link
+                </CardTitle>
+                <CardDescription className="text-gray-600 mb-4">
+                  This reset link is invalid or has expired. Please request a new one.
+                </CardDescription>
+                <Button 
+                  onClick={() => navigate('/forgot-password')}
+                  className="w-full h-12 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded-lg hover:from-orange-600 hover:to-red-600 transition-all duration-300"
+                >
+                  Request New Reset Link
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     );
   }
 
   // Show the password reset form
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-            <Lock className="h-6 w-6 text-blue-600" />
-          </div>
-          <CardTitle className="text-2xl font-bold text-gray-900">
-            Reset Your Password
-          </CardTitle>
-          <CardDescription className="text-gray-600">
-            Enter your new password below.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                New Password
-              </label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your new password"
-                  required
-                  className="w-full pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4 text-gray-400" />
-                  ) : (
-                    <Eye className="h-4 w-4 text-gray-400" />
-                  )}
-                </button>
-              </div>
-            </div>
-            
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                Confirm New Password
-              </label>
-              <div className="relative">
-                <Input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm your new password"
-                  required
-                  className="w-full pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff className="h-4 w-4 text-gray-400" />
-                  ) : (
-                    <Eye className="h-4 w-4 text-gray-400" />
-                  )}
-                </button>
-              </div>
-            </div>
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Full-screen background with gradient overlay */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: `url('/images/welcome-bg.jpg')`,
+        }}
+      >
+        {/* Dark gradient overlay for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/60"></div>
+      </div>
 
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={loading}
-            >
-              {loading ? (
-                <div className="flex items-center">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Updating...
+      {/* Content */}
+      <div className="relative z-10 min-h-screen flex flex-col">
+        {/* Header & Tagline */}
+        <div className="text-center pt-8 pb-6 px-4">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <img 
+              src="https://storage.googleapis.com/hostinger-horizons-assets-prod/3576ad99-fbe5-4d76-95b8-b9445d3273c9/f248d90957aab1199c7db78e9c6d6c49.png" 
+              alt="Growth App Logo" 
+              className="h-10 w-10"
+            />
+            <h1 className="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
+              Growth
+            </h1>
+          </div>
+          <p className="text-lg md:text-xl font-bold text-white drop-shadow-lg max-w-3xl mx-auto leading-relaxed">
+            This is more than an app. It's a journey towards the best version of you!
+          </p>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 flex items-center justify-center px-4 pb-8">
+          <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm border-0 shadow-2xl">
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+                <Lock className="h-6 w-6 text-blue-600" />
+              </div>
+              <CardTitle className="text-2xl font-bold text-gray-900">
+                Reset Your Password
+              </CardTitle>
+              <CardDescription className="text-gray-600">
+                Enter your new password below.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                    New Password
+                  </label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter your new password"
+                      required
+                      className="w-full h-12 bg-white/80 border-gray-200 text-gray-800 placeholder:text-gray-500 rounded-lg pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-gray-400" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-gray-400" />
+                      )}
+                    </button>
+                  </div>
                 </div>
-              ) : (
-                'Update Password'
-              )}
-            </Button>
-            
-            <Button 
-              type="button"
-              onClick={handleBackToLogin}
-              variant="ghost" 
-              className="w-full"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Sign In
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+                
+                <div>
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                    Confirm New Password
+                  </label>
+                  <div className="relative">
+                    <Input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm your new password"
+                      required
+                      className="w-full h-12 bg-white/80 border-gray-200 text-gray-800 placeholder:text-gray-500 rounded-lg pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-4 w-4 text-gray-400" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-gray-400" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <Button 
+                  type="submit" 
+                  className="w-full h-12 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded-lg hover:from-orange-600 hover:to-red-600 transition-all duration-300" 
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <div className="flex items-center">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                      Updating...
+                    </div>
+                  ) : (
+                    'Update Password'
+                  )}
+                </Button>
+                
+                <Button 
+                  type="button"
+                  onClick={handleBackToLogin}
+                  variant="ghost" 
+                  className="w-full text-gray-600 hover:text-orange-400"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Sign In
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 };

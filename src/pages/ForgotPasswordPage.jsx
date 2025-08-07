@@ -94,61 +94,95 @@ const ForgotPasswordPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-            <Mail className="h-6 w-6 text-blue-600" />
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Full-screen background with gradient overlay */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: `url('/images/welcome-bg.jpg')`,
+        }}
+      >
+        {/* Dark gradient overlay for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/60"></div>
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 min-h-screen flex flex-col">
+        {/* Header & Tagline */}
+        <div className="text-center pt-8 pb-6 px-4">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <img 
+              src="https://storage.googleapis.com/hostinger-horizons-assets-prod/3576ad99-fbe5-4d76-95b8-b9445d3273c9/f248d90957aab1199c7db78e9c6d6c49.png" 
+              alt="Growth App Logo" 
+              className="h-10 w-10"
+            />
+            <h1 className="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
+              Growth
+            </h1>
           </div>
-          <CardTitle className="text-2xl font-bold text-gray-900">
-            Forgot Password?
-          </CardTitle>
-          <CardDescription className="text-gray-600">
-            Enter your email address and we'll send you a link to reset your password.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
-              </label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email address"
-                required
-                className="w-full"
-              />
-            </div>
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={loading}
-            >
-              {loading ? (
-                <div className="flex items-center">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Sending...
+          <p className="text-lg md:text-xl font-bold text-white drop-shadow-lg max-w-3xl mx-auto leading-relaxed">
+            This is more than an app. It's a journey towards the best version of you!
+          </p>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 flex items-center justify-center px-4 pb-8">
+          <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm border-0 shadow-2xl">
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+                <Mail className="h-6 w-6 text-blue-600" />
+              </div>
+              <CardTitle className="text-2xl font-bold text-gray-900">
+                Forgot Your Password?
+              </CardTitle>
+              <CardDescription className="text-gray-600">
+                Enter your email address and we'll send you a link to reset your password.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                    Email Address
+                  </label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email address"
+                    required
+                    className="w-full h-12 bg-white/80 border-gray-200 text-gray-800 placeholder:text-gray-500 rounded-lg"
+                  />
                 </div>
-              ) : (
-                'Send Reset Link'
-              )}
-            </Button>
-            <Button 
-              type="button"
-              onClick={handleBackToLogin}
-              variant="ghost" 
-              className="w-full"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Sign In
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+                <Button 
+                  type="submit" 
+                  className="w-full h-12 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded-lg hover:from-orange-600 hover:to-red-600 transition-all duration-300" 
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <div className="flex items-center">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                      Sending...
+                    </div>
+                  ) : (
+                    'Send Reset Link'
+                  )}
+                </Button>
+                <Button 
+                  type="button"
+                  onClick={handleBackToLogin}
+                  variant="ghost" 
+                  className="w-full text-gray-600 hover:text-orange-400"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Sign In
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 };
