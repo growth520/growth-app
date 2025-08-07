@@ -53,39 +53,46 @@ export const useViewTracking = () => {
 
   // Track a view for a post
   const trackView = useCallback(async (postId, postUserId) => {
-    if (!user || !postId) return;
+    console.log('🔍 trackView called:', { postId, postUserId, currentUser: user?.id });
+    
+    if (!user || !postId) {
+      console.log('❌ Missing user or postId:', { user: !!user, postId: !!postId });
+      return;
+    }
 
     // Skip if viewing own post
     if (postUserId === user.id) {
-      console.log('Skipping view tracking for own post:', postId);
+      console.log('⏭️ Skipping view tracking for own post:', postId);
       return;
     }
 
     // Skip if already viewed in this session
     if (hasViewedPost(postId)) {
-      console.log('Post already viewed in this session:', postId);
+      console.log('🔄 Post already viewed in this session:', postId);
       return;
     }
 
+    console.log('📊 Attempting to track view for post:', postId);
+
     try {
       // Call the RPC function to increment view count
-      const { error } = await supabase
+      const { data, error } = await supabase
         .rpc('increment_post_view', {
           post_id: postId,
           viewer_id: user.id
         });
 
       if (error) {
-        console.error('Error tracking view:', error);
+        console.error('❌ Error tracking view:', error);
         return;
       }
 
       // Mark as viewed in session storage
       addViewedPost(postId);
-      console.log('View tracked successfully for post:', postId);
+      console.log('✅ View tracked successfully for post:', postId);
 
     } catch (error) {
-      console.error('Error tracking view:', error);
+      console.error('❌ Exception tracking view:', error);
     }
   }, [user]);
 
@@ -103,9 +110,18 @@ export const useViewTracking = () => {
           const postUserId = target.dataset.postUserId;
           const timeoutKey = `view_${postId}`;
 
+          console.log('👁️ Intersection Observer:', { 
+            postId, 
+            isIntersecting, 
+            intersectionRatio, 
+            threshold: 0.5 
+          });
+
           if (isIntersecting && intersectionRatio >= 0.5) {
+            console.log('⏱️ Starting 2-second timer for post:', postId);
             // Post is 50% visible, start 2-second timer
             const timeout = setTimeout(() => {
+              console.log('⏰ Timer completed, calling onView for post:', postId);
               onView(postId, postUserId);
               timeoutRefs.current.delete(timeoutKey);
             }, 2000);
@@ -115,6 +131,7 @@ export const useViewTracking = () => {
             // Post is not visible enough, clear timeout
             const existingTimeout = timeoutRefs.current.get(timeoutKey);
             if (existingTimeout) {
+              console.log('❌ Clearing timer for post:', postId);
               clearTimeout(existingTimeout);
               timeoutRefs.current.delete(timeoutKey);
             }

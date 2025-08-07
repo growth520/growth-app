@@ -186,16 +186,24 @@ const CommunityPage = () => {
 
   // Setup view tracking observer
   useEffect(() => {
+    console.log('🔧 Setting up view tracking observer for', posts.length, 'posts');
+    
     const observer = createViewObserver((postId, postUserId) => {
-      console.log('Post viewed:', postId, 'by user:', postUserId);
+      console.log('📊 Post viewed:', postId, 'by user:', postUserId);
       // The view tracking is handled automatically by the hook
     });
 
     // Observe all post elements
     const postElements = document.querySelectorAll('[data-post-id]');
-    postElements.forEach(element => observer.observe(element));
+    console.log('👀 Found', postElements.length, 'post elements to observe');
+    
+    postElements.forEach(element => {
+      console.log('🔍 Observing element:', element.dataset.postId);
+      observer.observe(element);
+    });
 
     return () => {
+      console.log('🧹 Cleaning up view tracking observer');
       cleanup();
     };
   }, [posts, createViewObserver, cleanup]);
