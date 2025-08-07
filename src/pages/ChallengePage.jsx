@@ -431,7 +431,7 @@ const ChallengePage = () => {
     if (!user) return;
     const fetchCompleted = async () => {
       const { data, error } = await supabase
-        .from('completed_challenges')
+        .from('public.completed_challenges')
         .select('challenge_id')
         .eq('user_id', user.id);
       if (!error && data) {
@@ -449,7 +449,7 @@ const ChallengePage = () => {
     if (!user) return;
     const fetchLastCompleted = async () => {
       const { data, error } = await supabase
-        .from('completed_challenges')
+        .from('public.completed_challenges')
         .select('completed_at')
         .eq('user_id', user.id)
         .order('completed_at', { ascending: false })
@@ -714,7 +714,7 @@ const ChallengePage = () => {
         }
       }
       // Insert into completed_challenges (always)
-      await supabase.from('completed_challenges').insert({
+      await supabase.from('public.completed_challenges').insert({
         user_id: user.id,
         challenge_id: extraChallengeState.challenge.id,
         challenge_title: extraChallengeState.challenge.title,

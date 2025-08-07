@@ -340,7 +340,7 @@ const ChallengeCompletionPage = () => {
 
       // Insert completion record
       const { error: completionError } = await supabase
-        .from('completed_challenges')
+        .from('public.completed_challenges')
         .insert({
           user_id: user.id,
           challenge_id: challenge.id,
@@ -516,7 +516,7 @@ const ChallengeCompletionPage = () => {
 
       // Insert extra completion record
       const { error } = await supabase
-        .from('completed_challenges')
+        .from('public.completed_challenges')
         .insert({
           user_id: user.id,
           challenge_id: challenge.id,

@@ -204,7 +204,7 @@ const ProgressPage = () => {
 
       // Fetch recent completed challenges for achievements
       const { data: recentData } = await supabase
-        .from('completed_challenges')
+        .from('public.completed_challenges')
         .select('*')
         .eq('user_id', userId)
         .order('completed_at', { ascending: false })
