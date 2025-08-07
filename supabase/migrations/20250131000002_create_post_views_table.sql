@@ -39,30 +39,33 @@ CREATE INDEX IF NOT EXISTS idx_post_views_viewer_id ON public.post_views(viewer_
 CREATE INDEX IF NOT EXISTS idx_post_views_viewed_at ON public.post_views(viewed_at);
 CREATE INDEX IF NOT EXISTS idx_post_views_post_viewer ON public.post_views(post_id, viewer_id);
 
--- 7. Update the RPC function to also insert into post_views table
-CREATE OR REPLACE FUNCTION increment_post_view(post_id uuid, viewer_id uuid, view_type text DEFAULT 'scroll')
+-- 7. Drop the existing function first to avoid parameter name conflicts
+DROP FUNCTION IF EXISTS increment_post_view(uuid, uuid, text);
+
+-- 8. Update the RPC function to also insert into post_views table
+CREATE OR REPLACE FUNCTION increment_post_view(p_post_id uuid, p_viewer_id uuid, p_view_type text DEFAULT 'scroll')
 RETURNS void AS $$
 BEGIN
   -- Only increment if viewer is not the post author
-  IF viewer_id != (SELECT user_id FROM posts WHERE id = post_id) THEN
+  IF p_viewer_id != (SELECT user_id FROM posts WHERE id = p_post_id) THEN
     -- Insert into post_views table for analytics
     INSERT INTO public.post_views (post_id, viewer_id, view_type, session_id)
-    VALUES (post_id, viewer_id, view_type, gen_random_uuid()::text)
+    VALUES (p_post_id, p_viewer_id, p_view_type, gen_random_uuid()::text)
     ON CONFLICT (post_id, viewer_id, session_id) DO NOTHING;
     
     -- Update the posts table views_count
     UPDATE posts 
     SET views_count = COALESCE(views_count, 0) + 1
-    WHERE id = post_id;
+    WHERE id = p_post_id;
   END IF;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 8. Grant permissions
+-- 9. Grant permissions
 GRANT SELECT, INSERT ON public.post_views TO authenticated;
 GRANT SELECT ON public.post_views TO anon;
 
--- 9. Verify the setup
+-- 10. Verify the setup
 SELECT 
     'Post views table created successfully' as status,
     COUNT(*) as total_views
