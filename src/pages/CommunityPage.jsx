@@ -199,7 +199,7 @@ const CommunityPage = () => {
           likes_count,
           comments_count
         `)
-        .or('privacy.eq.public,visibility.eq.public'); // Show posts that are public in either field
+        .eq('privacy', 'public'); // Only show posts that are explicitly public
       
       // Apply filters
       if (selectedGrowthArea !== 'all') {
@@ -662,7 +662,7 @@ const CommunityPage = () => {
           user_id
         `)
         .or(`reflection.ilike.%${query}%,challenge_title.ilike.%${query}%`)
-        .eq('visibility', 'public')
+        .eq('privacy', 'public')
         .limit(20);
 
       if (postsError) {

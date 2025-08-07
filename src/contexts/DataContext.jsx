@@ -313,7 +313,7 @@ export const DataProvider = ({ children }) => {
           visibility,
           flagged
         `)
-        .eq('visibility', 'public')
+        .eq('privacy', 'public')
         .is('flagged', false)
         .order('created_at', { ascending: false })
         .limit(15); // Preload fewer posts for speed

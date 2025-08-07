@@ -137,7 +137,7 @@ const ProfilePage = () => {
       .from('posts')
       .select('id, reflection, challenge_title, photo_url, category, created_at, user_id, likes_count, comments_count, shares_count, views_count')
       .eq('user_id', userId)
-      .or('privacy.eq.public,visibility.eq.public')
+                  .eq('privacy', 'public')
       .order('created_at', { ascending: false })
       .range(from, to);
 

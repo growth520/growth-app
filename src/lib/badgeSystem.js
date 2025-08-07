@@ -262,7 +262,7 @@ const getShareCount = async (userId) => {
       .from('posts')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
-      .or('privacy.eq.public,visibility.eq.public');
+      .eq('privacy', 'public');
 
     return error ? 0 : count;
   } catch (error) {
