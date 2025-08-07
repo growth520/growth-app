@@ -1,0 +1,187 @@
+[1mdiff --git a/check-posts-table-triggers.sql b/check-posts-table-triggers.sql[m
+[1mnew file mode 100644[m
+[1mindex 0000000..9804247[m
+[1m--- /dev/null[m
+[1m+++ b/check-posts-table-triggers.sql[m
+[36m@@ -0,0 +1,101 @@[m
+[32m+[m[32m-- Check for triggers on posts table that might reference completed_challenges[m
+[32m+[m[32m-- Run this in your Supabase SQL editor[m
+[32m+[m
+[32m+[m[32m-- 1. Check all triggers on posts table[m
+[32m+[m[32mSELECT '=== TRIGGERS ON POSTS TABLE ===' as step;[m
+[32m+[m[32mSELECT[m[41m [m
+[32m+[m[32m    trigger_name,[m
+[32m+[m[32m    event_manipulation,[m
+[32m+[m[32m    action_statement,[m
+[32m+[m[32m    action_orientation[m
+[32m+[m[32mFROM information_schema.triggers[m
+[32m+[m[32mWHERE event_object_table = 'posts'[m
+[32m+[m[32mAND event_object_schema = 'public';[m
+[32m+[m
+[32m+[m[32m-- 2. Check if any functions called by posts triggers reference completed_challenges[m
+[32m+[m[32mSELECT '=== FUNCTIONS CALLED BY POSTS TRIGGERS ===' as step;[m
+[32m+[m[32mSELECT DISTINCT[m
+[32m+[m[32m    t.trigger_name,[m
+[32m+[m[32m    t.action_statement,[m
+[32m+[m[32m    r.routine_name,[m
+[32m+[m[32m    r.routine_definition[m
+[32m+[m[32mFROM information_schema.triggers t[m
+[32m+[m[32mLEFT JOIN information_schema.routines r ON r.routine_name = ([m
+[32m+[m[32m    CASE[m[41m [m
+[32m+[m[32m        WHEN t.action_statement LIKE '%EXECUTE FUNCTION%'[m[41m [m
+[32m+[m[32m        THEN SUBSTRING(t.action_statement FROM 'EXECUTE FUNCTION ([^(]+)')[m
+[32m+[m[32m        WHEN t.action_statement LIKE '%EXECUTE PROCEDURE%'[m
+[32m+[m[32m        THEN SUBSTRING(t.action_statement FROM 'EXECUTE PROCEDURE ([^(]+)')[m
+[32m+[m[32m        ELSE NULL[m
+[32m+[m[32m    END[m
+[32m+[m[32m)[m
+[32m+[m[32mWHERE t.event_object_table = 'posts'[m
+[32m+[m[32mAND t.event_object_schema = 'public'[m
+[32m+[m[32mAND r.routine_definition LIKE '%completed_challenges%';[m
+[32m+[m
+[32m+[m[32m-- 3. Check posts table structure[m
+[32m+[m[32mSELECT '=== POSTS TABLE STRUCTURE ===' as step;[m
+[32m+[m[32mSELECT[m[41m [m
+[32m+[m[32m    column_name,[m
+[32m+[m[32m    data_type,[m
+[32m+[m[32m    is_nullable,[m
+[32m+[m[32m    column_default[m
+[32m+[m[32mFROM information_schema.columns[m
+[32m+[m[32mWHERE table_schema = 'public'[m
+[32m+[m[32mAND table_name = 'posts'[m
+[32m+[m[32mORDER BY ordinal_position;[m
+[32m+[m
+[32m+[m[32m-- 4. Test a simple insert into posts to see the exact error[m
+[32m+[m[32mSELECT '=== TESTING POSTS INSERT ===' as step;[m
+[32m+[m[32mDO $$[m
+[32m+[m[32mBEGIN[m
+[32m+[m[32m    INSERT INTO public.posts ([m
+[32m+[m[32m        user_id,[m
+[32m+[m[32m        challenge_id,[m
+[32m+[m[32m        challenge_title,[m
+[32m+[m[32m        reflection,[m
+[32m+[m[32m        photo_url,[m
+[32m+[m[32m        category,[m
+[32m+[m[32m        created_at,[m
+[32m+[m[32m        privacy,[m
+[32m+[m[32m        flagged,[m
+[32m+[m[32m        post_type,[m
+[32m+[m[32m        metadata,[m
+[32m+[m[32m        likes_count,[m
+[32m+[m[32m        comments_count,[m
+[32m+[m[32m        shares_count,[m
+[32m+[m[32m        views_count[m
+[32m+[m[32m    ) VALUES ([m
+[32m+[m[32m        '00000000-0000-0000-0000-000000000000'::uuid,[m
+[32m+[m[32m        999,[m
+[32m+[m[32m        'Test Challenge Title',[m
+[32m+[m[32m        'Test reflection text',[m
+[32m+[m[32m        NULL,[m
+[32m+[m[32m        'Test Category',[m
+[32m+[m[32m        NOW(),[m
+[32m+[m[32m        'public',[m
+[32m+[m[32m        false,[m
+[32m+[m[32m        'challenge_completion',[m
+[32m+[m[32m        '{"challenge_id": 999, "completion_type": "daily_challenge"}',[m
+[32m+[m[32m        0,[m
+[32m+[m[32m        0,[m
+[32m+[m[32m        0,[m
+[32m+[m[32m        0[m
+[32m+[m[32m    );[m
+[32m+[m[41m    [m
+[32m+[m[32m    RAISE NOTICE 'Posts insert successful!';[m
+[32m+[m[41m    [m
+[32m+[m[32m    -- Clean up[m
+[32m+[m[32m    DELETE FROM public.posts[m[41m [m
+[32m+[m[32m    WHERE user_id = '00000000-0000-0000-0000-000000000000'::uuid[m[41m [m
+[32m+[m[32m    AND challenge_id = 999;[m
+[32m+[m[41m    [m
+[32m+[m[32m    RAISE NOTICE 'Test record cleaned up!';[m
+[32m+[m[41m    [m
+[32m+[m[32mEXCEPTION[m
+[32m+[m[32m    WHEN OTHERS THEN[m
+[32m+[m[32m        RAISE NOTICE 'Posts insert failed: %', SQLERRM;[m
+[32m+[m[32m        RAISE NOTICE 'Error code: %', SQLSTATE;[m
+[32m+[m[32mEND $$;[m
+[32m+[m
+[32m+[m[32mSELECT '=== POSTS TABLE DIAGNOSTIC COMPLETE ===' as result;[m[41m [m
+\ No newline at end of file[m
+[1mdiff --git a/check-trigger-issue.sql b/check-trigger-issue.sql[m
+[1mnew file mode 100644[m
+[1mindex 0000000..414e7de[m
+[1m--- /dev/null[m
+[1m+++ b/check-trigger-issue.sql[m
+[36m@@ -0,0 +1,82 @@[m
+[32m+[m[32m-- Check if the trigger is causing the INSERT issue[m
+[32m+[m[32m-- Run this in your Supabase SQL editor[m
+[32m+[m
+[32m+[m[32m-- 1. Check if the trigger exists and what it does[m
+[32m+[m[32mSELECT '=== TRIGGER CHECK ===' as step;[m
+[32m+[m[32mSELECT[m[41m [m
+[32m+[m[32m    trigger_name,[m
+[32m+[m[32m    event_manipulation,[m
+[32m+[m[32m    action_statement[m
+[32m+[m[32mFROM information_schema.triggers[m
+[32m+[m[32mWHERE event_object_table = 'completed_challenges';[m
+[32m+[m
+[32m+[m[32m-- 2. Check the trigger function[m
+[32m+[m[32mSELECT '=== TRIGGER FUNCTION ===' as step;[m
+[32m+[m[32mSELECT[m[41m [m
+[32m+[m[32m    routine_name,[m
+[32m+[m[32m    routine_definition[m
+[32m+[m[32mFROM information_schema.routines[m
+[32m+[m[32mWHERE routine_name = 'update_challenge_completion_count'[m
+[32m+[m[32mAND routine_schema = 'public';[m
+[32m+[m
+[32m+[m[32m-- 3. Temporarily disable the trigger to test[m
+[32m+[m[32mSELECT '=== DISABLING TRIGGER ===' as step;[m
+[32m+[m[32mALTER TABLE public.completed_challenges DISABLE TRIGGER update_challenge_completion_trigger;[m
+[32m+[m
+[32m+[m[32m-- 4. Test insert without trigger[m
+[32m+[m[32mSELECT '=== TESTING INSERT WITHOUT TRIGGER ===' as step;[m
+[32m+[m[32mDO $$[m
+[32m+[m[32mBEGIN[m
+[32m+[m[32m    INSERT INTO public.completed_challenges ([m
+[32m+[m[32m        user_id,[m
+[32m+[m[32m        challenge_id,[m
+[32m+[m[32m        challenge_title,[m
+[32m+[m[32m        challenge_description,[m
+[32m+[m[32m        reflection,[m
+[32m+[m[32m        photo_url,[m
+[32m+[m[32m        category,[m
+[32m+[m[32m        completed_at,[m
+[32m+[m[32m        xp_earned,[m
+[32m+[m[32m        is_extra_challenge[m
+[32m+[m[32m    ) VALUES ([m
+[32m+[m[32m        '00000000-0000-0000-0000-000000000000'::uuid,[m
+[32m+[m[32m        999,[m
+[32m+[m[32m        'Test Challenge Title',[m
+[32m+[m[32m        'Test Challenge Description',[m
+[32m+[m[32m        'Test reflection text',[m
+[32m+[m[32m        NULL,[m
+[32m+[m[32m        'Test Category',[m
+[32m+[m[32m        NOW(),[m
+[32m+[m[32m        10,[m
+[32m+[m[32m        false[m
+[32m+[m[32m    );[m
+[32m+[m[41m    [m
+[32m+[m[32m    RAISE NOTICE 'Insert without trigger successful!';[m
+[32m+[m[41m    [m
+[32m+[m[32m    -- Clean up[m
+[32m+[m[32m    DELETE FROM public.completed_challenges[m[41m [m
+[32m+[m[32m    WHERE user_id = '00000000-0000-0000-0000-000000000000'::uuid[m[41m [m
+[32m+[m[32m    AND challenge_id = 999;[m
+[32m+[m[41m    [m
+[32m+[m[32m    RAISE NOTICE 'Test record cleaned up!';[m
+[32m+[m[41m    [m
+[32m+[m[32mEXCEPTION[m
+[32m+[m[32m    WHEN OTHERS THEN[m
+[32m+[m[32m        RAISE NOTICE 'Insert without trigger failed: %', SQLERRM;[m
+[32m+[m[32m        RAISE NOTICE 'Error code: %', SQLSTATE;[m
+[32m+[m[32mEND $$;[m
+[32m+[m
+[32m+[m[32m-- 5. Re-enable the trigger[m
+[32m+[m[32mSELECT '=== RE-ENABLING TRIGGER ===' as step;[m
+[32m+[m[32mALTER TABLE public.completed_challenges ENABLE TRIGGER update_challenge_completion_trigger;[m
+[32m+[m
+[32m+[m[

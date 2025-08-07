@@ -4,7 +4,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Share2, UserPlus, Filter, MoreVertical, Lock } from 'lucide-react';
+import { Share2, UserPlus, Filter, MoreVertical, Lock, Trash2, Eye, EyeOff, Settings } from 'lucide-react';
 import PostCard from '@/components/community/PostCard';
 import CommentsModal from '@/components/community/CommentsModal';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -25,6 +25,13 @@ import { useData } from '@/contexts/DataContext'; // Add useData import
 import CompletedPacksSection from '@/components/gamification/CompletedPacksSection';
 import { getLevelInfo } from '@/lib/levelSystem';
 import PasswordManager from '@/components/PasswordManager';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const DEFAULT_USER_SETTINGS = {
   show_streak: true,
@@ -175,28 +182,8 @@ const ProfilePage = () => {
 
         // Load other data in parallel (less critical)
         const [postsData, followersCount, followingCount, followingData, settingsData, progressDataResult] = await Promise.all([
-          // Initial posts (simplified query)
-          supabase
-            .from('posts')
-            .select('id, reflection, challenge_title, photo_url, category, created_at, user_id, likes_count, comments_count, shares_count, views_count')
-            .eq('user_id', userId)
-            .or('privacy.eq.public,visibility.eq.public')
-            .order('created_at', { ascending: false })
-            .range(0, ITEMS_PER_PAGE - 1)
-            .then(async ({ data }) => {
-              if (data && data.length > 0) {
-                // Add profile data to posts
-                return data.map(post => ({
-                  ...post,
-                  profiles: {
-                    id: profileData.id,
-                    full_name: profileData.full_name,
-                    avatar_url: profileData.avatar_url
-                  }
-                }));
-              }
-              return data || [];
-            }),
+          // Initial posts with enhanced query
+          loadPosts(0),
 
           // Followers count
           supabase
@@ -508,33 +495,127 @@ const ProfilePage = () => {
     }
   };
 
-  // Delete post logic
+  // Enhanced post management functions
   const handleDeletePost = async (postId) => {
-    if (!window.confirm('Are you sure you want to delete this post?')) return;
+    if (!window.confirm('Are you sure you want to delete this post? This action cannot be undone.')) return;
     
     try {
       const { error } = await supabase.from('posts').delete().eq('id', postId);
       if (error) throw error;
       
-      // Refresh the posts
-      if (user?.id === profile?.id) { // Assuming profile.id is the user's own ID
-        // This part needs to be implemented if fetchOwnPosts is defined elsewhere
-        // For now, we'll just remove it from the current posts state
-        setPosts(currentPosts => currentPosts.filter(p => p.id !== postId));
-        setPostState(currentPosts => currentPosts.filter(p => p.id !== postId));
-      }
+      // Remove from local state
+      setPosts(currentPosts => currentPosts.filter(p => p.id !== postId));
+      setPostState(currentPosts => currentPosts.filter(p => p.id !== postId));
       
       toast({
-        title: "Success",
-        description: "Post deleted successfully.",
+        title: "Post Deleted",
+        description: "Your post has been deleted successfully.",
       });
     } catch (error) {
+      console.error('Error deleting post:', error);
       toast({
         title: "Error",
         description: "Could not delete post. Please try again.",
         variant: "destructive",
       });
     }
+  };
+
+  const handleTogglePrivacy = async (postId, currentPrivacy) => {
+    const newPrivacy = currentPrivacy === 'public' ? 'private' : 'public';
+    
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .update({ privacy: newPrivacy })
+        .eq('id', postId);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setPosts(currentPosts => currentPosts.map(p => 
+        p.id === postId ? { ...p, privacy: newPrivacy } : p
+      ));
+      setPostState(currentPosts => currentPosts.map(p => 
+        p.id === postId ? { ...p, privacy: newPrivacy } : p
+      ));
+      
+      toast({
+        title: "Privacy Updated",
+        description: `Post is now ${newPrivacy}.`,
+      });
+    } catch (error) {
+      console.error('Error updating post privacy:', error);
+      toast({
+        title: "Error",
+        description: "Could not update post privacy. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Enhanced PostCard component with management options
+  const EnhancedPostCard = ({ post, ...props }) => {
+    return (
+      <div className="relative">
+        <PostCard post={post} {...props} />
+        
+        {/* Privacy indicator for private posts */}
+        {post.privacy === 'private' && (
+          <div className="absolute top-4 left-4">
+            <Badge variant="secondary" className="bg-gray-100 text-gray-600 text-xs">
+              <Lock className="w-3 h-3 mr-1" />
+              Private
+            </Badge>
+          </div>
+        )}
+        
+        {/* Post Management Menu - Only show for own posts */}
+        {isOwnProfile && (
+          <div className="absolute top-4 right-4">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 bg-white/80 backdrop-blur-sm hover:bg-white/90"
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem
+                  onClick={() => handleTogglePrivacy(post.id, post.privacy)}
+                  className="flex items-center gap-2"
+                >
+                  {post.privacy === 'public' ? (
+                    <>
+                      <EyeOff className="h-4 w-4" />
+                      Make Private
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="h-4 w-4" />
+                      Make Public
+                    </>
+                  )}
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
+                
+                <DropdownMenuItem
+                  onClick={() => handleDeletePost(post.id)}
+                  className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete Post
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
+      </div>
+    );
   };
 
   // Share logic
@@ -868,31 +949,32 @@ const ProfilePage = () => {
     }
   };
 
-  // Load more posts
-  const handleLoadMorePosts = async () => {
-    if (!userId || !profile) return;
-    
-    setLoadingMore(true);
+  // Enhanced posts query to include privacy filtering
+  const loadPosts = async (pageNumber = 0) => {
     try {
-      const nextPage = Math.ceil(posts.length / ITEMS_PER_PAGE) + 1;
-      const from = nextPage * ITEMS_PER_PAGE;
+      const from = pageNumber * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('posts')
-        .select('id, reflection, challenge_title, photo_url, category, created_at, user_id, likes_count, comments_count, shares_count, views_count')
+        .select('id, reflection, challenge_title, photo_url, category, created_at, user_id, likes_count, comments_count, shares_count, views_count, privacy')
         .eq('user_id', userId)
-        .or('privacy.eq.public,visibility.eq.public')
-        .order('created_at', { ascending: false })
-        .range(from, to);
+        .order('created_at', { ascending: false });
+
+      // For own profile, show all posts. For others, only show public posts
+      if (!isOwnProfile) {
+        query = query.eq('privacy', 'public');
+      }
+
+      const { data, error } = await query.range(from, to);
 
       if (error) {
-        console.error('Error loading more posts:', error);
-        return;
+        console.error('Error loading posts:', error);
+        return [];
       }
 
       if (data && data.length > 0) {
-        const newPosts = data.map(post => ({
+        return data.map(post => ({
           ...post,
           profiles: {
             id: profile.id,
@@ -900,7 +982,24 @@ const ProfilePage = () => {
             avatar_url: profile.avatar_url
           }
         }));
-        
+      }
+      return [];
+    } catch (error) {
+      console.error('Error loading posts:', error);
+      return [];
+    }
+  };
+
+  // Enhanced load more posts function
+  const handleLoadMorePosts = async () => {
+    if (!userId || !profile) return;
+    
+    setLoadingMore(true);
+    try {
+      const nextPage = Math.ceil(posts.length / ITEMS_PER_PAGE);
+      const newPosts = await loadPosts(nextPage);
+      
+      if (newPosts && newPosts.length > 0) {
         setPosts(prev => [...prev, ...newPosts]);
         setPostState(prev => [...prev, ...newPosts]);
         setPostsHasMore(newPosts.length === ITEMS_PER_PAGE);
@@ -1367,22 +1466,42 @@ const ProfilePage = () => {
 
         {/* Posts Section */}
         {/* Posts Filter */}
-        <div className="flex items-center gap-2 mb-4">
-          <Filter className="w-5 h-5 text-forest-green" />
-          <select value={areaFilter} onChange={e => setAreaFilter(e.target.value)} className="border rounded px-2 py-1">
-            <option value="all">All Growth Areas</option>
-            {uniqueAreas.map(area => (
-              <option key={area} value={area}>{area}</option>
-            ))}
-          </select>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Filter className="w-5 h-5 text-forest-green" />
+            <select value={areaFilter} onChange={e => setAreaFilter(e.target.value)} className="border rounded px-2 py-1">
+              <option value="all">All Growth Areas</option>
+              {uniqueAreas.map(area => (
+                <option key={area} value={area}>{area}</option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Privacy indicator for own profile */}
+          {isOwnProfile && (
+            <div className="flex items-center gap-2 text-sm text-charcoal-gray/70">
+              <Lock className="w-4 h-4" />
+              <span>Private posts are only visible to you</span>
+            </div>
+          )}
         </div>
+
         {/* Posts Feed */}
         <div className="space-y-6">
           {filteredPosts.length === 0 ? (
-            <div className="text-center text-charcoal-gray/60 italic py-12">This user hasn't posted yet — but they're still growing 🌱</div>
+            <div className="text-center text-charcoal-gray/60 italic py-12">
+              {isOwnProfile ? (
+                <>
+                  <div className="text-lg mb-2">No posts yet</div>
+                  <div className="text-sm">Complete challenges to start sharing your growth journey!</div>
+                </>
+              ) : (
+                "This user hasn't posted yet — but they're still growing 🌱"
+              )}
+            </div>
           ) : (
             filteredPosts.map(post => (
-              <PostCard
+              <EnhancedPostCard
                 key={post.id}
                 post={post}
                 isLiked={post.likes?.some(l => l.user_id === user?.id) || false}

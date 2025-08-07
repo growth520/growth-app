@@ -148,3 +148,46 @@ GRANT EXECUTE ON FUNCTION public.has_user_completed_challenge_today(UUID, TEXT) 
 
 -- 13. Verification query
 SELECT 'Completed challenges table fixed successfully!' as result; 
+
+-- Fix completed_challenges table missing columns
+-- This script adds the missing columns that the ChallengeCompletionPage expects
+
+-- Add missing columns to completed_challenges table
+ALTER TABLE public.completed_challenges 
+ADD COLUMN IF NOT EXISTS challenge_title TEXT,
+ADD COLUMN IF NOT EXISTS challenge_description TEXT,
+ADD COLUMN IF NOT EXISTS photo_url TEXT,
+ADD COLUMN IF NOT EXISTS category VARCHAR(100),
+ADD COLUMN IF NOT EXISTS xp_earned INTEGER DEFAULT 10,
+ADD COLUMN IF NOT EXISTS is_extra_challenge BOOLEAN DEFAULT false;
+
+-- Create indexes for the new columns
+CREATE INDEX IF NOT EXISTS idx_completed_challenges_category ON public.completed_challenges(category);
+CREATE INDEX IF NOT EXISTS idx_completed_challenges_xp_earned ON public.completed_challenges(xp_earned);
+CREATE INDEX IF NOT EXISTS idx_completed_challenges_is_extra ON public.completed_challenges(is_extra_challenge);
+
+-- Update existing completed_challenges to have default values for new columns
+UPDATE completed_challenges 
+SET 
+  xp_earned = COALESCE(xp_earned, 10),
+  is_extra_challenge = COALESCE(is_extra_challenge, false)
+WHERE 
+  xp_earned IS NULL 
+  OR is_extra_challenge IS NULL;
+
+-- Verify the changes
+SELECT 
+    'Completed challenges table updated successfully' as status,
+    COUNT(*) as total_completed_challenges
+FROM completed_challenges;
+
+-- Show the current completed_challenges table structure
+SELECT 
+    column_name,
+    data_type,
+    is_nullable,
+    column_default
+FROM information_schema.columns 
+WHERE table_name = 'completed_challenges' 
+AND table_schema = 'public'
+ORDER BY ordinal_position; 
