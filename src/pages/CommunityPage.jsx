@@ -69,6 +69,20 @@ const CommunityPage = () => {
   // View tracking
   const { createViewObserver, trackView, trackViewImmediate, cleanup } = useViewTracking();
   
+  // Debug: Check if trackView is available
+  console.log('🔧 trackView function available:', typeof trackView);
+  
+  // Test trackView function
+  useEffect(() => {
+    if (trackView && user) {
+      console.log('🧪 Testing trackView function...');
+      // Test with a dummy call (won't actually track since it's not a real post)
+      trackView('test-post-id', 'test-user-id', 'test').then(result => {
+        console.log('🧪 trackView test result:', result);
+      });
+    }
+  }, [trackView, user]);
+  
   // Refs
   const observerRef = useRef();
 
@@ -190,6 +204,12 @@ const CommunityPage = () => {
     
     const observer = createViewObserver(async (postId, postUserId) => {
       console.log('📊 Post viewed:', postId, 'by user:', postUserId);
+      console.log('🔧 trackView function in callback:', typeof trackView);
+      
+      if (!trackView) {
+        console.error('❌ trackView function is not available!');
+        return;
+      }
       
       // Track the view and update UI if successful
       console.log('🔍 Calling trackView for post:', postId);
