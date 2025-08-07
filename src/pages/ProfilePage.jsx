@@ -182,8 +182,22 @@ const ProfilePage = () => {
 
         // Load other data in parallel (less critical)
         const [postsData, followersCount, followingCount, followingData, settingsData, progressDataResult] = await Promise.all([
-          // Initial posts with enhanced query
-          loadPosts(0),
+          // Initial posts with enhanced query - pass profileData to ensure it's available
+          (async () => {
+            const posts = await loadPosts(0);
+            // Add profile data to posts if available
+            if (posts && posts.length > 0 && profileData) {
+              return posts.map(post => ({
+                ...post,
+                profiles: {
+                  id: profileData.id,
+                  full_name: profileData.full_name,
+                  avatar_url: profileData.avatar_url
+                }
+              }));
+            }
+            return posts || [];
+          })(),
 
           // Followers count
           supabase
@@ -966,22 +980,33 @@ const ProfilePage = () => {
         query = query.eq('privacy', 'public');
       }
 
+      console.log('Loading posts for user:', userId, 'isOwnProfile:', isOwnProfile);
+
       const { data, error } = await query.range(from, to);
 
       if (error) {
         console.error('Error loading posts:', error);
+        console.error('Query details:', { userId, isOwnProfile, from, to });
         return [];
       }
 
+      console.log('Posts loaded successfully:', data?.length || 0, 'posts');
+
       if (data && data.length > 0) {
-        return data.map(post => ({
-          ...post,
-          profiles: {
-            id: profile.id,
-            full_name: profile.full_name,
-            avatar_url: profile.avatar_url
-          }
-        }));
+        // Only add profile data if profile is available
+        if (profile) {
+          return data.map(post => ({
+            ...post,
+            profiles: {
+              id: profile.id,
+              full_name: profile.full_name,
+              avatar_url: profile.avatar_url
+            }
+          }));
+        } else {
+          // Return posts without profile data if profile isn't loaded yet
+          return data;
+        }
       }
       return [];
     } catch (error) {
@@ -1000,8 +1025,18 @@ const ProfilePage = () => {
       const newPosts = await loadPosts(nextPage);
       
       if (newPosts && newPosts.length > 0) {
-        setPosts(prev => [...prev, ...newPosts]);
-        setPostState(prev => [...prev, ...newPosts]);
+        // Add profile data to new posts
+        const postsWithProfile = newPosts.map(post => ({
+          ...post,
+          profiles: {
+            id: profile.id,
+            full_name: profile.full_name,
+            avatar_url: profile.avatar_url
+          }
+        }));
+        
+        setPosts(prev => [...prev, ...postsWithProfile]);
+        setPostState(prev => [...prev, ...postsWithProfile]);
         setPostsHasMore(newPosts.length === ITEMS_PER_PAGE);
       } else {
         setPostsHasMore(false);
