@@ -38,6 +38,7 @@ const CommunityPage = () => {
   
   // Debug logging
   console.log('CommunityPage: Component loaded', { user, profile });
+  console.log('🚨 NEW VERSION LOADED - View tracking debugging enabled!');
   
   // State management
   const [posts, setPosts] = useState([]);
@@ -71,6 +72,8 @@ const CommunityPage = () => {
   
   // Debug: Check if trackView is available
   console.log('🔧 trackView function available:', typeof trackView);
+  console.log('🔧 createViewObserver function available:', typeof createViewObserver);
+  console.log('🔧 trackViewImmediate function available:', typeof trackViewImmediate);
   
   // Test trackView function
   useEffect(() => {
