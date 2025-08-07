@@ -78,9 +78,9 @@ export const useViewTracking = () => {
       // Call the RPC function to increment view count
       const { data, error } = await supabase
         .rpc('increment_post_view', {
-          post_id: postId,
-          viewer_id: user.id,
-          view_type: viewType
+          p_post_id: postId,
+          p_viewer_id: user.id,
+          p_view_type: viewType
         });
 
       if (error) {
