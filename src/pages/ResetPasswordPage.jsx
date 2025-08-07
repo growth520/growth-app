@@ -18,6 +18,7 @@ const ResetPasswordPage = () => {
   const [passwordReset, setPasswordReset] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [debugInfo, setDebugInfo] = useState('');
 
     useEffect(() => {
     // Handle password reset flow
@@ -25,6 +26,7 @@ const ResetPasswordPage = () => {
       try {
         console.log('Reset password page loaded');
         console.log('Current URL:', window.location.href);
+        setDebugInfo('Starting authentication check...');
         
         // Check if we have a recovery token in the URL
         const urlParams = new URLSearchParams(window.location.search);
@@ -44,9 +46,12 @@ const ResetPasswordPage = () => {
           fullUrl: window.location.href
         });
 
+        setDebugInfo(`Found tokens: access=${!!accessToken}, refresh=${!!refreshToken}, recovery=${!!recoveryToken}, generic=${!!token}`);
+
         // If we have any token, try to set up the session
         if (accessToken && refreshToken) {
           console.log('Setting session with access and refresh tokens');
+          setDebugInfo('Setting session with access and refresh tokens...');
           const { data, error } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken
@@ -54,38 +59,49 @@ const ResetPasswordPage = () => {
           
           if (error) {
             console.error('Error setting session:', error);
+            setDebugInfo(`Session error: ${error.message}`);
           } else {
             console.log('Session set successfully');
+            setDebugInfo('Session set successfully');
           }
         } else if (recoveryToken) {
           console.log('Found recovery token, attempting to recover session');
+          setDebugInfo('Recovering session with recovery token...');
           // Try to recover the session with the recovery token
           const { data, error } = await supabase.auth.recoverSession(recoveryToken);
           
           if (error) {
             console.error('Error recovering session:', error);
+            setDebugInfo(`Recovery error: ${error.message}`);
           } else {
             console.log('Session recovered successfully');
+            setDebugInfo('Session recovered successfully');
           }
         } else if (token) {
           console.log('Found generic token, attempting to use it');
+          setDebugInfo('Trying generic token...');
           // This might be a recovery token in a different format
           try {
             const { data, error } = await supabase.auth.recoverSession(token);
             if (error) {
               console.error('Error with generic token:', error);
+              setDebugInfo(`Generic token error: ${error.message}`);
             } else {
               console.log('Session recovered with generic token');
+              setDebugInfo('Session recovered with generic token');
             }
           } catch (err) {
             console.error('Error processing generic token:', err);
+            setDebugInfo(`Generic token exception: ${err.message}`);
           }
         } else {
           console.log('No tokens found in URL');
+          setDebugInfo('No tokens found in URL, checking existing session...');
           // Check if user is already authenticated
           const { data: { user } } = await supabase.auth.getUser();
           if (!user) {
             console.log('No user found, redirecting to forgot password');
+            setDebugInfo('No user found, redirecting...');
             toast({
               title: "Invalid Reset Link",
               description: "This reset link is invalid or has expired. Please request a new one.",
@@ -93,27 +109,34 @@ const ResetPasswordPage = () => {
             });
             navigate('/forgot-password');
             return;
+          } else {
+            console.log('User already authenticated:', user.email);
+            setDebugInfo(`User already authenticated: ${user.email}`);
           }
         }
 
         // Final check - are we authenticated now?
         const { data: { user } } = await supabase.auth.getUser();
         console.log('Final user check:', !!user);
+        setDebugInfo(`Final user check: ${!!user}`);
         
         if (!user) {
           console.log('Still no user, redirecting to forgot password');
+          setDebugInfo('Still no user, redirecting...');
           toast({
             title: "Invalid Reset Link",
             description: "This reset link is invalid or has expired. Please request a new one.",
             variant: "destructive"
           });
           navigate('/forgot-password');
-                } else {
+        } else {
           console.log('User authenticated successfully:', user.email);
+          setDebugInfo(`User authenticated successfully: ${user.email}`);
           setIsAuthenticated(true);
         }
       } catch (error) {
         console.error('Error in password reset flow:', error);
+        setDebugInfo(`Error: ${error.message}`);
         toast({
           title: "Error",
           description: "An error occurred while processing your reset link. Please try again.",
@@ -122,11 +145,24 @@ const ResetPasswordPage = () => {
         navigate('/forgot-password');
       } finally {
         setIsLoading(false);
+        setDebugInfo(prev => prev + ' (Loading finished)');
       }
     };
 
     handlePasswordReset();
-  }, [navigate, toast]);
+    
+    // Add a timeout to prevent infinite loading
+    const timeout = setTimeout(() => {
+      if (isLoading) {
+        console.log('Authentication timeout - forcing completion');
+        setDebugInfo('Authentication timeout - forcing completion');
+        setIsLoading(false);
+        setIsAuthenticated(false);
+      }
+    }, 10000); // 10 second timeout
+
+    return () => clearTimeout(timeout);
+  }, [navigate, toast, isLoading]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -219,7 +255,13 @@ const ResetPasswordPage = () => {
             <div className="flex items-center justify-center mb-4">
               <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
             </div>
-            <p className="text-gray-600">Verifying your reset link...</p>
+            <p className="text-gray-600 mb-4">Verifying your reset link...</p>
+            {debugInfo && (
+              <div className="mt-4 p-3 bg-gray-100 rounded text-xs text-gray-600 text-left">
+                <p className="font-semibold mb-1">Debug Info:</p>
+                <p className="break-all">{debugInfo}</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
