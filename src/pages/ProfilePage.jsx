@@ -100,7 +100,7 @@ const ProfilePage = () => {
   const [editEmail, setEditEmail] = useState('');
   
   // View tracking
-  const { createViewObserver, trackViewImmediate, cleanup } = useViewTracking();
+  const { createViewObserver, trackView, trackViewImmediate, cleanup } = useViewTracking();
   const [editLocation, setEditLocation] = useState('');
   const [editUsername, setEditUsername] = useState('');
   const [editBio, setEditBio] = useState('');

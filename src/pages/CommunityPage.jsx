@@ -67,7 +67,7 @@ const CommunityPage = () => {
   const [selectedPostForModal, setSelectedPostForModal] = useState(null);
   
   // View tracking
-  const { createViewObserver, trackViewImmediate, cleanup } = useViewTracking();
+  const { createViewObserver, trackView, trackViewImmediate, cleanup } = useViewTracking();
   
   // Refs
   const observerRef = useRef();
@@ -250,7 +250,8 @@ const CommunityPage = () => {
           post_type,
           metadata,
           likes_count,
-          comments_count
+          comments_count,
+          views_count
         `)
         .eq('privacy', 'public'); // Only show posts that are explicitly public
       
