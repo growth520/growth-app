@@ -394,6 +394,17 @@ const LoginPage = () => {
                     className="h-12 bg-white/80 border-gray-200 text-gray-800 placeholder:text-gray-500 rounded-lg" 
                     required
                   />
+                  {isLogin && (
+                    <div className="text-right">
+                      <button
+                        type="button"
+                        onClick={() => navigate('/forgot-password')}
+                        className="text-sm text-white/80 hover:text-orange-400 transition-colors underline"
+                      >
+                        Forgot Password?
+                      </button>
+                    </div>
+                  )}
                   <Button 
                     type="submit" 
                     className="w-full h-12 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded-lg hover:from-orange-600 hover:to-red-600 transition-all duration-300"

@@ -9,6 +9,8 @@ import Navigation from '@/components/Navigation';
 import BackchatWidget from '@/components/BackchatWidget';
 import LoginPage from '@/pages/LoginPage'; // Keep login page eager for initial load
 import AuthCallbackPage from '@/pages/AuthCallbackPage'; // Keep auth callback eager for email confirmation
+import ForgotPasswordPage from '@/pages/ForgotPasswordPage';
+import ResetPasswordPage from '@/pages/ResetPasswordPage';
 import { 
   LazyChallengePage,
   LazyChallengeDetailsPage,
@@ -139,6 +141,8 @@ function AppContent() {
               <LazyBadgesPage />
             </Suspense>
           } />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/test-email" element={<TestEmailPage />} />
         </Routes>
       </div>
