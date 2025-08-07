@@ -633,9 +633,47 @@ const ProfilePage = () => {
   };
 
   // Share logic
-  const handleShare = (post) => {
-    const shareUrl = `${window.location.origin}/post/${post.id}`;
-    navigator.clipboard.writeText(shareUrl);
+  const handleShare = async (post) => {
+    try {
+      const shareUrl = `${window.location.origin}/post/${post.id}`;
+      
+      if (navigator.share) {
+        await navigator.share({
+          title: 'Growth Challenge',
+          text: post.reflection,
+          url: shareUrl
+        });
+      } else {
+        // Fallback: copy to clipboard
+        await navigator.clipboard.writeText(shareUrl);
+        toast({
+          title: "Shared!",
+          description: "Post link copied to clipboard.",
+        });
+      }
+      
+      // Update shares count
+      const { data: currentPost } = await supabase
+        .from('posts')
+        .select('shares_count')
+        .eq('id', post.id)
+        .single();
+      
+      if (currentPost) {
+        await supabase
+          .from('posts')
+          .update({ shares_count: (currentPost.shares_count || 0) + 1 })
+          .eq('id', post.id);
+      }
+      
+    } catch (error) {
+      console.error('Error sharing post:', error);
+      toast({
+        title: "Share Error",
+        description: "Failed to share post. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   // Comment logic (open comments modal or navigate to post)

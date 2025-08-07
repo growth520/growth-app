@@ -35,12 +35,10 @@ const PostPage = () => {
   // Fetch post data with privacy check
   const fetchPost = async () => {
     if (!postId) {
-      console.log('No postId provided');
       setNotFound(true);
       return;
     }
     
-    console.log('Fetching post with ID:', postId);
     setLoading(true);
     try {
       // First, try to fetch the post with basic info
@@ -66,8 +64,6 @@ const PostPage = () => {
         .eq('id', postId)
         .single();
 
-      console.log('Post query result:', { data, error, postId, postIdType: typeof postId });
-
       if (error) {
         console.error('Error fetching post:', error);
         setNotFound(true);
@@ -77,19 +73,9 @@ const PostPage = () => {
       // Check if post is public (fallback to just privacy check if share_to_community doesn't exist)
       const isPublic = data.privacy === 'public' && (data.share_to_community !== false || data.share_to_community === undefined);
       
-      console.log('Post privacy check:', {
-        privacy: data.privacy,
-        share_to_community: data.share_to_community,
-        isPublic,
-        user: user?.id,
-        postUserId: data.user_id,
-        isOwner: user?.id === data.user_id
-      });
-      
       if (!isPublic) {
         // Check if user is authenticated and is the owner
         if (!user || user.id !== data.user_id) {
-          console.log('Post is private and user is not owner');
           setIsPrivate(true);
           setNotFound(false);
           return;
