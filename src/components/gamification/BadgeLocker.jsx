@@ -162,11 +162,16 @@ const BadgeLocker = ({ userId, onViewAll }) => {
                       {/* Badge Icon */}
                       <div className="w-16 h-16 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-full flex items-center justify-center border-2 border-yellow-200 mx-auto mb-2">
                         {badge.icon_url ? (
-                          <img 
-                            src={badge.icon_url} 
-                            alt={badge.name}
-                            className="w-8 h-8"
-                          />
+                          // Check if icon_url is an emoji (simple check for common emoji characters)
+                          /[✅✋🔟2️⃣5️⃣5️⃣0️⃣7️⃣5️⃣💯🔥🚀🏅🥈🥉4️⃣🏅6️⃣7️⃣8️⃣9️⃣🔟🔰🌐💫🎯🏆🌟🌞🔥💭🤝🫂❤️💖💗💞💝📣🌍💬🗣️🗨️📝🏷️📦📚🎒🏰🏛️🏯🤖🧩⚡🔮🧠✨🌅🌙📆🗓️🦋]/.test(badge.icon_url) ? (
+                            <span className="text-2xl">{badge.icon_url}</span>
+                          ) : (
+                            <img 
+                              src={badge.icon_url} 
+                              alt={badge.name}
+                              className="w-8 h-8"
+                            />
+                          )
                         ) : (
                           <Trophy className="w-8 h-8 text-yellow-600" />
                         )}
