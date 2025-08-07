@@ -52,47 +52,52 @@ export const useViewTracking = () => {
   }, []);
 
   // Track a view for a post
-  const trackView = useCallback(async (postId, postUserId) => {
-    console.log('🔍 trackView called:', { postId, postUserId, currentUser: user?.id });
+  const trackView = useCallback(async (postId, postUserId, viewType = 'scroll') => {
+    console.log('🔍 trackView called:', { postId, postUserId, viewType, currentUser: user?.id });
     
     if (!user || !postId) {
       console.log('❌ Missing user or postId:', { user: !!user, postId: !!postId });
-      return;
+      return false;
     }
 
     // Skip if viewing own post
     if (postUserId === user.id) {
       console.log('⏭️ Skipping view tracking for own post:', postId);
-      return;
+      return false;
     }
 
     // Skip if already viewed in this session
     if (hasViewedPost(postId)) {
       console.log('🔄 Post already viewed in this session:', postId);
-      return;
+      return false;
     }
 
-    console.log('📊 Attempting to track view for post:', postId);
+    console.log('📊 Attempting to track view for post:', postId, 'type:', viewType);
 
     try {
       // Call the RPC function to increment view count
       const { data, error } = await supabase
         .rpc('increment_post_view', {
           post_id: postId,
-          viewer_id: user.id
+          viewer_id: user.id,
+          view_type: viewType
         });
 
       if (error) {
         console.error('❌ Error tracking view:', error);
-        return;
+        return false;
       }
 
       // Mark as viewed in session storage
       addViewedPost(postId);
       console.log('✅ View tracked successfully for post:', postId);
 
+      // Return success for UI updates
+      return true;
+
     } catch (error) {
       console.error('❌ Exception tracking view:', error);
+      return false;
     }
   }, [user]);
 

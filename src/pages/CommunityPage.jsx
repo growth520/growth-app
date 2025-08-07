@@ -188,9 +188,22 @@ const CommunityPage = () => {
   useEffect(() => {
     console.log('🔧 Setting up view tracking observer for', posts.length, 'posts');
     
-    const observer = createViewObserver((postId, postUserId) => {
+    const observer = createViewObserver(async (postId, postUserId) => {
       console.log('📊 Post viewed:', postId, 'by user:', postUserId);
-      // The view tracking is handled automatically by the hook
+      
+      // Track the view and update UI if successful
+      const success = await trackView(postId, postUserId, 'scroll');
+      if (success) {
+        // Update the posts state to reflect the new view count
+        setPosts(prevPosts => 
+          prevPosts.map(post => 
+            post.id === postId 
+              ? { ...post, views_count: (post.views_count || 0) + 1 }
+              : post
+          )
+        );
+        console.log('📈 Updated UI for post:', postId);
+      }
     });
 
     // Observe all post elements
@@ -206,7 +219,7 @@ const CommunityPage = () => {
       console.log('🧹 Cleaning up view tracking observer');
       cleanup();
     };
-  }, [posts, createViewObserver, cleanup]);
+  }, [posts, createViewObserver, cleanup, trackView]);
 
   // Fetch posts directly from posts table with proper joins
   const fetchPosts = useCallback(async (pageNum = 0, refresh = false) => {
@@ -898,7 +911,19 @@ const CommunityPage = () => {
     
     // Track view immediately when modal opens
     console.log('🎯 Modal opened, tracking view immediately for post:', post.id);
-    trackViewImmediate(post.id, post.user_id);
+    trackView(post.id, post.user_id, 'modal').then(success => {
+      if (success) {
+        // Update the posts state to reflect the new view count
+        setPosts(prevPosts => 
+          prevPosts.map(p => 
+            p.id === post.id 
+              ? { ...p, views_count: (p.views_count || 0) + 1 }
+              : p
+          )
+        );
+        console.log('📈 Updated UI for modal view:', post.id);
+      }
+    });
   };
 
   const handlePostModalClose = () => {
