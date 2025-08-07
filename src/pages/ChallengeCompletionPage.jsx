@@ -344,10 +344,14 @@ const ChallengeCompletionPage = () => {
         .insert({
           user_id: user.id,
           challenge_id: challenge.id,
+          challenge_title: challenge.title,
+          challenge_description: challenge.description,
           reflection: reflection.trim(),
           photo_url: photoUrl,
           category: challenge.category,
-          completed_at: new Date().toISOString()
+          completed_at: new Date().toISOString(),
+          xp_earned: challenge.xp_reward || 10,
+          is_extra_challenge: false
         });
 
       if (completionError) throw completionError;
@@ -515,10 +519,14 @@ const ChallengeCompletionPage = () => {
         .insert({
           user_id: user.id,
           challenge_id: challenge.id,
+          challenge_title: challenge.title,
+          challenge_description: challenge.description,
           reflection: extraReflection.trim(),
           photo_url: photoUrl,
           category: challenge.category,
-          completed_at: new Date().toISOString()
+          completed_at: new Date().toISOString(),
+          xp_earned: 5,
+          is_extra_challenge: true
         });
 
       if (error) throw error;

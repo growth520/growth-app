@@ -717,10 +717,14 @@ const ChallengePage = () => {
       await supabase.from('completed_challenges').insert({
         user_id: user.id,
         challenge_id: extraChallengeState.challenge.id,
+        challenge_title: extraChallengeState.challenge.title,
+        challenge_description: extraChallengeState.challenge.description,
         completed_at: new Date().toISOString(),
         reflection: extraChallengeState.reflection,
         photo_url: postPhotoUrl,
-        category: extraChallengeState.challenge.category
+        category: extraChallengeState.challenge.category,
+        xp_earned: 5,
+        is_extra_challenge: true
       });
       // Insert into posts if public
       if (mediaState.privacy === 'public' || mediaState.privacy === 'friends') {
