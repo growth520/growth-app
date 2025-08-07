@@ -405,17 +405,18 @@ const ChallengeCompletionPage = () => {
       const newLevel = calculateLevelFromXP(newXp);
       const xpToNextLevel = calculateXPForNextLevel(currentProgress.level);
 
-      // Get current challenge count and increment it
-      const { data: challengeCountData, error: countError } = await supabase
-        .from('completed_challenges')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id);
+      // Get current challenge count from user_progress instead
+      const { data: userProgressData, error: progressError } = await supabase
+        .from('user_progress')
+        .select('total_challenges_completed')
+        .eq('user_id', user.id)
+        .single();
 
-      if (countError) {
-        console.error('Error getting challenge count:', countError);
+      if (progressError) {
+        console.error('Error getting user progress:', progressError);
       }
 
-      const newChallengeCount = (challengeCountData?.length || 0) + 1;
+      const newChallengeCount = (userProgressData?.total_challenges_completed || 0) + 1;
 
       // Get the new streak from the streak system result
       const newStreak = streakResult.success ? streakResult.data?.new_streak : (currentProgress.streak + 1);
