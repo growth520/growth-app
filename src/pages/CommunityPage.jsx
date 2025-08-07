@@ -192,7 +192,10 @@ const CommunityPage = () => {
       console.log('📊 Post viewed:', postId, 'by user:', postUserId);
       
       // Track the view and update UI if successful
+      console.log('🔍 Calling trackView for post:', postId);
       const success = await trackView(postId, postUserId, 'scroll');
+      console.log('🔍 trackView result:', success);
+      
       if (success) {
         // Update the posts state to reflect the new view count
         setPosts(prevPosts => 
@@ -203,6 +206,8 @@ const CommunityPage = () => {
           )
         );
         console.log('📈 Updated UI for post:', postId);
+      } else {
+        console.log('❌ trackView failed for post:', postId);
       }
     });
 
