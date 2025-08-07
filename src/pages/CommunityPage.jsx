@@ -547,7 +547,7 @@ const CommunityPage = () => {
       const shareData = {
         title: 'Growth Challenge',
         text: post.reflection,
-        url: `${window.location.origin}/community/post/${post.id}`
+        url: `${window.location.origin}/post/${post.id}`
       };
       
       if (navigator.share) {

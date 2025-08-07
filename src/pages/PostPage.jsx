@@ -66,7 +66,7 @@ const PostPage = () => {
         .eq('id', postId)
         .single();
 
-      console.log('Post query result:', { data, error });
+      console.log('Post query result:', { data, error, postId, postIdType: typeof postId });
 
       if (error) {
         console.error('Error fetching post:', error);
@@ -74,8 +74,8 @@ const PostPage = () => {
         return;
       }
 
-      // Check if post is public
-      const isPublic = data.privacy === 'public' && data.share_to_community !== false;
+      // Check if post is public (fallback to just privacy check if share_to_community doesn't exist)
+      const isPublic = data.privacy === 'public' && (data.share_to_community !== false || data.share_to_community === undefined);
       
       console.log('Post privacy check:', {
         privacy: data.privacy,
