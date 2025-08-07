@@ -53,9 +53,9 @@ const PostCard = ({
     setViewsCount(post.views_count || 0);
   }, [post.id, post.likes_count, post.comments_count, post.shares_count, post.views_count]);
 
-  // Fetch recent comments - temporarily disabled due to timeout issues
+  // Fetch recent comments
   useEffect(() => {
-    fetchRecentComments(); // Re-enabled with better error handling
+    fetchRecentComments();
   }, [post.id]);
 
   // Rotate comments every 5 seconds
@@ -72,13 +72,12 @@ const PostCard = ({
 
   const fetchRecentComments = async () => {
     try {
-      // Add timeout and error handling for the comments query
       const { data, error } = await supabase
         .from('comments')
         .select('*')
         .eq('post_id', post.id)
         .order('created_at', { ascending: false })
-        .limit(3); // Increased limit slightly for better user experience
+        .limit(3);
 
       if (error) {
         console.warn('Comments fetch failed, continuing without comments:', error);
@@ -97,7 +96,6 @@ const PostCard = ({
 
         if (profilesError) {
           console.error('Error fetching comment profiles:', profilesError);
-          // Still show comments even if profile fetch fails
           setRecentComments(data);
           setCommentsCount(data.length);
         } else {
@@ -114,42 +112,31 @@ const PostCard = ({
 
           setRecentComments(commentsWithProfiles);
           setCommentsCount(commentsWithProfiles.length);
-          return;
         }
+      } else {
+        setRecentComments([]);
+        setCommentsCount(0);
       }
-      
-      setRecentComments(data || []);
-      setCommentsCount(data?.length || 0);
     } catch (error) {
-      console.warn('Comments fetch error, continuing without comments:', error);
+      console.error('Error fetching recent comments:', error);
       setRecentComments([]);
       setCommentsCount(0);
     }
   };
 
   const handleLike = async () => {
-    if (isLoading) return;
+    if (!onLike) return;
     
     setIsLoading(true);
-    
     try {
-      // Optimistic update
-      const newLikesCount = isLikedState ? Math.max(0, likesCount - 1) : likesCount + 1;
-      setLikesCount(newLikesCount);
-      setIsLikedState(!isLikedState);
-      
-      // Call the parent handler
       await onLike();
-      
+      setIsLikedState(!isLikedState);
+      setLikesCount(prev => isLikedState ? prev - 1 : prev + 1);
     } catch (error) {
-      // Revert optimistic update on error
-      setLikesCount(isLikedState ? likesCount : Math.max(0, likesCount - 1));
-      setIsLikedState(isLikedState);
-      
-      console.error('Error handling like:', error);
+      console.error('Error toggling like:', error);
       toast({
         title: "Error",
-        description: "Failed to update like. Please try again.",
+        description: "Failed to update like",
         variant: "destructive"
       });
     } finally {
@@ -158,75 +145,51 @@ const PostCard = ({
   };
 
   const handleComment = () => {
-    onComment();
+    if (onComment) {
+      onComment();
+    }
   };
 
   const handleShare = async () => {
+    if (!onShare) return;
+    
     try {
-      const shareData = {
-        title: 'Growth Challenge',
-        text: post.reflection,
-        url: `${window.location.origin}/community/post/${post.id}`
-      };
-      
-      if (navigator.share) {
-        await navigator.share(shareData);
-      } else {
-        // Fallback: copy to clipboard
-        await navigator.clipboard.writeText(shareData.url);
-        toast({
-          title: "Shared!",
-          description: "Post link copied to clipboard.",
-        });
-      }
-      
-      // Update shares count
-      const { data: currentPost } = await supabase
-        .from('posts')
-        .select('shares_count')
-        .eq('id', post.id)
-        .single();
-      
-      if (currentPost) {
-        await supabase
-          .from('posts')
-          .update({ shares_count: (currentPost.shares_count || 0) + 1 })
-          .eq('id', post.id);
-      }
-      
+      await onShare();
       setSharesCount(prev => prev + 1);
-      
+      toast({
+        title: "Shared!",
+        description: "Post shared successfully",
+      });
     } catch (error) {
       console.error('Error sharing post:', error);
+      toast({
+        title: "Error",
+        description: "Failed to share post",
+        variant: "destructive"
+      });
     }
   };
 
   const getGrowthAreaEmoji = (growthArea) => {
     const emojiMap = {
-      'spiritual': '🙏',
-      'emotional': '💝',
-      'physical': '💪',
-      'intellectual': '🧠',
-      'social': '🤝',
-      'financial': '💰',
-      'career': '💼',
-      'Self-Control': '🎯',
-      'Patience': '⏳',
-      'Kindness': '💝',
-      'Humility': '🙏',
+      'Confidence': '💪',
+      'Communication': '💬',
+      'Self-Control': '🧘',
+      'Self-Worth': '💎',
+      'Mindfulness': '🧠',
+      'Relationships': '❤️',
+      'Leadership': '👑',
+      'Resilience': '🛡️',
       'Gratitude': '🙏',
-      'Generosity': '🎁',
-      'Honesty': '🤝',
-      'Forgiveness': '💚',
-      'Compassion': '💕',
-      'Perseverance': '💪'
+      'Creativity': '🎨',
+      'Empathy': '🤝',
+      'Optimism': '☀️'
     };
-    return emojiMap[growthArea] || '🌱';
+    return emojiMap[growthArea] || '🎯';
   };
 
   const calculatePostScore = () => {
-    // This is now handled in the parent component
-    return 0;
+    return (likesCount * 2) + (commentsCount * 3) + (sharesCount * 1);
   };
 
   const getTimeAgo = (dateString) => {
@@ -253,7 +216,7 @@ const PostCard = ({
 
   const getAvatarFallback = () => {
     const name = getDisplayName();
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    return name.charAt(0).toUpperCase();
   };
 
   return (
@@ -263,7 +226,7 @@ const PostCard = ({
         <div className="flex items-center space-x-3">
           <Avatar 
             className="h-10 w-10 cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={() => onProfileClick(post.user_id)}
+            onClick={() => onProfileClick && onProfileClick(post.user_id)}
           >
             <AvatarImage src={getAvatarUrl()} alt={getDisplayName()} />
             <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-medium">
@@ -274,7 +237,7 @@ const PostCard = ({
           <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-2">
               <button
-                onClick={() => onProfileClick(post.user_id)}
+                onClick={() => onProfileClick && onProfileClick(post.user_id)}
                 className="font-semibold text-gray-900 hover:text-blue-600 transition-colors text-left truncate"
               >
                 {getDisplayName()}
@@ -377,69 +340,68 @@ const PostCard = ({
         </div>
       )}
         
-        {/* Comments Preview */}
-        {showInteractions && recentComments.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-gray-100">
-            <div className="flex items-start space-x-2">
-              <Avatar className="h-6 w-6">
-                <AvatarImage 
-                  src={recentComments[currentCommentIndex]?.profiles?.avatar_url} 
-                  alt={recentComments[currentCommentIndex]?.profiles?.username} 
-                />
-                <AvatarFallback className="text-xs">
-                  {recentComments[currentCommentIndex]?.profiles?.username?.charAt(0)?.toUpperCase() || 'U'}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium text-gray-900">
-                    {recentComments[currentCommentIndex]?.profiles?.username || 'Anonymous'}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {getTimeAgo(recentComments[currentCommentIndex]?.created_at)}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-700 mt-1">
-                  {recentComments[currentCommentIndex]?.content}
-                </p>
+      {/* Comments Preview */}
+      {showInteractions && recentComments.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-gray-100">
+          <div className="flex items-start space-x-2">
+            <Avatar className="h-6 w-6">
+              <AvatarImage 
+                src={recentComments[currentCommentIndex]?.profiles?.avatar_url} 
+                alt={recentComments[currentCommentIndex]?.profiles?.username} 
+              />
+              <AvatarFallback className="text-xs">
+                {recentComments[currentCommentIndex]?.profiles?.username?.charAt(0)?.toUpperCase() || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-medium text-gray-900">
+                  {recentComments[currentCommentIndex]?.profiles?.username || 'Anonymous'}
+                </span>
+                <span className="text-xs text-gray-500">
+                  {getTimeAgo(recentComments[currentCommentIndex]?.created_at)}
+                </span>
               </div>
+              <p className="text-sm text-gray-700 mt-1">
+                {recentComments[currentCommentIndex]?.content}
+              </p>
             </div>
-            
-            {recentComments.length > 1 && (
-              <div className="flex items-center justify-between mt-2">
-                <div className="flex space-x-1">
-                  {recentComments.map((_, index) => (
-                    <div
-                      key={index}
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        index === currentCommentIndex ? 'bg-blue-500' : 'bg-gray-300'
-                      }`}
-                    />
-                  ))}
-                </div>
-                <button
-                  onClick={onViewComments}
-                  className="text-xs text-blue-600 hover:text-blue-800 font-medium"
-                >
-                  View all {commentsCount} comments
-                </button>
+          </div>
+          
+          {recentComments.length > 1 && (
+            <div className="flex items-center justify-between mt-2">
+              <div className="flex space-x-1">
+                {recentComments.map((_, index) => (
+                  <div
+                    key={index}
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      index === currentCommentIndex ? 'bg-blue-500' : 'bg-gray-300'
+                    }`}
+                  />
+                ))}
               </div>
-            )}
-          </div>
-        )}
+              <button
+                onClick={onViewComments}
+                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+              >
+                View all {commentsCount} comments
+              </button>
+            </div>
+          )}
+        </div>
+      )}
         
-        {/* View Comments Link */}
-        {showInteractions && commentsCount > 0 && recentComments.length === 0 && (
-          <div className="mt-3 pt-3 border-t border-gray-100">
-            <button
-              onClick={onViewComments}
-              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-            >
-              View all {commentsCount} comments
-            </button>
-          </div>
-        )}
-      </div>
+      {/* View Comments Link */}
+      {showInteractions && commentsCount > 0 && recentComments.length === 0 && (
+        <div className="mt-3 pt-3 border-t border-gray-100">
+          <button
+            onClick={onViewComments}
+            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+          >
+            View all {commentsCount} comments
+          </button>
+        </div>
+      )}
     </div>
   );
 };
