@@ -84,80 +84,68 @@ const LeaderboardPage = () => {
 
       // Use different approach for challenges filter
       if (filterKey === 'challenges') {
-        try {
-          // Use the get_leaderboard_by_challenges function
-          const { data: challengeData, error: challengeError } = await supabase.rpc(
-            'get_leaderboard_by_challenges',
-            { 
-              p_limit: limit,
-              p_offset: offset
-            }
-          );
-          
-          if (challengeError) throw challengeError;
-          
-          // Transform the data to match expected format
-          progressData = (challengeData || []).map(user => ({
-            user_id: user.user_id,
-            xp: user.xp,
-            level: user.level,
-            streak: user.streak,
-            total_challenges_completed: user.challenge_count,
-            challenge_count: user.challenge_count, // Keep both for compatibility
-            profiles: user.profiles
-          }));
-          
-          console.log('Challenge leaderboard data:', progressData);
-        } catch (challengeError) {
-          console.warn('Challenge leaderboard function not available, falling back to regular query');
-          // Fallback to regular query - fetch user_progress first, then profiles separately
-          let query = supabase
-            .from('user_progress')
-            .select(`
-              user_id,
-              xp,
-              streak,
-              total_challenges_completed
-            `)
-            .order('total_challenges_completed', { ascending: false });
+        // For challenges, use the same approach as the working Leaderboard component
+        console.log('Fetching challenge-based leaderboard...');
+        
+        // First, get all users with completed assessment
+        const { data: allProfiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name, username, avatar_url')
+          .eq('has_completed_assessment', true);
 
-          if (!isSearch) {
-            query = query.range(offset, offset + limit - 1);
-          }
-
-          const result = await query;
-          progressData = result.data;
-          error = result.error;
-
-          // If we got user_progress data, fetch profiles separately
-          if (progressData && progressData.length > 0) {
-            const userIds = [...new Set(progressData.map(user => user.user_id))];
-            const { data: profiles, error: profilesError } = await supabase
-              .from('profiles')
-              .select('id, full_name, username, avatar_url')
-              .in('id', userIds)
-              .eq('has_completed_assessment', true);
-            
-            if (profilesError) {
-              console.error('Profiles Error:', profilesError);
-            } else {
-              // Create a map of user_id to profile data
-              const profilesMap = profiles.reduce((acc, profile) => {
-                acc[profile.id] = profile;
-                return acc;
-              }, {});
-              
-              // Filter progressData to only include users with profiles (who completed assessment)
-              progressData = progressData.filter(user => profilesMap[user.user_id]);
-              
-              // Add profiles data to each user
-              progressData = progressData.map(user => ({
-                ...user,
-                profiles: profilesMap[user.user_id]
-              }));
-            }
-          }
+        if (profilesError) {
+          console.error('Profiles Error:', profilesError);
+          throw profilesError;
         }
+
+        console.log(`Found ${allProfiles.length} users with completed assessment for challenges`);
+
+        // Then, get their user_progress data (if any)
+        const userIds = allProfiles.map(p => p.id);
+        const { data: userProgressData, error: progressError } = await supabase
+          .from('user_progress')
+          .select('user_id, xp, level, streak, total_challenges_completed')
+          .in('user_id', userIds);
+
+        if (progressError) {
+          console.error('Progress Error:', progressError);
+        }
+
+        console.log(`Found ${userProgressData?.length || 0} user_progress records for challenges`);
+
+        // Create a map of user_id to progress data
+        const progressMap = {};
+        if (userProgressData) {
+          userProgressData.forEach(progress => {
+            progressMap[progress.user_id] = progress;
+          });
+        }
+
+        // Combine profiles with progress data, defaulting to 0 for missing progress
+        progressData = allProfiles.map(profile => {
+          const progress = progressMap[profile.id] || {
+            user_id: profile.id,
+            xp: 0,
+            level: 1,
+            streak: 0,
+            total_challenges_completed: 0
+          };
+
+          return {
+            ...progress,
+            profiles: profile
+          };
+        });
+
+        // Sort by total_challenges_completed (descending)
+        progressData.sort((a, b) => (b.total_challenges_completed || 0) - (a.total_challenges_completed || 0));
+
+        // Apply pagination
+        if (!isSearch) {
+          progressData = progressData.slice(offset, offset + limit);
+        }
+
+        console.log(`Returning ${progressData.length} users for challenge leaderboard`);
       } else {
         // For XP and streak - fetch ALL users with completed assessment, even if they don't have user_progress records
         console.log('Fetching all users with completed assessment...');
@@ -228,47 +216,14 @@ const LeaderboardPage = () => {
       // Process the data - profiles are now handled consistently across all filters
       let validData = [];
       
-      if (filterKey === 'challenges') {
-        // For challenges, we still need to fetch profiles separately since we use the RPC function
-        let profilesData = {};
-        if (progressData && progressData.length > 0) {
-          const userIds = [...new Set(progressData.map(user => user.user_id))];
-          const { data: profiles, error: profilesError } = await supabase
-            .from('profiles')
-            .select('id, full_name, username, avatar_url')
-            .in('id', userIds);
-          
-          if (profilesError) {
-            console.error('Profiles Error:', profilesError);
-          } else {
-            // Create a map of user_id to profile data
-            profilesData = profiles.reduce((acc, profile) => {
-              acc[profile.id] = profile;
-              return acc;
-            }, {});
-          }
-        }
-
-        // Combine user_progress with profiles data for challenges
-        validData = (progressData || []).map(user => ({
-          ...user,
-          profiles: profilesData[user.user_id] || {
-            id: user.user_id,
-            full_name: 'User',
-            username: null,
-            avatar_url: null
-          }
-        }));
-      } else {
-        // For XP and streak, profiles are already included from the separate fetch
-        validData = (progressData || []).map(user => ({
-          user_id: user.user_id,
-          xp: user.xp,
-          streak: user.streak,
-          total_challenges_completed: user.total_challenges_completed,
-          profiles: user.profiles
-        }));
-      }
+      // For all filters, profiles are already included from the separate fetch
+      validData = (progressData || []).map(user => ({
+        user_id: user.user_id,
+        xp: user.xp,
+        streak: user.streak,
+        total_challenges_completed: user.total_challenges_completed,
+        profiles: user.profiles
+      }));
 
       // Filter out users without profiles and add rank numbers
       const rankedData = validData
