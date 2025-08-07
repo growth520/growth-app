@@ -51,7 +51,10 @@ function AppContent() {
     };
   }, [location.pathname]);
 
-  const shouldShowNavigation = location.pathname !== '/login' && location.pathname !== '/assessment';
+  const shouldShowNavigation = location.pathname !== '/login' && 
+                              location.pathname !== '/assessment' && 
+                              location.pathname !== '/forgot-password' && 
+                              location.pathname !== '/reset-password';
   const paddingClass = shouldShowNavigation ? 'pb-20 pt-16' : '';
 
   return (
