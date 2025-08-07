@@ -588,13 +588,15 @@ const ProfilePage = () => {
         }));
         
         // Update posts state to reflect the change
-        setPosts(prevPosts => 
-          prevPosts.map(post => 
+        setPosts(prevPosts => {
+          const updatedPosts = prevPosts.map(post => 
             post.id === postId 
               ? { ...post, likes_count: Math.max(0, (post.likes_count || 0) - 1) }
               : post
-          )
-        );
+          );
+          console.log('Updated posts state after unlike:', updatedPosts.find(p => p.id === postId));
+          return updatedPosts;
+        });
         
         toast({
           title: "Unliked!",
@@ -618,13 +620,15 @@ const ProfilePage = () => {
         }));
         
         // Update posts state to reflect the change
-        setPosts(prevPosts => 
-          prevPosts.map(post => 
+        setPosts(prevPosts => {
+          const updatedPosts = prevPosts.map(post => 
             post.id === postId 
               ? { ...post, likes_count: (post.likes_count || 0) + 1 }
               : post
-          )
-        );
+          );
+          console.log('Updated posts state after like:', updatedPosts.find(p => p.id === postId));
+          return updatedPosts;
+        });
         
         toast({
           title: "Liked!",
@@ -709,10 +713,13 @@ const ProfilePage = () => {
     const isLiked = userInteractions.likes.includes(post.id);
     const isCommented = userInteractions.comments.includes(post.id);
     
+    // Find the updated post from the posts state to get the latest likes_count
+    const updatedPost = posts.find(p => p.id === post.id) || post;
+    
     return (
       <div className="relative">
         <PostCard 
-          post={post} 
+          post={updatedPost} 
           onLike={() => handleLikeToggle(post.id)}
           onComment={() => handleOpenComments(post)}
           onShare={() => handleShare(post)}

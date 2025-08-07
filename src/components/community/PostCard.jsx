@@ -47,6 +47,7 @@ const PostCard = ({
 
   // Initialize counts from post data and update when post changes
   useEffect(() => {
+    console.log('PostCard: Updating counts for post', post.id, 'likes_count:', post.likes_count);
     setLikesCount(post.likes_count || 0);
     setCommentsCount(post.comments_count || 0);
     setSharesCount(post.shares_count || 0);
