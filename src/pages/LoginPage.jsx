@@ -31,6 +31,9 @@ const LoginPage = () => {
     }
   }, [isSignUp]);
 
+  // Debug: Log the current state
+  console.log('LoginPage - isLogin state:', isLogin);
+
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
@@ -395,11 +398,11 @@ const LoginPage = () => {
                     required
                   />
                   {isLogin && (
-                    <div className="text-right">
+                    <div className="text-center">
                       <button
                         type="button"
                         onClick={() => navigate('/forgot-password')}
-                        className="text-sm text-white/80 hover:text-orange-400 transition-colors underline"
+                        className="text-sm text-white/90 hover:text-orange-400 transition-colors underline font-medium"
                       >
                         Forgot Password?
                       </button>
