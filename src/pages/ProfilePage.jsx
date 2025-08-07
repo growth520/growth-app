@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
@@ -112,6 +112,8 @@ const ProfilePage = () => {
   const [imageToCrop, setImageToCrop] = useState(null);
   const [postsHasMore, setPostsHasMore] = useState(true);
   const [postsPage, setPostsPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [userSettings, setUserSettings] = useState(DEFAULT_USER_SETTINGS);
   const [progressData, setProgressData] = useState({
     level: 1,
@@ -120,6 +122,8 @@ const ProfilePage = () => {
     badges: []
   });
   const [userInteractions, setUserInteractions] = useState({ likes: [], comments: [] });
+  const fileInputRef = useRef(null);
+  const ITEMS_PER_PAGE = 20;
 
   // Fetch user interactions
   const fetchUserInteractions = useCallback(async () => {
