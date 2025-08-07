@@ -561,22 +561,8 @@ const CommunityPage = () => {
         });
       }
       
-      // Update shares count
-      const { data: currentPost } = await supabase
-        .from('posts')
-        .select('shares_count')
-        .eq('id', post.id)
-        .single();
-      
-      if (currentPost) {
-        await supabase
-          .from('posts')
-          .update({ shares_count: (currentPost.shares_count || 0) + 1 })
-          .eq('id', post.id);
-      }
-      
-      // Refresh posts
-      fetchPosts(0, true);
+      // Note: Share count will only update when someone actually clicks the link
+      // This prevents spam and gives more accurate metrics
       
     } catch (error) {
       console.error('Error sharing post:', error);

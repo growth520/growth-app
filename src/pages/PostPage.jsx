@@ -82,6 +82,13 @@ const PostPage = () => {
         }
       }
 
+      // Track view and share click if this is a public post accessed via shared link
+      if (isPublic && !user) {
+        // Only track view if user is not authenticated (external visitor)
+        await trackPostView(postId);
+        await trackShareClick(postId);
+      }
+
       // Fetch profile data
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -122,28 +129,112 @@ const PostPage = () => {
         const [userLikesResult, userCommentsResult] = await Promise.all([
           supabase
             .from('likes')
-            .select('post_id')
-            .eq('user_id', user.id)
-            .eq('post_id', postId),
+            .select('user_id')
+            .eq('post_id', postId)
+            .eq('user_id', user.id),
           supabase
             .from('comments')
-            .select('post_id')
-            .eq('user_id', user.id)
+            .select('id, user_id')
             .eq('post_id', postId)
+            .eq('user_id', user.id)
         ]);
 
-        setUserInteractions({
-          likes: userLikesResult.data?.map(l => l.post_id) || [],
-          comments: userCommentsResult.data?.map(c => c.post_id) || []
-        });
+        if (!userLikesResult.error) {
+          setUserInteractions(prev => ({
+            ...prev,
+            likes: userLikesResult.data || []
+          }));
+        }
+
+        if (!userCommentsResult.error) {
+          setUserInteractions(prev => ({
+            ...prev,
+            comments: userCommentsResult.data || []
+          }));
+        }
       }
 
       setPost(data);
+      setLoading(false);
     } catch (error) {
       console.error('Error fetching post:', error);
       setNotFound(true);
-    } finally {
       setLoading(false);
+    }
+  };
+
+  // Track post view (only for external visitors)
+  const trackPostView = async (postId) => {
+    try {
+      // Get visitor's IP or use a simple identifier
+      const visitorId = user?.id || 'anonymous';
+      
+      // Check if this visitor has already viewed this post recently (within 24 hours)
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      const { data: existingView } = await supabase
+        .from('post_views')
+        .select('id')
+        .eq('post_id', postId)
+        .eq('visitor_id', visitorId)
+        .gte('viewed_at', yesterday.toISOString())
+        .single();
+
+      // Only increment view count if this is a new view
+      if (!existingView) {
+        // Insert view record
+        await supabase
+          .from('post_views')
+          .insert({
+            post_id: postId,
+            visitor_id: visitorId,
+            viewed_at: new Date().toISOString()
+          });
+
+        // Update post views count
+        await supabase
+          .from('posts')
+          .update({ 
+            views_count: supabase.sql`views_count + 1` 
+          })
+          .eq('id', postId);
+      }
+    } catch (error) {
+      console.error('Error tracking post view:', error);
+    }
+  };
+
+  // Track share click (when someone visits via shared link)
+  const trackShareClick = async (postId) => {
+    try {
+      // Get visitor's IP or use a simple identifier
+      const visitorId = user?.id || 'anonymous';
+      
+      // Check if this visitor has already clicked this shared link recently (within 24 hours)
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      const { data: existingClick } = await supabase
+        .from('post_views')
+        .select('id')
+        .eq('post_id', postId)
+        .eq('visitor_id', visitorId)
+        .gte('viewed_at', yesterday.toISOString())
+        .single();
+
+      // Only increment share count if this is a new click
+      if (!existingClick) {
+        // Update post shares count
+        await supabase
+          .from('posts')
+          .update({ 
+            shares_count: supabase.sql`shares_count + 1` 
+          })
+          .eq('id', postId);
+      }
+    } catch (error) {
+      console.error('Error tracking share click:', error);
     }
   };
 
