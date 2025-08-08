@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -74,11 +74,15 @@ const ProfileSkeleton = () => (
 
 const ProfilePage = () => {
   const { userId: paramUserId } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { userBadges, refreshAllData } = useData(); // Add userBadges from DataContext
-  const isOwnProfile = !paramUserId || paramUserId === user?.id;
-  const userId = isOwnProfile ? user?.id : paramUserId;
+  
+  // Get userId from either route params or query params
+  const queryUserId = searchParams.get('userId');
+  const isOwnProfile = (!paramUserId && !queryUserId) || (paramUserId === user?.id) || (queryUserId === user?.id);
+  const userId = isOwnProfile ? user?.id : (paramUserId || queryUserId);
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
