@@ -83,6 +83,15 @@ const ProfilePage = () => {
   const queryUserId = searchParams.get('userId');
   const isOwnProfile = (!paramUserId && !queryUserId) || (paramUserId === user?.id) || (queryUserId === user?.id);
   const userId = isOwnProfile ? user?.id : (paramUserId || queryUserId);
+  
+  // Debug logging to see what's happening
+  console.log('🔧 PROFILE PAGE DEBUG:', {
+    paramUserId,
+    queryUserId,
+    user: user?.id,
+    isOwnProfile,
+    finalUserId: userId
+  });
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
