@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -75,13 +75,19 @@ const ProfileSkeleton = () => (
 const ProfilePage = () => {
   const { userId: paramUserId } = useParams();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { userBadges, refreshAllData } = useData(); // Add userBadges from DataContext
   
   // Get userId from either route params or query params
   const queryUserId = searchParams.get('userId');
-  const targetUserId = paramUserId || queryUserId;
+  
+  // Fallback: parse URL manually if searchParams doesn't work
+  const urlParams = new URLSearchParams(window.location.search);
+  const fallbackQueryUserId = urlParams.get('userId');
+  
+  const targetUserId = paramUserId || queryUserId || fallbackQueryUserId;
   const isOwnProfile = !targetUserId || targetUserId === user?.id;
   const userId = isOwnProfile ? user?.id : targetUserId;
   
@@ -89,11 +95,13 @@ const ProfilePage = () => {
   console.log('🔧 PROFILE PAGE DEBUG:', {
     paramUserId,
     queryUserId,
+    fallbackQueryUserId,
     targetUserId,
     user: user?.id,
     isOwnProfile,
     finalUserId: userId,
     searchParams: Object.fromEntries(searchParams.entries()),
+    urlSearch: window.location.search,
     location: window.location.href
   });
   const [profile, setProfile] = useState(null);
@@ -245,7 +253,16 @@ const ProfilePage = () => {
     console.log('🔧 URL PARAMETERS CHANGED - Reloading profile data');
     console.log('Current URL:', window.location.href);
     console.log('Search params:', Object.fromEntries(searchParams.entries()));
-  }, [searchParams, paramUserId]);
+    
+    // Force reload of data when URL changes
+    if (userId && user?.id) {
+      console.log('🔧 FORCING RELOAD for userId:', userId);
+      // Reset state to force reload
+      setProfile(null);
+      setPosts([]);
+      setLoading(true);
+    }
+  }, [searchParams, paramUserId, location.pathname, location.search]);
 
   // Load initial data
   useEffect(() => {
