@@ -32,6 +32,7 @@ const LeaderboardPage = () => {
   
   // Debug log to verify new version is loaded
   console.log('🚀 LEADERBOARD PAGE - NEW VERSION LOADED:', new Date().toISOString());
+  console.log('🔧 LEADERBOARD FIX APPLIED - Challenges filter should work now!');
   
   // State management
   const [selectedFilter, setSelectedFilter] = useState('xp');
