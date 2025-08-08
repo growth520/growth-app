@@ -12,5 +12,5 @@ RETURNS text
 LANGUAGE sql
 SECURITY DEFINER
 AS $$
-  SELECT 'https://' || current_setting('request.headers')::json->>'host' || '/storage/v1/object/public/photos/' || file_path;
+  SELECT 'https://eceojrvqdsfjakprojgy.supabase.co/storage/v1/object/public/photos/' || file_path;
 $$; 
