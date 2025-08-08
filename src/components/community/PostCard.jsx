@@ -48,11 +48,12 @@ const PostCard = ({
   // Initialize counts from post data and update when post changes
   useEffect(() => {
     console.log('PostCard: Updating counts for post', post.id, 'likes_count:', post.likes_count);
+    console.log('PostCard: Photo URL for post', post.id, 'photo_url:', post.photo_url);
     setLikesCount(post.likes_count || 0);
     setCommentsCount(post.comments_count || 0);
     setSharesCount(post.shares_count || 0);
     setViewsCount(post.views_count || 0);
-  }, [post.id, post.likes_count, post.comments_count, post.shares_count, post.views_count]);
+  }, [post.id, post.likes_count, post.comments_count, post.shares_count, post.views_count, post.photo_url]);
 
   // Fetch recent comments
   useEffect(() => {
@@ -285,6 +286,15 @@ const PostCard = ({
               alt="Post attachment"
               className="w-full h-auto rounded-lg object-cover max-h-96"
               loading="lazy"
+              onError={(e) => {
+                console.error('Image failed to load:', post.photo_url);
+                console.error('Error event:', e);
+                // Hide the image if it fails to load
+                e.target.style.display = 'none';
+              }}
+              onLoad={() => {
+                console.log('Image loaded successfully:', post.photo_url);
+              }}
             />
           </div>
         )}
