@@ -92,7 +92,9 @@ const ProfilePage = () => {
     targetUserId,
     user: user?.id,
     isOwnProfile,
-    finalUserId: userId
+    finalUserId: userId,
+    searchParams: Object.fromEntries(searchParams.entries()),
+    location: window.location.href
   });
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
@@ -147,12 +149,12 @@ const ProfilePage = () => {
   const fileInputRef = useRef(null);
   const ITEMS_PER_PAGE = 20;
 
-  // Fetch user interactions
+  // Fetch user interactions (only for logged-in user, not target user)
   const fetchUserInteractions = useCallback(async () => {
     if (!user) return;
     
     try {
-      console.log('Fetching user interactions for user:', user.id);
+      console.log('Fetching user interactions for logged-in user:', user.id);
       
       // Use the function to get liked posts
       const [likesResult, commentsResult] = await Promise.all([
@@ -238,9 +240,18 @@ const ProfilePage = () => {
     };
   }, [posts, createViewObserver, cleanup]);
 
+  // Watch for URL parameter changes and reload data
+  useEffect(() => {
+    console.log('🔧 URL PARAMETERS CHANGED - Reloading profile data');
+    console.log('Current URL:', window.location.href);
+    console.log('Search params:', Object.fromEntries(searchParams.entries()));
+  }, [searchParams, paramUserId]);
+
   // Load initial data
   useEffect(() => {
     if (!userId || !user?.id) return;
+    
+    console.log('🔧 LOADING PROFILE DATA for userId:', userId);
     
     const loadInitialData = async () => {
       // Fetch user interactions first
