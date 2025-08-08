@@ -283,6 +283,7 @@ const CommunityPage = () => {
           metadata,
           likes_count,
           comments_count,
+          shares_count,
           views_count
         `)
         .eq('privacy', 'public'); // Only show posts that are explicitly public

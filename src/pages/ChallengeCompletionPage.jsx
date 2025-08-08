@@ -286,6 +286,12 @@ const ChallengeCompletionPage = () => {
 
       if (error) {
         console.error('Storage upload error:', error);
+        console.error('Error details:', {
+          message: error.message,
+          statusCode: error.statusCode,
+          error: error.error,
+          details: error.details
+        });
         
         // Handle specific error types
         if (error.message?.includes('row-level security policy')) {
