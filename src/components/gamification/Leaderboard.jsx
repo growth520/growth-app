@@ -611,7 +611,7 @@ const Leaderboard = ({
                     <div className="flex items-center gap-2">
                       <h3 
                         className="font-semibold text-gray-900 truncate cursor-pointer hover:text-forest-green transition-colors"
-                        onClick={() => navigate(`/profile?userId=${profile.id}`)}
+                        onClick={() => navigate(`/profile?userId=${userData.id}`)}
                       >
                         {profile.full_name || profile.username || 'Anonymous'}
                       </h3>
