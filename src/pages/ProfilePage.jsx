@@ -26,6 +26,7 @@ import CompletedPacksSection from '@/components/gamification/CompletedPacksSecti
 import { useViewTracking } from '@/hooks/useViewTracking';
 import { getLevelInfo } from '@/lib/levelSystem';
 import PasswordManager from '@/components/PasswordManager';
+import { useFollowsRealtime } from '@/hooks/useRealtime';
 import {
   DropdownMenu,
   DropdownMenuContent,

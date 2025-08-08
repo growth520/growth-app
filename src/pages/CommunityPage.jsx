@@ -29,6 +29,7 @@ import { Badge } from '@/components/ui/badge';
 import { useData } from '@/contexts/DataContext';
 import { useNavigate } from 'react-router-dom';
 import { useViewTracking } from '@/hooks/useViewTracking';
+import { useCommunityRealtime } from '@/hooks/useRealtime';
 
 const CommunityPage = () => {
   const navigate = useNavigate();
@@ -248,6 +249,9 @@ const CommunityPage = () => {
       cleanup();
     };
   }, [posts, createViewObserver, cleanup, trackView]);
+
+  // Setup real-time updates for community feed
+  useCommunityRealtime(posts, setPosts, userInteractions, setUserInteractions);
 
   // Fetch posts directly from posts table with proper joins
   const fetchPosts = useCallback(async (pageNum = 0, refresh = false) => {

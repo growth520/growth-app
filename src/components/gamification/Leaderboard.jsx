@@ -23,6 +23,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useData } from '@/contexts/DataContext';
 import { useNavigate } from 'react-router-dom';
+import { useLeaderboardRealtime } from '@/hooks/useRealtime';
 
 const Leaderboard = ({ 
   title = "Leaderboard",
@@ -376,6 +377,9 @@ const Leaderboard = ({
       fetchUserRank(rankBy);
     }
   }, [currentPage, rankBy, user, useTopPerformersFunction]);
+
+  // Setup real-time updates for leaderboard
+  useLeaderboardRealtime(setLeaderboardData);
 
   const handleRankTypeChange = (newRankBy) => {
     setRankBy(newRankBy);

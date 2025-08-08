@@ -4,6 +4,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth as useSupabaseAuth } from './SupabaseAuthContext';
 import LevelUpModal from '@/components/gamification/LevelUpModal';
 import ConfettiCelebration from '@/components/gamification/ConfettiCelebration';
+import { useProgressRealtime, useNotificationsRealtime, useProfileRealtime } from '@/hooks/useRealtime';
 
 const DataContext = createContext(undefined);
 
@@ -550,6 +551,19 @@ export const DataProvider = ({ children }) => {
       clearInterval(pollInterval);
     };
   }, [user, refreshHasNewNotifications]);
+
+  // Setup real-time updates
+  useProgressRealtime(user?.id, (progress) => {
+    setAppState(prev => ({ ...prev, progress }));
+  });
+
+  useNotificationsRealtime(user?.id, (hasNew) => {
+    setAppState(prev => ({ ...prev, hasNewNotifications: hasNew }));
+  });
+
+  useProfileRealtime(user?.id, (profile) => {
+    setAppState(prev => ({ ...prev, profile }));
+  });
 
   // Memoized context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({
