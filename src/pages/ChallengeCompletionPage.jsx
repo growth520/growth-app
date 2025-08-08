@@ -18,6 +18,7 @@ import LevelUpModal from '@/components/gamification/LevelUpModal';
 import PackCompletionModal from '@/components/gamification/PackCompletionModal';
 import { updateStreakOnChallengeCompletion } from '@/lib/streakSystem';
 import { triggerBadgeCheck } from '@/lib/badgeSystem';
+import { compressImage, validateImageFile } from '@/lib/imageCompression';
 
 // Gamification Modal Components
 const StreakModal = ({ open, onOpenChange, streakCount }) => (
@@ -200,21 +201,12 @@ const ChallengeCompletionPage = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
+    // Validate the file
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
       toast({
-        title: "Invalid file type",
-        description: "Please select an image file.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "File too large",
-        description: "Please select an image smaller than 5MB.",
+        title: "Invalid File",
+        description: validation.error,
         variant: "destructive"
       });
       return;
@@ -223,20 +215,36 @@ const ChallengeCompletionPage = () => {
     try {
       setIsUploadingPhoto(true);
       
+      // Show compression message
+      toast({
+        title: "Processing Image",
+        description: "Compressing image for upload...",
+        duration: 2000
+      });
+
+      // Compress the image
+      const compressedFile = await compressImage(file);
+      
       // Create preview
       const reader = new FileReader();
       reader.onload = (e) => {
         setPhotoPreview(e.target.result);
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(compressedFile);
       
-      setPhotoFile(file);
+      setPhotoFile(compressedFile);
+      
+      toast({
+        title: "Image Ready",
+        description: "Image compressed and ready for upload!",
+        duration: 2000
+      });
       
     } catch (error) {
       console.error('Error processing photo:', error);
       toast({
-        title: "Error",
-        description: "Failed to process photo. Please try again.",
+        title: "Image Processing Failed",
+        description: "Could not process the image. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -263,6 +271,11 @@ const ChallengeCompletionPage = () => {
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
       const filePath = `challenge-photos/${fileName}`;
 
+      console.log('=== DEBUGGING STORAGE UPLOAD ===');
+      console.log('User ID:', user.id);
+      console.log('File path:', filePath);
+      console.log('File size:', file.size, 'bytes');
+
       // Try to upload to storage
       const { data, error } = await supabase.storage
         .from('photos')
@@ -273,12 +286,27 @@ const ChallengeCompletionPage = () => {
 
       if (error) {
         console.error('Storage upload error:', error);
-        // If storage is not set up, we'll skip photo upload but continue with challenge completion
-        toast({
-          title: "Photo Upload Skipped",
-          description: "Photo storage not configured. Challenge will be completed without photo.",
-          variant: "default"
-        });
+        
+        // Handle specific error types
+        if (error.message?.includes('row-level security policy')) {
+          toast({
+            title: "Storage Permission Error",
+            description: "Photo storage permissions not configured. Challenge will be completed without photo.",
+            variant: "destructive"
+          });
+        } else if (error.message?.includes('413') || error.message?.includes('too large')) {
+          toast({
+            title: "File Too Large",
+            description: "Image is still too large after compression. Challenge will be completed without photo.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Photo Upload Failed",
+            description: "Could not upload photo. Challenge will be completed without photo.",
+            variant: "default"
+          });
+        }
         return null;
       }
 
@@ -287,10 +315,10 @@ const ChallengeCompletionPage = () => {
         .from('photos')
         .getPublicUrl(filePath);
 
+      console.log('Upload successful, public URL:', publicUrl);
       return publicUrl;
     } catch (error) {
       console.error('Error uploading photo:', error);
-      // Don't throw error, just return null to continue without photo
       toast({
         title: "Photo Upload Failed",
         description: "Could not upload photo. Challenge will be completed without photo.",
