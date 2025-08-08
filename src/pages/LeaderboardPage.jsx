@@ -30,6 +30,9 @@ const LeaderboardPage = () => {
   const { progress } = useData();
   const navigate = useNavigate();
   
+  // Debug log to verify new version is loaded
+  console.log('🚀 LEADERBOARD PAGE - NEW VERSION LOADED:', new Date().toISOString());
+  
   // State management
   const [selectedFilter, setSelectedFilter] = useState('xp');
   const [leaderboardData, setLeaderboardData] = useState([]);
