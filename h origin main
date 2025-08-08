@@ -322,3 +322,8 @@
  TAB ...................................... Complete filename & cycle.
  SHIFT-TAB ...................... ESC-TAB   Complete filename & reverse cycle.
  ctrl-L ................................... Complete filename, list all.
+[33mc92c713[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Add debug logging to ProfilePage to diagnose navigation issue
+[33m9d23547[m[33m ([m[1;31morigin/main[m[33m)[m Fix ProfilePage to handle query parameter userId from leaderboard navigation
+[33m53e69a0[m Add debug logs to verify leaderboard navigation fix
+[33ma1fb4ef[m Fix leaderboard user navigation to use correct user ID
+[33md62385f[m Add additional debug log to verify leaderboard fix

@@ -81,13 +81,15 @@ const ProfilePage = () => {
   
   // Get userId from either route params or query params
   const queryUserId = searchParams.get('userId');
-  const isOwnProfile = (!paramUserId && !queryUserId) || (paramUserId === user?.id) || (queryUserId === user?.id);
-  const userId = isOwnProfile ? user?.id : (paramUserId || queryUserId);
+  const targetUserId = paramUserId || queryUserId;
+  const isOwnProfile = !targetUserId || targetUserId === user?.id;
+  const userId = isOwnProfile ? user?.id : targetUserId;
   
   // Debug logging to see what's happening
   console.log('🔧 PROFILE PAGE DEBUG:', {
     paramUserId,
     queryUserId,
+    targetUserId,
     user: user?.id,
     isOwnProfile,
     finalUserId: userId
