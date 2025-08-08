@@ -7,6 +7,7 @@ import { Heart, MessageCircle, CornerUpRight, BellOff, Bell, Users, X, ExternalL
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useData } from '@/contexts/DataContext';
+import { useNotificationsRealtime } from '@/hooks/useRealtime';
 
 const NotificationsPage = () => {
   const navigate = useNavigate();
@@ -66,6 +67,13 @@ const NotificationsPage = () => {
     fetchNotifications();
     updateLastViewedNotifications();
   }, [fetchNotifications, updateLastViewedNotifications]);
+
+  // Setup real-time updates for notifications
+  useNotificationsRealtime(user?.id, (hasNew) => {
+    if (hasNew) {
+      fetchNotifications();
+    }
+  });
 
   useEffect(() => {
     if (!user) return;

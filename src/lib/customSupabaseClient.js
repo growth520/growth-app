@@ -52,20 +52,20 @@ const createSupabaseClient = () => {
         persistSession: true,
         detectSessionInUrl: true
       },
-      // Completely disable realtime to prevent WebSocket connections
+      // Enable realtime for live updates
       realtime: {
         params: {
-          eventsPerSecond: 0
+          eventsPerSecond: 10
         }
       },
-      // Disable realtime globally and add proper headers
+      // Global headers
       global: {
         headers: {
           'x-client-info': 'growth-app@1.0.0',
           'apikey': supabaseAnonKey
         }
       },
-      // Disable realtime subscriptions
+      // Database schema
       db: {
         schema: 'public'
       }

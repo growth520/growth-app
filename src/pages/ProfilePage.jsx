@@ -481,6 +481,9 @@ const ProfilePage = () => {
     };
   }, [user, userId]);
 
+  // Setup real-time updates for follows
+  useFollowsRealtime(setFollowers, setFollowing);
+
   useEffect(() => {
     if (profile) {
       setEditName(profile.full_name || '');
